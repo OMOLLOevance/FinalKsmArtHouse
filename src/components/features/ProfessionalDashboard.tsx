@@ -23,19 +23,19 @@ interface MetricCardProps {
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, changeType, icon }) => (
-  <Card className="hover:shadow-md transition-all duration-200 border-gray-200">
+  <Card className="hover:shadow-md transition-all duration-200">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-gray-500">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
         {title}
       </CardTitle>
-      <div className="h-4 w-4 text-gray-400">
+      <div className="h-4 w-4 text-muted-foreground">
         {icon}
       </div>
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
+      <div className="text-2xl font-bold text-foreground">{value}</div>
       <p className={`text-xs font-medium ${
-        changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+        changeType === 'positive' ? 'text-success' : 'text-destructive'
       }`}>
         {change} from last month
       </p>
@@ -82,7 +82,7 @@ const ProfessionalDashboard: React.FC = () => {
       percentage: 41,
       growth: '+28%',
       icon: <Calendar className="h-5 w-5" />,
-      color: 'bg-slate-800'
+      color: 'bg-primary'
     },
     {
       name: 'Restaurant',
@@ -90,7 +90,7 @@ const ProfessionalDashboard: React.FC = () => {
       percentage: 30,
       growth: '+18%',
       icon: <Building2 className="h-5 w-5" />,
-      color: 'bg-indigo-600'
+      color: 'bg-secondary'
     },
     {
       name: 'Gym & Fitness',
@@ -98,7 +98,7 @@ const ProfessionalDashboard: React.FC = () => {
       percentage: 19,
       growth: '+22%',
       icon: <Activity className="h-5 w-5" />,
-      color: 'bg-gray-600'
+      color: 'bg-slate-600'
     },
     {
       name: 'Sauna & Spa',
@@ -106,32 +106,31 @@ const ProfessionalDashboard: React.FC = () => {
       percentage: 10,
       growth: '+35%',
       icon: <Flame className="h-5 w-5" />,
-      color: 'bg-gray-500'
+      color: 'bg-slate-500'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              KSM.ART HOUSE Dashboard
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Business Management Overview
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              All Systems Operational
-            </Badge>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              Real-time Data
-            </Badge>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            KSM.ART HOUSE Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Business Management Overview
+          </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+            All Systems Operational
+          </Badge>
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            Real-time Data
+          </Badge>
+        </div>
+      </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -142,10 +141,10 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Business Units Performance */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <Card className="border-gray-200">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center text-gray-900">
-                <BarChart3 className="h-5 w-5 mr-2 text-gray-600" />
+              <CardTitle className="flex items-center text-foreground">
+                <BarChart3 className="h-5 w-5 mr-2 text-muted-foreground" />
                 Revenue by Business Unit
               </CardTitle>
             </CardHeader>
@@ -157,14 +156,14 @@ const ProfessionalDashboard: React.FC = () => {
                       <div className={`p-2 rounded-lg ${unit.color} text-white shadow-sm`}>
                         {unit.icon}
                       </div>
-                      <span className="font-medium text-gray-900 text-sm sm:text-base">{unit.name}</span>
+                      <span className="font-medium text-foreground text-sm sm:text-base">{unit.name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-gray-900 text-sm sm:text-base">{unit.revenue}</div>
-                      <div className="text-xs sm:text-sm text-green-600 font-medium">{unit.growth}</div>
+                      <div className="font-semibold text-foreground text-sm sm:text-base">{unit.revenue}</div>
+                      <div className="text-xs sm:text-sm text-success font-medium">{unit.growth}</div>
                     </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-border rounded-full h-2">
                     <div 
                       className={`h-2 rounded-full ${unit.color} transition-all duration-500`}
                       style={{ width: `${unit.percentage}%` }}
@@ -175,46 +174,46 @@ const ProfessionalDashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-gray-200">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-gray-900">Recent Activity</CardTitle>
+              <CardTitle className="text-foreground">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-3">
-                <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="w-2 h-2 bg-slate-800 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex items-start space-x-3 p-3 bg-muted rounded-lg border border-border">
+                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">New event booking confirmed</p>
-                    <p className="text-xs text-gray-500">Wedding ceremony - June 15th</p>
+                    <p className="text-sm font-medium text-foreground">New event booking confirmed</p>
+                    <p className="text-xs text-muted-foreground">Wedding ceremony - June 15th</p>
                   </div>
-                  <span className="text-xs text-gray-500 flex-shrink-0">2 min ago</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">2 min ago</span>
                 </div>
                 
-                <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex items-start space-x-3 p-3 bg-muted rounded-lg border border-border">
+                  <div className="w-2 h-2 bg-success rounded-full mt-2 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Restaurant order completed</p>
-                    <p className="text-xs text-gray-500">Table 12 - KSH 4,500</p>
+                    <p className="text-sm font-medium text-foreground">Restaurant order completed</p>
+                    <p className="text-xs text-muted-foreground">Table 12 - KSH 4,500</p>
                   </div>
-                  <span className="text-xs text-gray-500 flex-shrink-0">15 min ago</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">15 min ago</span>
                 </div>
                 
-                <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="w-2 h-2 bg-indigo-600 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex items-start space-x-3 p-3 bg-muted rounded-lg border border-border">
+                  <div className="w-2 h-2 bg-secondary rounded-full mt-2 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">New gym membership</p>
-                    <p className="text-xs text-gray-500">3-month package - John Doe</p>
+                    <p className="text-sm font-medium text-foreground">New gym membership</p>
+                    <p className="text-xs text-muted-foreground">3-month package - John Doe</p>
                   </div>
-                  <span className="text-xs text-gray-500 flex-shrink-0">1 hour ago</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">1 hour ago</span>
                 </div>
                 
-                <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="w-2 h-2 bg-gray-600 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex items-start space-x-3 p-3 bg-muted rounded-lg border border-border">
+                  <div className="w-2 h-2 bg-slate-600 rounded-full mt-2 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Sauna session booked</p>
-                    <p className="text-xs text-gray-500">Premium package - 2 hours</p>
+                    <p className="text-sm font-medium text-foreground">Sauna session booked</p>
+                    <p className="text-xs text-muted-foreground">Premium package - 2 hours</p>
                   </div>
-                  <span className="text-xs text-gray-500 flex-shrink-0">2 hours ago</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">2 hours ago</span>
                 </div>
               </div>
             </CardContent>
@@ -223,73 +222,72 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          <Card className="border-gray-200">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Today's Summary</CardTitle>
+              <CardTitle className="text-lg text-foreground">Today's Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Revenue</span>
-                  <span className="font-semibold text-gray-900">KSH 8,450</span>
+                  <span className="text-sm text-muted-foreground">Revenue</span>
+                  <span className="font-semibold text-foreground">KSH 8,450</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Orders</span>
-                  <span className="font-semibold text-gray-900">23</span>
+                  <span className="text-sm text-muted-foreground">Orders</span>
+                  <span className="font-semibold text-foreground">23</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">New Customers</span>
-                  <span className="font-semibold text-gray-900">7</span>
+                  <span className="text-sm text-muted-foreground">New Customers</span>
+                  <span className="font-semibold text-foreground">7</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-gray-200">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">This Week</CardTitle>
+              <CardTitle className="text-lg text-foreground">This Week</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Events</span>
-                  <span className="font-semibold text-gray-900">12</span>
+                  <span className="text-sm text-muted-foreground">Events</span>
+                  <span className="font-semibold text-foreground">12</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gym Sessions</span>
-                  <span className="font-semibold text-gray-900">156</span>
+                  <span className="text-sm text-muted-foreground">Gym Sessions</span>
+                  <span className="font-semibold text-foreground">156</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Spa Bookings</span>
-                  <span className="font-semibold text-gray-900">34</span>
+                  <span className="text-sm text-muted-foreground">Spa Bookings</span>
+                  <span className="font-semibold text-foreground">34</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-gray-200">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Performance</CardTitle>
+              <CardTitle className="text-lg text-foreground">Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Customer Satisfaction</span>
-                  <span className="font-semibold text-green-600">98.2%</span>
+                  <span className="text-sm text-muted-foreground">Customer Satisfaction</span>
+                  <span className="font-semibold text-success">98.2%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">On-time Delivery</span>
-                  <span className="font-semibold text-green-600">96.8%</span>
+                  <span className="text-sm text-muted-foreground">On-time Delivery</span>
+                  <span className="font-semibold text-success">96.8%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Repeat Customers</span>
-                  <span className="font-semibold text-indigo-600">74.5%</span>
+                  <span className="text-sm text-muted-foreground">Repeat Customers</span>
+                  <span className="font-semibold text-secondary">74.5%</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
     </div>
   );
 };
