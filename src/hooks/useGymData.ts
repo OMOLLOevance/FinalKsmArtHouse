@@ -1,9 +1,13 @@
+// DEPRECATED: Use useGymMembersQuery and useGymFinancesQuery from use-gym-api.ts instead
+// This file is kept for backward compatibility during migration
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { GymMember, GymFinance } from '../types';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
-import { getAuthenticatedUser } from '../utils/authHelpers'; // Not directly needed if using useAuth
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
+// MIGRATION NOTICE: Replace with useGymMembersQuery from @/hooks/use-gym-api
 export const useGymMembers = () => {
   const { user, userId, isAuthenticated, isLoading: authLoading } = useAuth();
   const [members, setMembers] = useState<GymMember[]>([]);
@@ -34,7 +38,10 @@ export const useGymMembers = () => {
       }
 
       const { data, error: fetchError } = await query;
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        toast.error(`Failed to fetch gym members: ${fetchError.message}`);
+        throw fetchError;
+      }
 
       const mappedMembers = (data || []).map(dbMember => ({
         id: dbMember.id,
@@ -53,7 +60,9 @@ export const useGymMembers = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching gym members:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch gym members');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch gym members';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       setSyncing(false);
@@ -113,7 +122,10 @@ export const useGymMembers = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Failed to add member: ${error.message}`);
+        throw error;
+      }
 
       const frontendMember = {
         id: data.id,
@@ -129,6 +141,7 @@ export const useGymMembers = () => {
       };
 
       setMembers(prev => [frontendMember, ...prev]);
+      toast.success('Member added successfully');
       return frontendMember;
     } catch (err) {
       console.error('Error adding gym member:', err);
@@ -158,7 +171,10 @@ export const useGymMembers = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Failed to update member: ${error.message}`);
+        throw error;
+      }
 
       const frontendMember = {
         id: data.id,
@@ -174,6 +190,7 @@ export const useGymMembers = () => {
       };
 
       setMembers(prev => prev.map(m => m.id === id ? frontendMember : m));
+      toast.success('Member updated successfully');
       return frontendMember;
     } catch (err) {
       console.error('Error updating gym member:', err);
@@ -191,9 +208,13 @@ export const useGymMembers = () => {
         .eq('id', id)
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Failed to delete member: ${error.message}`);
+        throw error;
+      }
 
       setMembers(prev => prev.filter(m => m.id !== id));
+      toast.success('Member deleted successfully');
     } catch (err) {
       console.error('Error deleting gym member:', err);
       throw err;
@@ -205,6 +226,7 @@ export const useGymMembers = () => {
   return { members, loading: combinedLoading, error, syncing, addMember, updateMember, deleteMember, refetch: fetchMembers };
 };
 
+// MIGRATION NOTICE: Replace with useGymFinancesQuery from @/hooks/use-gym-api
 export const useGymFinances = () => {
   const { user, userId, isAuthenticated, isLoading: authLoading } = useAuth();
   const [finances, setFinances] = useState<GymFinance[]>([]);
@@ -235,7 +257,10 @@ export const useGymFinances = () => {
       }
 
       const { data, error: fetchError } = await query;
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        toast.error(`Failed to fetch gym finances: ${fetchError.message}`);
+        throw fetchError;
+      }
 
       const mappedFinances = (data || []).map(dbFinance => ({
         id: dbFinance.id,
@@ -250,7 +275,9 @@ export const useGymFinances = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching gym finances:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch gym finances');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch gym finances';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       setSyncing(false);
@@ -305,7 +332,10 @@ export const useGymFinances = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Failed to add finance record: ${error.message}`);
+        throw error;
+      }
 
       const frontendFinance = {
         id: data.id,
@@ -317,6 +347,7 @@ export const useGymFinances = () => {
       };
 
       setFinances(prev => [frontendFinance, ...prev]);
+      toast.success('Finance record added successfully');
       return frontendFinance;
     } catch (err) {
       console.error('Error adding gym finance:', err);
@@ -342,7 +373,10 @@ export const useGymFinances = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Failed to update finance record: ${error.message}`);
+        throw error;
+      }
 
       const frontendFinance = {
         id: data.id,
@@ -354,6 +388,7 @@ export const useGymFinances = () => {
       };
 
       setFinances(prev => prev.map(f => f.id === id ? frontendFinance : f));
+      toast.success('Finance record updated successfully');
       return frontendFinance;
     } catch (err) {
       console.error('Error updating gym finance:', err);
@@ -371,9 +406,13 @@ export const useGymFinances = () => {
         .eq('id', id)
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        toast.error(`Failed to delete finance record: ${error.message}`);
+        throw error;
+      }
 
       setFinances(prev => prev.filter(f => f.id !== id));
+      toast.success('Finance record deleted successfully');
     } catch (err) {
       console.error('Error deleting gym finance:', err);
       throw err;
