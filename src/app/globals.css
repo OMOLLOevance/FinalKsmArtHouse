@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base - Light Mode (Clean, High-End Paper) */
+    --background: 210 40% 98%; /* Soft cool white */
+    --foreground: 222 47% 11%; /* Deep Navy text */
+
+    /* Card - Pure White */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary - Champagne Gold (The "Art/Value" Accent) */
+    --primary: 45 93% 47%;
+    --primary-foreground: 222 47% 11%; /* Dark text on gold for readability */
+
+    /* Secondary - Muted Navy */
+    --secondary: 217 33% 90%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Muted */
+    --muted: 217 33% 90%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent - For hovers (Soft Gold/Blue mix) */
+    --accent: 210 40% 93%;
+    --accent-foreground: 222 47% 11%;
+
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Borders */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 45 93% 47%; /* Gold Focus Ring */
+
+    --radius: 0.75rem; /* Modern rounded corners */
+  }
+
+  .dark {
+    /* Base - Dark Mode (The "Executive Suite" Look) */
+    --background: 222 47% 11%; /* Rich Deep Navy */
+    --foreground: 210 40% 98%; /* Off-white text */
+
+    --card: 217 33% 17%; /* Lighter Navy Surface */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 217 33% 17%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary - Rich Gold */
+    --primary: 45 93% 47%;
+    --primary-foreground: 222 47% 11%;
+
+    /* Secondary - Deep Slate */
+    --secondary: 217 33% 25%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 25%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 25%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 25%;
+    --input: 217 33% 25%;
+    --ring: 45 93% 47%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom Scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+  }
+}
+
+@layer components {
+  /* Clean professional styling */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors;
+  }
+}
