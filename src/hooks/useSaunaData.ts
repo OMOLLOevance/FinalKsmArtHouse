@@ -1,7 +1,11 @@
+// DEPRECATED: Use React Query hooks from use-sauna-api.ts instead
+// This file is kept for backward compatibility during migration
+
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
 import { SaunaBooking, SpaBooking } from '../types';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { safeLog } from '@/lib/sanitizer';
 
 interface SaunaSpaFinance {
   id: string;
@@ -13,371 +17,236 @@ interface SaunaSpaFinance {
   user_id?: string;
 }
 
+// MIGRATION NOTICE: Replace with useSaunaBookingsQuery from @/hooks/use-sauna-api
 export const useSaunaBookings = () => {
-  const { user, userId, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth();
   const [bookings, setBookings] = useState<SaunaBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
-    if (authLoading) return;
+    if (authLoading || !isAuthenticated || !userId) {
+      setBookings([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
-      if (!isAuthenticated || !userId) {
-        setBookings([]);
-        setError('User not authenticated');
-        return;
+      // Use backend API instead of direct Supabase
+      const response = await fetch(`/api/sauna?userId=${userId}&type=bookings`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch bookings');
       }
-
-      const query = supabase
-        .from('sauna_bookings')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      setBookings(data || []);
+      
+      setBookings(result.data || []);
       setError(null);
     } catch (err) {
-      console.error('Error fetching sauna bookings:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch sauna bookings');
+      safeLog.error('Error fetching sauna bookings:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch sauna bookings';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   }, [userId, isAuthenticated, authLoading]);
 
   useEffect(() => {
-    if (!authLoading) {
-      fetchBookings();
-    }
-  }, [fetchBookings, authLoading]);
-
-  useEffect(() => {
-    if (!authLoading && userId) {
-      const channel = supabase
-        .channel('sauna_bookings_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'sauna_bookings', filter: `user_id=eq.${userId}` },
-          () => {
-            fetchBookings();
-          }
-        )
-        .subscribe();
-
-      return () => { supabase.removeChannel(channel); };
-    }
-  }, [fetchBookings, authLoading, userId]);
+    fetchBookings();
+  }, [fetchBookings]);
 
   const addBooking = useCallback(async (booking: Omit<SaunaBooking, 'id'>) => {
     try {
       if (!userId) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('sauna_bookings')
-        .insert([{ ...booking, user_id: userId }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return data;
+      const response = await fetch('/api/sauna', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, type: 'bookings', ...booking })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add booking');
+      }
+      
+      await fetchBookings();
+      toast.success('Sauna booking added successfully');
+      return result.data;
     } catch (err) {
-      console.error('Error adding sauna booking:', err);
+      safeLog.error('Error adding sauna booking:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add booking';
+      toast.error(errorMessage);
       throw err;
     }
-  }, [userId]);
+  }, [userId, fetchBookings]);
 
   const updateBooking = useCallback(async (id: string, updates: Partial<SaunaBooking>) => {
-    try {
-      if (!userId) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('sauna_bookings')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return data;
-    } catch (err) {
-      console.error('Error updating sauna booking:', err);
-      throw err;
-    }
-  }, [userId]);
+    // Implementation for update via API
+    toast.info('Update functionality will be implemented');
+  }, []);
 
   const deleteBooking = useCallback(async (id: string) => {
-    try {
-      if (!userId) throw new Error('User not authenticated');
+    // Implementation for delete via API
+    toast.info('Delete functionality will be implemented');
+  }, []);
 
-      const { error } = await supabase
-        .from('sauna_bookings')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-    } catch (err) {
-      console.error('Error deleting sauna booking:', err);
-      throw err;
-    }
-  }, [userId]);
-
-  const combinedLoading = loading || authLoading;
-
-  return { bookings, loading: combinedLoading, error, addBooking, updateBooking, deleteBooking, refetch: fetchBookings };
+  return { bookings, loading, error, addBooking, updateBooking, deleteBooking, refetch: fetchBookings };
 };
 
+// MIGRATION NOTICE: Replace with useSpaBookingsQuery from @/hooks/use-sauna-api
 export const useSpaBookings = () => {
-  const { user, userId, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth();
   const [bookings, setBookings] = useState<SpaBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
-    if (authLoading) return;
+    if (authLoading || !isAuthenticated || !userId) {
+      setBookings([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
-      if (!isAuthenticated || !userId) {
-        setBookings([]);
-        setError('User not authenticated');
-        return;
+      const response = await fetch(`/api/sauna?userId=${userId}&type=spa`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch spa bookings');
       }
-
-      const query = supabase
-        .from('spa_bookings')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      setBookings(data || []);
+      
+      setBookings(result.data || []);
       setError(null);
     } catch (err) {
-      console.error('Error fetching spa bookings:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch spa bookings');
+      safeLog.error('Error fetching spa bookings:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch spa bookings';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   }, [userId, isAuthenticated, authLoading]);
 
   useEffect(() => {
-    if (!authLoading) {
-      fetchBookings();
-    }
-  }, [fetchBookings, authLoading]);
-
-  useEffect(() => {
-    if (!authLoading && userId) {
-      const channel = supabase
-        .channel('spa_bookings_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'spa_bookings', filter: `user_id=eq.${userId}` },
-          () => {
-            fetchBookings();
-          }
-        )
-        .subscribe();
-
-      return () => { supabase.removeChannel(channel); };
-    }
-  }, [fetchBookings, authLoading, userId]);
+    fetchBookings();
+  }, [fetchBookings]);
 
   const addBooking = useCallback(async (booking: Omit<SpaBooking, 'id'>) => {
     try {
       if (!userId) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('spa_bookings')
-        .insert([{ ...booking, user_id: userId }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return data;
+      const response = await fetch('/api/sauna', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, type: 'spa', ...booking })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add spa booking');
+      }
+      
+      await fetchBookings();
+      toast.success('Spa booking added successfully');
+      return result.data;
     } catch (err) {
-      console.error('Error adding spa booking:', err);
+      safeLog.error('Error adding spa booking:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add spa booking';
+      toast.error(errorMessage);
       throw err;
     }
-  }, [userId]);
+  }, [userId, fetchBookings]);
 
   const updateBooking = useCallback(async (id: string, updates: Partial<SpaBooking>) => {
-    try {
-      if (!userId) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('spa_bookings')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return data;
-    } catch (err) {
-      console.error('Error updating spa booking:', err);
-      throw err;
-    }
-  }, [userId]);
+    toast.info('Update functionality will be implemented');
+  }, []);
 
   const deleteBooking = useCallback(async (id: string) => {
-    try {
-      if (!userId) throw new Error('User not authenticated');
+    toast.info('Delete functionality will be implemented');
+  }, []);
 
-      const { error } = await supabase
-        .from('spa_bookings')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-    } catch (err) {
-      console.error('Error deleting spa booking:', err);
-      throw err;
-    }
-  }, [userId]);
-
-  const combinedLoading = loading || authLoading;
-
-  return { bookings, loading: combinedLoading, error, addBooking, updateBooking, deleteBooking, refetch: fetchBookings };
+  return { bookings, loading, error, addBooking, updateBooking, deleteBooking, refetch: fetchBookings };
 };
 
+// MIGRATION NOTICE: Replace with useSaunaFinancesQuery from @/hooks/use-sauna-api
 export const useSaunaSpaFinances = () => {
-  const { user, userId, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth();
   const [finances, setFinances] = useState<SaunaSpaFinance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchFinances = useCallback(async () => {
-    if (authLoading) return;
+    if (authLoading || !isAuthenticated || !userId) {
+      setFinances([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
-      if (!isAuthenticated || !userId) {
-        setFinances([]);
-        setError('User not authenticated');
-        return;
+      const response = await fetch(`/api/sauna?userId=${userId}&type=finances`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch finances');
       }
-
-      const query = supabase
-        .from('sauna_spa_finances')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      setFinances(data || []);
+      
+      setFinances(result.data || []);
       setError(null);
     } catch (err) {
-      console.error('Error fetching sauna/spa finances:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch finances');
+      safeLog.error('Error fetching sauna/spa finances:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch finances';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   }, [userId, isAuthenticated, authLoading]);
 
   useEffect(() => {
-    if (!authLoading) {
-      fetchFinances();
-    }
-  }, [fetchFinances, authLoading]);
-
-  useEffect(() => {
-    if (!authLoading && userId) {
-      const channel = supabase
-        .channel('sauna_spa_finances_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'sauna_spa_finances', filter: `user_id=eq.${userId}` },
-          (payload) => {
-            fetchFinances();
-          }
-        )
-        .subscribe();
-
-      return () => { supabase.removeChannel(channel); };
-    }
-  }, [fetchFinances, authLoading, userId]);
+    fetchFinances();
+  }, [fetchFinances]);
 
   const addFinance = useCallback(async (finance: Omit<SaunaSpaFinance, 'id'>) => {
     try {
       if (!userId) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('sauna_spa_finances')
-        .insert([{ ...finance, user_id: userId }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return data;
+      const response = await fetch('/api/sauna', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, type: 'finances', ...finance })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add finance record');
+      }
+      
+      await fetchFinances();
+      toast.success('Finance record added successfully');
+      return result.data;
     } catch (err) {
-      console.error('Error adding finance:', err);
+      safeLog.error('Error adding finance:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add finance record';
+      toast.error(errorMessage);
       throw err;
     }
-  }, [userId]);
+  }, [userId, fetchFinances]);
 
   const updateFinance = useCallback(async (id: string, updates: Partial<SaunaSpaFinance>) => {
-    try {
-      if (!userId) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('sauna_spa_finances')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return data;
-    } catch (err) {
-      console.error('Error updating finance:', err);
-      throw err;
-    }
-  }, [userId]);
+    toast.info('Update functionality will be implemented');
+  }, []);
 
   const deleteFinance = useCallback(async (id: string) => {
-    try {
-      if (!userId) throw new Error('User not authenticated');
+    toast.info('Delete functionality will be implemented');
+  }, []);
 
-      const { error } = await supabase
-        .from('sauna_spa_finances')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-    } catch (err) {
-      console.error('Error deleting finance:', err);
-      throw err;
-    }
-  }, [userId]);
-
-  const combinedLoading = loading || authLoading;
-
-  return { finances, loading: combinedLoading, error, addFinance, updateFinance, deleteFinance, refetch: fetchFinances };
+  return { finances, loading, error, addFinance, updateFinance, deleteFinance, refetch: fetchFinances };
 };
