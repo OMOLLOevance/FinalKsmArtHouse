@@ -23,22 +23,15 @@ export async function getAuthenticatedUser(): Promise<User | null> {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return null;
 
-    const { data: profile, error: profileError } = await supabase
-      .from('custom_users')
-      .select('*')
-      .eq('email', user.email)
-      .single();
-
-    if (profileError || !profile) return null;
-
+    // Use Supabase auth user data directly
     return {
-      id: profile.id,
-      email: profile.email,
-      firstName: profile.first_name,
-      lastName: profile.last_name,
-      role: profile.role,
+      id: user.id,
+      email: user.email || '',
+      firstName: user.user_metadata?.first_name || '',
+      lastName: user.user_metadata?.last_name || '',
+      role: user.user_metadata?.role || 'staff',
       password: '', // Don't return password
-      createdAt: profile.created_at
+      createdAt: user.created_at || new Date().toISOString()
     };
   } catch (error) {
     console.error('Error getting authenticated user:', error);
