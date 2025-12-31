@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types';
+import { safeLog } from '@/lib/sanitizer';
 
 export async function ensureAuthenticated(): Promise<User> {
   const user = await getAuthenticatedUser();
@@ -34,7 +35,7 @@ export async function getAuthenticatedUser(): Promise<User | null> {
       createdAt: user.created_at || new Date().toISOString()
     };
   } catch (error) {
-    console.error('Error getting authenticated user:', error);
+    safeLog.error('Error getting authenticated user:', error);
     return null;
   }
 }
