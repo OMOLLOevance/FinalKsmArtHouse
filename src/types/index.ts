@@ -123,6 +123,7 @@ export interface GymFinance {
   description: string;
   amount: number;
   type: 'income' | 'expense';
+  createdAt?: string;
 }
 
 export interface GymMember {
@@ -135,6 +136,7 @@ export interface GymMember {
   startDate: string;
   endDate: string;
   status: 'active' | 'expired';
+  createdAt?: string;
 }
 
 export interface SaunaBooking {

@@ -3,6 +3,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { AlertCircle } from 'lucide-react';
+import { safeLog } from '@/lib/sanitizer';
 
 interface Props {
   children: ReactNode;
@@ -25,7 +26,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
   
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('API Error:', error, errorInfo);
+    safeLog.error('API Error:', error);
+    safeLog.error('Error Info:', errorInfo);
     // Send to error tracking service (Sentry, LogRocket)
   }
   

@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { toast } from 'sonner';
+import { tokenStorage } from './token-storage';
+import { safeLog } from './sanitizer';
 
 class APIClient {
   private client: AxiosInstance;
@@ -18,7 +20,7 @@ class APIClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('auth_token');
+        const token = tokenStorage.getToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -46,10 +48,10 @@ class APIClient {
   private async handleTokenRefresh() {
     try {
       // Implement token refresh logic here
-      localStorage.removeItem('auth_token');
+      tokenStorage.removeToken();
       window.location.href = '/login';
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      safeLog.error('Token refresh failed:', error);
     }
   }
   

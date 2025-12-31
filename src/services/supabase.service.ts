@@ -5,7 +5,7 @@ import { z } from 'zod';
 export const SupabaseQuerySchema = z.object({
   table: z.string(),
   select: z.string().optional(),
-  filters: z.record(z.any()).optional(),
+  filters: z.record(z.string(), z.any()).optional(),
   orderBy: z.object({
     column: z.string(),
     ascending: z.boolean().optional(),
@@ -19,29 +19,29 @@ class SupabaseService {
   private client = supabase;
 
   async query<T>(params: SupabaseQuery): Promise<T[]> {
-    SupabaseQuerySchema.parse(params);
+    const validatedParams = SupabaseQuerySchema.parse(params);
     
     let query = this.client
-      .from(params.table)
-      .select(params.select || '*');
+      .from(validatedParams.table)
+      .select(validatedParams.select || '*');
 
     // Apply filters
-    if (params.filters) {
-      Object.entries(params.filters).forEach(([key, value]) => {
+    if (validatedParams.filters) {
+      Object.entries(validatedParams.filters).forEach(([key, value]) => {
         query = query.eq(key, value);
       });
     }
 
     // Apply ordering
-    if (params.orderBy) {
-      query = query.order(params.orderBy.column, { 
-        ascending: params.orderBy.ascending ?? true 
+    if (validatedParams.orderBy) {
+      query = query.order(validatedParams.orderBy.column, { 
+        ascending: validatedParams.orderBy.ascending ?? true 
       });
     }
 
     // Apply limit
-    if (params.limit) {
-      query = query.limit(params.limit);
+    if (validatedParams.limit) {
+      query = query.limit(validatedParams.limit);
     }
 
     const { data, error } = await query;
