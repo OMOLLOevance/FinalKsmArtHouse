@@ -4,77 +4,72 @@
 
 @layer base {
   :root {
-    /* Base - Light Mode (Clean, High-End Paper) */
-    --background: 210 40% 98%; /* Soft cool white */
-    --foreground: 222 47% 11%; /* Deep Navy text */
+    /* Authoritative Color Scheme */
+    --background: 244 247 250; /* #F4F7FA */
+    --foreground: 27 31 59; /* #1B1F3B */
 
-    /* Card - Pure White */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 27 31 59;
 
-    /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 27 31 59;
 
-    /* Primary - Champagne Gold (The "Art/Value" Accent) */
-    --primary: 45 93% 47%;
-    --primary-foreground: 222 47% 11%; /* Dark text on gold for readability */
+    /* Primary - #0F3460 */
+    --primary: 210 69% 22%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Muted Navy */
-    --secondary: 217 33% 90%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary - #E94560 */
+    --secondary: 351 81% 59%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Muted */
-    --muted: 217 33% 90%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted - #6B7280 */
+    --muted: 220 13% 46%;
+    --muted-foreground: 220 13% 46%;
 
-    /* Accent - For hovers (Soft Gold/Blue mix) */
-    --accent: 210 40% 93%;
-    --accent-foreground: 222 47% 11%;
+    /* Accent - #F9DC5C */
+    --accent: 48 94% 68%;
+    --accent-foreground: 27 31 59;
 
     /* Destructive */
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Borders */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 45 93% 47%; /* Gold Focus Ring */
+    /* Borders - #E5E7EB */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 210 69% 22%; /* Primary focus ring */
 
-    --radius: 0.75rem; /* Modern rounded corners */
+    --radius: 0.5rem; /* rounded-lg */
   }
 
   .dark {
-    /* Base - Dark Mode (The "Executive Suite" Look) */
-    --background: 222 47% 11%; /* Rich Deep Navy */
-    --foreground: 210 40% 98%; /* Off-white text */
+    --background: 27 31 59; /* Dark navy */
+    --foreground: 244 247 250;
 
-    --card: 217 33% 17%; /* Lighter Navy Surface */
-    --card-foreground: 210 40% 98%;
+    --card: 210 69% 22%;
+    --card-foreground: 244 247 250;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 69% 22%;
+    --popover-foreground: 244 247 250;
 
-    /* Primary - Rich Gold */
-    --primary: 45 93% 47%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 210 69% 22%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Deep Slate */
-    --secondary: 217 33% 25%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 351 81% 59%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217 33% 25%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 13% 46%;
+    --muted-foreground: 220 13% 46%;
 
-    --accent: 217 33% 25%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 48 94% 68%;
+    --accent-foreground: 27 31 59;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 25%;
-    --input: 217 33% 25%;
-    --ring: 45 93% 47%;
+    --border: 220 13% 46%;
+    --input: 220 13% 46%;
+    --ring: 210 69% 22%;
   }
 }
 

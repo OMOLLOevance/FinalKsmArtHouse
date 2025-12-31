@@ -60,64 +60,64 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
   return (
     <div className="w-full space-y-6">
-      <Card className="glass-panel border-white/5 shadow-2xl">
-          <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your email and password to access your account</CardDescription>
+      <Card className="bg-white/95 backdrop-blur-sm border-brand-border shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-brand-text">Sign In</CardTitle>
+            <CardDescription className="text-brand-muted">Enter your email and password to access your account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Demo Login Banner */}
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-center">
-              <p className="text-sm font-medium text-primary mb-2">Quick Demo Access</p>
+            <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-lg p-4 text-center">
+              <p className="text-sm font-medium text-brand-primary mb-2">Quick Demo Access</p>
               <Button 
                 variant="outline" 
-                className="w-full border-primary/20 hover:bg-primary/20"
+                className="w-full border-brand-primary/30 hover:bg-brand-primary/10 text-brand-primary"
                 onClick={handleDemoLogin}
                 disabled={loading}
               >
                 {loading ? 'Logging in...' : 'Login as Demo User'}
               </Button>
-              <p className="text-xs text-muted-foreground mt-2">demo@test.com / demo123</p>
+              <p className="text-xs text-brand-muted mt-2">demo@test.com / demo123</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                <label htmlFor="email" className="text-sm font-medium text-brand-text">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-brand-muted" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="pl-9"
+                    className="pl-9 border-brand-border focus:border-brand-primary focus:ring-brand-primary/20"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                <label htmlFor="password" className="text-sm font-medium text-brand-text">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-brand-muted" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="pl-9 pr-9"
+                    className="pl-9 pr-9 border-brand-border focus:border-brand-primary focus:ring-brand-primary/20"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-2.5 text-brand-muted hover:text-brand-text transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -125,8 +125,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               </div>
 
               {message && (
-                <div className={`p-3 rounded-md flex items-center gap-2 text-sm ${
-                  message.type === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-green-100 text-green-700'
+                <div className={`p-3 rounded-lg flex items-center gap-2 text-sm ${
+                  message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
                 }`}>
                   {message.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
                   {message.text}
@@ -140,10 +140,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+                <span className="w-full border-t border-brand-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-white px-2 text-brand-muted">Or continue with</span>
               </div>
             </div>
 
@@ -157,10 +157,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               Google
             </Button>
           </CardContent>
-          <CardFooter className="flex justify-center text-sm text-muted-foreground">
-            <button className="hover:text-primary underline">Forgot password?</button>
-            <span className="mx-2">•</span>
-            <button className="hover:text-primary underline">Create account</button>
+          <CardFooter className="flex justify-center text-sm text-brand-muted space-x-4">
+            <button className="hover:text-brand-primary underline transition-colors">Forgot password?</button>
+            <span>•</span>
+            <button className="hover:text-brand-primary underline transition-colors">Create account</button>
           </CardFooter>
         </Card>
     </div>

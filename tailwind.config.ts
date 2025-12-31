@@ -13,6 +13,16 @@ const config: Config = {
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
       },
       colors: {
+        // Authoritative Color Palette
+        'brand-primary': '#0F3460',
+        'brand-secondary': '#E94560', 
+        'brand-accent': '#F9DC5C',
+        'brand-background': '#F4F7FA',
+        'brand-text': '#1B1F3B',
+        'brand-muted': '#6B7280',
+        'brand-border': '#E5E7EB',
+        
+        // shadcn/ui compatibility
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
