@@ -14,65 +14,41 @@ const config: Config = {
       },
       colors: {
         // Professional Enterprise Color System
-        'slate': {
-          800: '#1F2937', // Primary brand/actions
-        },
-        'indigo': {
-          600: '#4F46E5', // Secondary emphasis
-        },
-        'gray': {
-          50: '#F9FAFB',   // Page backgrounds
-          100: '#F3F4F6',  // Subtle sections
-          200: '#E5E7EB',  // Borders
-          300: '#D1D5DB',  // Hover borders
-          500: '#6B7280',  // Muted text
-          600: '#374151',  // Body text
-          900: '#111827',  // Primary text
-        },
-        // Status colors (semantic only)
-        'green': {
-          600: '#16A34A', // Success
-        },
-        'amber': {
-          600: '#D97706', // Warning
-        },
-        'red': {
-          600: '#DC2626', // Error
-        },
-        
-        // shadcn/ui compatibility
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: '#1F2937', // Slate 800
+          foreground: '#FFFFFF',
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: '#4F46E5', // Indigo 600
+          foreground: '#FFFFFF',
         },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+        background: '#F9FAFB', // Page background
+        foreground: '#111827', // Primary text
+        card: {
+          DEFAULT: '#FFFFFF', // Card surfaces
+          foreground: '#111827',
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: '#F3F4F6', // Subtle sections
+          foreground: '#6B7280', // Muted text
         },
+        border: '#E5E7EB', // Borders
+        input: '#E5E7EB',
+        ring: '#4F46E5', // Focus ring
+        
+        // Status colors (semantic only)
+        success: '#16A34A',
+        warning: '#D97706', 
+        destructive: '#DC2626',
+        
+        // shadcn/ui compatibility
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: '#F3F4F6',
+          foreground: '#111827',
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: '#FFFFFF',
+          foreground: '#111827',
         },
       },
       borderRadius: {
