@@ -10,7 +10,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   userId: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   signup: (userData: Omit<User, 'id' | 'createdAt'>, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
 
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // }, [isLoading, user, pathname, router]);
 
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -101,14 +101,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         setUser(userData);
-        return true;
+        return { success: true };
       }
-      return false;
+      
+      if (data.user && !data.session) {
+          return { success: false, message: 'Please check your email to confirm your account before logging in.' };
+      }
+
+      return { success: false, message: 'Session not created' };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message.replace(/[\r\n]/g, ' ') : 'Login failed';
       console.error('Login error:', { message: errorMessage });
       setUser(null);
-      return false;
+      return { success: false, message: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (userData: Omit<User, 'id' | 'createdAt'>, password: string): Promise<{ success: boolean; message: string }> => {
     setIsLoading(true);
     try {
+      console.log('Signup payload:', { ...userData });
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: password,

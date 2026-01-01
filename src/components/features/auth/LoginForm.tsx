@@ -33,6 +33,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     setMessage(null);
 
     try {
+      if (formData.password.length < 8) {
+          setMessage({ type: 'error', text: 'Password must be at least 8 characters long.' });
+          setLoading(false);
+          return;
+      }
+
       if (mode === 'login') {
         if (!formData.email || !formData.password) {
           setMessage({ type: 'error', text: 'Please fill in all fields.' });
@@ -41,14 +47,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         }
 
         const result = await login(formData.email, formData.password);
-        if (result) {
+        if (result.success) {
           setSuccessData({
             title: 'Welcome Back!',
             message: 'You have successfully logged into KSM.ART HOUSE management system.'
           });
           setShowSuccessDialog(true);
         } else {
-          setMessage({ type: 'error', text: 'Invalid email or password.' });
+          setMessage({ type: 'error', text: result.message || 'Invalid email or password.' });
         }
       } else {
         if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
