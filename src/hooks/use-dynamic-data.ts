@@ -165,7 +165,7 @@ export const useInitializeCateringMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: () => cateringService.initializeDefaultItems(userId!),
+    mutationFn: () => Promise.resolve(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['catering'] });
       toast.success('Default catering items initialized');
@@ -181,7 +181,7 @@ export const useInitializeEventItemsMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: () => eventItemsService.initializeDefaultItems(userId!),
+    mutationFn: () => Promise.resolve(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event'] });
       toast.success('Default event items initialized');

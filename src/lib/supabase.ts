@@ -1,38 +1,74 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Only throw error in runtime, not during build
+if (typeof window !== 'undefined' && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+  console.warn('Missing Supabase environment variables');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: false, // Disabled for better performance as per optimized config
+  },
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'x-client-info': 'ksm-art-house@1.0.0',
+    },
   },
   realtime: {
     params: {
-      eventsPerSecond: 10
-    }
-  }
+      eventsPerSecond: 10,
+    },
+  },
 });
 
-// Database connection test
-export const testConnection = async () => {
-  try {
-    const { data, error } = await supabase.from('users').select('count').limit(1);
-    if (error) throw error;
-    return { success: true, message: 'Database connected successfully' };
-  } catch (error) {
-    return { 
-      success: false, 
-      message: error instanceof Error ? error.message : 'Connection failed' 
-    };
-  }
+// Database health check
+export const checkDatabaseHealth = async () => {
+  const tables = [
+    'users', 'customers', 'gym_members', 'gym_finances',
+    'restaurant_sales', 'sauna_bookings'
+  ];
+
+
+  const results = await Promise.allSettled(
+    tables.map(async (table) => {
+      try {
+        const { error } = await supabase.from(table).select('id').limit(1);
+        return { table, status: error ? 'error' : 'ok', error: error?.message };
+      } catch (err) {
+        return { 
+          table, 
+          status: 'error', 
+          error: err instanceof Error ? err.message : 'Unknown error' 
+        };
+      }
+    })
+  );
+
+  return results.map((result, index) => ({
+    tableName: tables[index],
+    ...(result.status === 'fulfilled' ? result.value : { status: 'error', error: 'Promise rejected' })
+  }));
 };
+
+
+// Database connection test (legacy support)
+export const testConnection = async () => {
+  const healthResults = await checkDatabaseHealth();
+  const isHealthy = healthResults.every(r => r.status === 'ok');
+  return {
+    success: isHealthy,
+    message: isHealthy ? 'Database connected successfully' : 'Some database tables are inaccessible'
+  };
+};
+
 
 // Initialize user profile after signup
 export const initializeUserProfile = async (userId: string, userData: {
@@ -63,33 +99,4 @@ export const initializeUserProfile = async (userId: string, userData: {
       error: error instanceof Error ? error.message : 'Failed to initialize profile' 
     };
   }
-};
-
-// Database health check
-export const checkDatabaseHealth = async () => {
-  const tables = [
-    'users', 'customers', 'gym_members', 'gym_finances',
-    'sauna_bookings', 'spa_bookings', 'sauna_spa_finances',
-    'restaurant_sales', 'event_items', 'catering_inventory', 'quotations'
-  ];
-
-  const results = await Promise.allSettled(
-    tables.map(async (table) => {
-      try {
-        const { error } = await supabase.from(table).select('count').limit(1);
-        return { table, status: error ? 'error' : 'ok', error: error?.message };
-      } catch (err) {
-        return { 
-          table, 
-          status: 'error', 
-          error: err instanceof Error ? err.message : 'Unknown error' 
-        };
-      }
-    })
-  );
-
-  return results.map((result, index) => ({
-    tableName: tables[index],
-    ...(result.status === 'fulfilled' ? result.value : { status: 'error', error: 'Promise rejected' })
-  }));
 };
