@@ -4,8 +4,10 @@ import { LoadingSpinner } from './LoadingSpinner';
 // Lazy load heavy components
 export const LazyCustomerManager = lazy(() => import('../features/events/CustomerManager'));
 export const LazyCateringManager = lazy(() => import('../features/events/CateringManager'));
-export const LazyDecorManager = lazy(() => import('../features/events/DecorManager'));
 export const LazyQuotationManager = lazy(() => import('../features/events/QuotationManager'));
+export const LazyEventCategoryManager = lazy(() => import('../features/events/EventCategoryManager'));
+export const LazyEventPaymentForm = lazy(() => import('../features/events/EventPaymentForm'));
+
 
 interface LazyComponentProps {
   children: React.ReactNode;

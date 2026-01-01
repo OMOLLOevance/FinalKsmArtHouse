@@ -1,18 +1,18 @@
 'use client';
 
 import React, { useState, Suspense, lazy } from 'react';
-import { Utensils, Palette, Users, Wrench, Music, FileText, ArrowLeft } from 'lucide-react';
+import { Utensils, Palette, Users, Wrench, Music, FileText, ArrowLeft, DollarSign } from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Lazy load heavy components for better performance
 const CateringManager = lazy(() => import('./CateringManager'));
-const DecorManager = lazy(() => import('./DecorManager'));
 const CustomerManager = lazy(() => import('./CustomerManager'));
-const SanitationManager = lazy(() => import('./SanitationManager'));
-const EntertainmentManager = lazy(() => import('./EntertainmentManager'));
 const QuotationManager = lazy(() => import('./QuotationManager'));
+const EventCategoryManager = lazy(() => import('./EventCategoryManager'));
+const EventPaymentForm = lazy(() => import('./EventPaymentForm'));
 
 interface EventManagementProps {
   onBack?: () => void;
@@ -26,78 +26,90 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
       id: 'catering', 
       title: 'Catering', 
       icon: Utensils, 
-      color: 'text-pink-600', 
-      bg: 'bg-pink-100',
+      color: 'text-primary', 
+      bg: 'bg-primary/10',
       description: 'Manage food and beverage services' 
+    },
+    { 
+      id: 'payments', 
+      title: 'Payments', 
+      icon: DollarSign, 
+      color: 'text-success', 
+      bg: 'bg-success/10',
+      description: 'Log event payments and financial records' 
     },
     { 
       id: 'decor', 
       title: 'Decor', 
       icon: Palette, 
-      color: 'text-purple-600', 
-      bg: 'bg-purple-100',
+      color: 'text-secondary', 
+      bg: 'bg-secondary/10',
       description: 'Manage event decorations and themes' 
     },
     { 
       id: 'customers', 
       title: 'Customers', 
       icon: Users, 
-      color: 'text-red-900', 
-      bg: 'bg-red-100',
+      color: 'text-blue-600 dark:text-blue-400', 
+      bg: 'bg-blue-100 dark:bg-blue-900/20',
       description: 'Manage client details and history' 
     },
     { 
       id: 'quotation', 
       title: 'Quotation', 
       icon: FileText, 
-      color: 'text-blue-600', 
-      bg: 'bg-blue-100',
+      color: 'text-indigo-600 dark:text-indigo-400', 
+      bg: 'bg-indigo-100 dark:bg-indigo-900/20',
       description: 'Create and manage price quotations' 
     },
     { 
       id: 'sanitation', 
       title: 'Sanitation', 
       icon: Wrench, 
-      color: 'text-orange-600', 
-      bg: 'bg-orange-100',
+      color: 'text-accent', 
+      bg: 'bg-accent/10',
       description: 'Manage cleaning and maintenance' 
     },
     { 
       id: 'entertainment', 
       title: 'Entertainment', 
       icon: Music, 
-      color: 'text-red-600', 
-      bg: 'bg-red-100',
+      color: 'text-violet-600 dark:text-violet-400', 
+      bg: 'bg-violet-100 dark:bg-violet-900/20',
       description: 'Manage music and performance acts' 
     },
   ];
 
   const renderModule = () => {
-    const ModuleComponent = () => {
-      switch (activeModule) {
-        case 'catering':
-          return <CateringManager onBack={() => setActiveModule(null)} />;
-        case 'decor':
-          return <DecorManager onBack={() => setActiveModule(null)} />;
-        case 'customers':
-          return <CustomerManager onBack={() => setActiveModule(null)} />;
-        case 'quotation':
-          return <QuotationManager onBack={() => setActiveModule(null)} />;
-        case 'sanitation':
-          return <SanitationManager onBack={() => setActiveModule(null)} />;
-        case 'entertainment':
-          return <EntertainmentManager onBack={() => setActiveModule(null)} />;
-        default:
-          return null;
-      }
-    };
+    switch (activeModule) {
+      case 'catering':
+        return <CateringManager onBack={() => setActiveModule(null)} />;
+      case 'customers':
+        return <CustomerManager onBack={() => setActiveModule(null)} />;
+      case 'quotation':
+        return <QuotationManager onBack={() => setActiveModule(null)} />;
+      case 'payments':
+        return (
+          <div className="space-y-6">
+            <Button variant="outline" size="sm" onClick={() => setActiveModule(null)}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            </Button>
+            <EventPaymentForm />
+          </div>
+        );
+      case 'decor':
+// ...
 
-    return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <ModuleComponent />
-      </Suspense>
-    );
+        return <EventCategoryManager onBack={() => setActiveModule(null)} category="decor" title="Decor Management" />;
+      case 'sanitation':
+        return <EventCategoryManager onBack={() => setActiveModule(null)} category="sanitation" title="Sanitation Management" />;
+      case 'entertainment':
+        return <EventCategoryManager onBack={() => setActiveModule(null)} category="entertainment" title="Entertainment Management" />;
+      default:
+        return <div className="text-center p-8">Module not available</div>;
+    }
   };
+
 
   if (activeModule) {
     return renderModule();
@@ -125,20 +137,21 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
           <Card
             key={module.id}
             onClick={() => setActiveModule(module.id)}
-            className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/50"
+            className="cursor-pointer group hover-lift hover-glow border-primary/5 transition-all duration-300"
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xl font-semibold">{module.title}</CardTitle>
-              <div className={`p-2 rounded-full ${module.bg}`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">{module.title}</CardTitle>
+              <div className={`p-3 rounded-2xl ${module.bg} group-hover:scale-110 transition-transform duration-500`}>
                 <module.icon className={`h-6 w-6 ${module.color}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">{module.description}</p>
+              <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">{module.description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
+
     </div>
   );
 };

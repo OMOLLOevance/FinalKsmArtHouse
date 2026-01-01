@@ -101,20 +101,22 @@ const DatabaseStatus: React.FC<DatabaseStatusProps> = ({ onClose }) => {
         </div>
 
         {!isHealthy && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-start space-x-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-yellow-800">Setup Required</h4>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Some database tables are missing. Please run the database setup script in your Supabase SQL Editor.
+          <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
+              <div className="ml-3">
+                <h4 className="font-medium text-warning-foreground">Setup Required</h4>
+                <p className="text-sm text-warning-foreground opacity-90 mt-1">
+                  Some database tables were not found. Please click the setup button above to initialize your database structure.
                 </p>
-                <p className="text-sm text-yellow-700 mt-2">
-                  Check the DATABASE_SETUP.md file for instructions.
+                <p className="text-sm text-warning-foreground opacity-90 mt-2">
+                  Tables missing: {status.filter(r => r.status === 'error').map(r => r.table).join(', ')}
                 </p>
+
               </div>
             </div>
           </div>
+
         )}
       </CardContent>
     </Card>

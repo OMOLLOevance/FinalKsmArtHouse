@@ -3,7 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'; // Corrected import
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { logger } from '@/lib/logger';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -12,16 +13,17 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading) {
-      // If not authenticated and not on the login page, redirect to login
       if (!isAuthenticated && pathname !== '/login') {
+        logger.info(`Unauthorized access attempt to ${pathname}, redirecting to /login`);
         router.push('/login');
       } 
-      // If authenticated and on the login page, redirect to dashboard
       else if (isAuthenticated && pathname === '/login') {
+        logger.info('Authenticated user on login page, redirecting to dashboard');
         router.push('/');
       }
     }
-  }, [isAuthenticated, isLoading, pathname, router, user]);
+  }, [isAuthenticated, isLoading, pathname, router]);
+
 
   // Show loading spinner while auth status is being determined
   if (isLoading) {
