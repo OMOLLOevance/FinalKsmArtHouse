@@ -33,8 +33,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     setMessage(null);
 
     try {
-      if (formData.password.length < 8) {
-          setMessage({ type: 'error', text: 'Password must be at least 8 characters long.' });
+      if (formData.password.length < 6) {
+          setMessage({ type: 'error', text: 'Password must be at least 6 characters long.' });
           setLoading(false);
           return;
       }
@@ -146,7 +146,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Password
+                Password {mode === 'signup' && <span className="text-xs text-muted-foreground">(min 6 characters)</span>}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
