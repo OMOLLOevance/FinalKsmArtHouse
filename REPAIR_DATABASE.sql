@@ -147,32 +147,58 @@ CREATE INDEX IF NOT EXISTS idx_restaurant_sale_date ON public.restaurant_sales(s
 CREATE INDEX IF NOT EXISTS idx_gym_transaction_date ON public.gym_finances(transaction_date);
 CREATE INDEX IF NOT EXISTS idx_sauna_booking_date ON public.sauna_bookings(booking_date);
 
--- 11. Create unified security policies
+-- 11. Create trigger function for new user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, first_name, last_name, role)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'staff')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 12. Create trigger for new user signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 13. Create unified security policies
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own customers') THEN
-        CREATE POLICY "Manage own customers" ON public.customers FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own gym members') THEN
-        CREATE POLICY "Manage own gym members" ON public.gym_members FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own gym finances') THEN
-        CREATE POLICY "Manage own gym finances" ON public.gym_finances FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own restaurant sales') THEN
-        CREATE POLICY "Manage own restaurant sales" ON public.restaurant_sales FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own sauna bookings') THEN
-        CREATE POLICY "Manage own sauna bookings" ON public.sauna_bookings FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own event items') THEN
-        CREATE POLICY "Manage own event items" ON public.event_items FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own catering inventory') THEN
-        CREATE POLICY "Manage own catering inventory" ON public.catering_inventory FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'View own profile') THEN
-        CREATE POLICY "View own profile" ON public.users FOR SELECT USING (auth.uid() = id);
-    END IF;
+    -- Users table policies
+    DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+    CREATE POLICY "Users can view own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+    
+    DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+    CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
+    
+    -- Other table policies
+    DROP POLICY IF EXISTS "Manage own customers" ON public.customers;
+    CREATE POLICY "Manage own customers" ON public.customers FOR ALL USING (auth.uid() = user_id);
+    
+    DROP POLICY IF EXISTS "Manage own gym members" ON public.gym_members;
+    CREATE POLICY "Manage own gym members" ON public.gym_members FOR ALL USING (auth.uid() = user_id);
+    
+    DROP POLICY IF EXISTS "Manage own gym finances" ON public.gym_finances;
+    CREATE POLICY "Manage own gym finances" ON public.gym_finances FOR ALL USING (auth.uid() = user_id);
+    
+    DROP POLICY IF EXISTS "Manage own restaurant sales" ON public.restaurant_sales;
+    CREATE POLICY "Manage own restaurant sales" ON public.restaurant_sales FOR ALL USING (auth.uid() = user_id);
+    
+    DROP POLICY IF EXISTS "Manage own sauna bookings" ON public.sauna_bookings;
+    CREATE POLICY "Manage own sauna bookings" ON public.sauna_bookings FOR ALL USING (auth.uid() = user_id);
+    
+    DROP POLICY IF EXISTS "Manage own event items" ON public.event_items;
+    CREATE POLICY "Manage own event items" ON public.event_items FOR ALL USING (auth.uid() = user_id);
+    
+    DROP POLICY IF EXISTS "Manage own catering inventory" ON public.catering_inventory;
+    CREATE POLICY "Manage own catering inventory" ON public.catering_inventory FOR ALL USING (auth.uid() = user_id);
 END
 $$;

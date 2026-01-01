@@ -1,14 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Only throw error in runtime, not during build
-if (typeof window !== 'undefined' && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
-  console.warn('Missing Supabase environment variables');
+if (!supabaseUrl || !supabaseAnonKey) {
+  if (typeof window !== 'undefined') {
+    console.error('CRITICAL: Supabase environment variables are missing. Authentication and database features will not work.');
+  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(
+  supabaseUrl || 'https://mqnfdmdqfysqxxamgvwc.supabase.co', 
+  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xbmZkbWRxZnlzcXh4YW1ndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwODY1MDcsImV4cCI6MjA4MjY2MjUwN30.sMqYbNbF8371DgcSjXMzwfI5vqX3tdwCzqfBIfaaH3w', 
+  {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
