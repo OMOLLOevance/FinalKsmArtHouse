@@ -3,6 +3,8 @@ import { cateringService } from '@/services/catering.service';
 import { eventItemsService } from '@/services/event-items.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
+
 
 // Catering Hooks
 export const useCateringItemsQuery = () => {
@@ -10,55 +12,33 @@ export const useCateringItemsQuery = () => {
   
   return useQuery({
     queryKey: ['catering', 'items', userId],
-    queryFn: () => cateringService.getCateringItems(userId!),
-    enabled: !!userId && isAuthenticated,
-    retry: 3,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
-};
-
-export const useCreateCateringItemMutation = () => {
-  const { userId } = useAuth();
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (data: any) => cateringService.createCateringItem(userId!, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['catering', 'items'] });
-      toast.success('Catering item added successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to add catering item: ${error.message}`);
-    },
-  });
-};
-
-export const useCateringCategoriesQuery = () => {
-  const { userId, isAuthenticated } = useAuth();
-  
-  return useQuery({
-    queryKey: ['catering', 'categories', userId],
-    queryFn: () => cateringService.getCateringCategories(userId!),
+    queryFn: () => cateringService.getCateringItems(userId!).catch(err => {
+      logger.error('Catering items fetch error:', err);
+      return [];
+    }),
     enabled: !!userId && isAuthenticated,
     retry: 3,
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
-
-// Event Items Hooks
+// ...
 export const useEventItemsQuery = () => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
     queryKey: ['event-items', userId],
-    queryFn: () => eventItemsService.getEventItems(userId!),
+    queryFn: () => eventItemsService.getEventItems(userId!).catch(err => {
+      logger.error('Event items fetch error:', err);
+      return [];
+    }),
     enabled: !!userId && isAuthenticated,
     retry: 3,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 };
+
 
 export const useEventItemsByCategoryQuery = (category: string) => {
   const { userId, isAuthenticated } = useAuth();
@@ -84,6 +64,39 @@ export const useCreateEventItemMutation = () => {
     },
     onError: (error: Error) => {
       toast.error(`Failed to add event item: ${error.message}`);
+    },
+  });
+};
+
+export const useUpdateEventItemMutation = () => {
+  const { userId } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      eventItemsService.updateEventItem(userId!, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-items'] });
+      toast.success('Event item updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update event item: ${error.message}`);
+    },
+  });
+};
+
+export const useDeleteEventItemMutation = () => {
+  const { userId } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => eventItemsService.deleteEventItem(userId!, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-items'] });
+      toast.success('Event item deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete event item: ${error.message}`);
     },
   });
 };

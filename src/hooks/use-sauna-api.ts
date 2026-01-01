@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { saunaService } from '@/services/sauna.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
+
 
 // Sauna Bookings Hooks
 export const useSaunaBookingsQuery = () => {
@@ -9,13 +11,17 @@ export const useSaunaBookingsQuery = () => {
   
   return useQuery({
     queryKey: ['sauna', 'bookings', userId],
-    queryFn: () => saunaService.getSaunaBookings(userId!),
+    queryFn: () => saunaService.getSaunaBookings(userId!).catch(err => {
+      logger.error('Sauna bookings fetch error:', err);
+      return [];
+    }),
     enabled: !!userId && isAuthenticated,
     retry: 3,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 };
+
 
 export const useCreateSaunaBookingMutation = () => {
   const { userId } = useAuth();
@@ -33,62 +39,29 @@ export const useCreateSaunaBookingMutation = () => {
   });
 };
 
-// Spa Bookings Hooks
-export const useSpaBookingsQuery = () => {
-  const { userId, isAuthenticated } = useAuth();
-  
-  return useQuery({
-    queryKey: ['spa', 'bookings', userId],
-    queryFn: () => saunaService.getSpaBookings(userId!),
-    enabled: !!userId && isAuthenticated,
-    retry: 3,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
-};
-
-export const useCreateSpaBookingMutation = () => {
+export const useUpdateSaunaBookingMutation = () => {
   const { userId } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: any) => saunaService.createSpaBooking(userId!, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      saunaService.updateSaunaBooking(userId!, id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spa', 'bookings'] });
-      toast.success('Spa booking added successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to add spa booking: ${error.message}`);
+      queryClient.invalidateQueries({ queryKey: ['sauna', 'bookings'] });
+      toast.success('Sauna booking updated');
     },
   });
 };
 
-// Sauna Finances Hooks
-export const useSaunaFinancesQuery = () => {
-  const { userId, isAuthenticated } = useAuth();
-  
-  return useQuery({
-    queryKey: ['sauna', 'finances', userId],
-    queryFn: () => saunaService.getSaunaFinances(userId!),
-    enabled: !!userId && isAuthenticated,
-    retry: 3,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
-};
-
-export const useCreateSaunaFinanceMutation = () => {
+export const useDeleteSaunaBookingMutation = () => {
   const { userId } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: any) => saunaService.createSaunaFinance(userId!, data),
+    mutationFn: (id: string) => saunaService.deleteSaunaBooking(userId!, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sauna', 'finances'] });
-      toast.success('Finance record added successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to add finance record: ${error.message}`);
+      queryClient.invalidateQueries({ queryKey: ['sauna', 'bookings'] });
+      toast.success('Sauna booking deleted');
     },
   });
 };

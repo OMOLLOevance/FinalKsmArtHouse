@@ -33,25 +33,25 @@ class AuthService {
     // Validate before sending
     LoginSchema.parse(data);
     
-    return apiClient.post<LoginResponse>('/auth/login', data);
+    return apiClient.post<LoginResponse>('/api/auth/login', data);
   }
   
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     RegisterSchema.parse(data);
     
-    return apiClient.post<RegisterResponse>('/auth/register', data);
+    return apiClient.post<RegisterResponse>('/api/auth/register', data);
   }
   
   async logout(): Promise<void> {
-    return apiClient.post('/auth/logout');
+    return apiClient.post('/api/auth/logout');
   }
   
   async refreshToken(): Promise<{ token: string }> {
-    return apiClient.post('/auth/refresh');
+    return apiClient.post('/api/auth/refresh');
   }
   
   async getCurrentUser(): Promise<User> {
-    return apiClient.get<User>('/auth/me');
+    return apiClient.get<User>('/api/auth/me');
   }
 }
 

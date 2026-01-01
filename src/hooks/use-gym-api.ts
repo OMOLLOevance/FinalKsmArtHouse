@@ -1,18 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { gymSupabaseService } from '@/services/gym-supabase.service';
+import { gymService } from '@/services/gym.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
+
 
 // Gym Members Hooks
 export const useGymMembersQuery = () => {
-  const { userId, user, isAuthenticated } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
     queryKey: ['gym', 'members', userId],
-    queryFn: () => gymSupabaseService.getMembers(userId!, user?.role === 'admin'),
+    queryFn: () => gymService.getMembers(userId!).catch(err => {
+      logger.error('Gym members fetch error:', err);
+      return [];
+    }),
     enabled: !!userId && isAuthenticated,
+
     retry: 3,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 };
@@ -22,7 +28,7 @@ export const useCreateGymMemberMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: any) => gymSupabaseService.createMember(userId!, data),
+    mutationFn: (data: any) => gymService.createMember(userId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gym', 'members'] });
       toast.success('Member added successfully');
@@ -39,7 +45,7 @@ export const useUpdateGymMemberMutation = () => {
   
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      gymSupabaseService.updateMember(userId!, id, data),
+      gymService.updateMember(userId!, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gym', 'members'] });
       toast.success('Member updated successfully');
@@ -55,7 +61,7 @@ export const useDeleteGymMemberMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => gymSupabaseService.deleteMember(userId!, id),
+    mutationFn: (id: string) => gymService.deleteMember(userId!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gym', 'members'] });
       toast.success('Member deleted successfully');
@@ -68,12 +74,16 @@ export const useDeleteGymMemberMutation = () => {
 
 // Gym Finances Hooks
 export const useGymFinancesQuery = () => {
-  const { userId, user, isAuthenticated } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
     queryKey: ['gym', 'finances', userId],
-    queryFn: () => gymSupabaseService.getFinances(userId!, user?.role === 'admin'),
+    queryFn: () => gymService.getFinances(userId!).catch(err => {
+      logger.error('Gym finances fetch error:', err);
+      return [];
+    }),
     enabled: !!userId && isAuthenticated,
+
     retry: 3,
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnWindowFocus: false,
@@ -85,7 +95,7 @@ export const useCreateGymFinanceMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: any) => gymSupabaseService.createFinance(userId!, data),
+    mutationFn: (data: any) => gymService.createFinance(userId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gym', 'finances'] });
       toast.success('Finance record added successfully');
@@ -102,7 +112,7 @@ export const useUpdateGymFinanceMutation = () => {
   
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      gymSupabaseService.updateFinance(userId!, id, data),
+      gymService.updateFinance(userId!, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gym', 'finances'] });
       toast.success('Finance record updated successfully');
@@ -118,7 +128,7 @@ export const useDeleteGymFinanceMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => gymSupabaseService.deleteFinance(userId!, id),
+    mutationFn: (id: string) => gymService.deleteFinance(userId!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gym', 'finances'] });
       toast.success('Finance record deleted successfully');
