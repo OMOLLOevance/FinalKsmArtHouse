@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { CateringItem } from '../types';
 import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
-import { getAuthenticatedUser } from '../utils/authHelpers'; // For admin check
+// import { getAuthenticatedUser } from '../utils/authHelpers'; // Removed
 
 export const useCateringItems = () => {
   const { user, userId, isAuthenticated, isLoading: authLoading } = useAuth();

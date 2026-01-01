@@ -1,8 +1,13 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
-import ProfessionalDashboard from '@/components/features/ProfessionalDashboard';
+
+const Dashboard = dynamic(() => import('@/components/features/Dashboard'), {
+  loading: () => <PageLoader text="Loading Dashboard..." />,
+  ssr: false, 
+});
 
 export default function Home() {
   const { isLoading } = useAuth();
@@ -11,5 +16,5 @@ export default function Home() {
     return <PageLoader text="Loading KSM.ART HOUSE..." />;
   }
 
-  return <ProfessionalDashboard />;
+  return <Dashboard />;
 }

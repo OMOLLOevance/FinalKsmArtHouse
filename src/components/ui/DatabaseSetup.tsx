@@ -138,9 +138,10 @@ CREATE POLICY "Users can manage own sauna bookings" ON public.sauna_bookings FOR
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h3 className="font-medium text-yellow-800 mb-2">Setup Instructions:</h3>
-          <ol className="text-sm text-yellow-700 space-y-1 list-decimal list-inside">
+        <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+          <h3 className="font-medium text-warning-foreground mb-2">Setup Instructions:</h3>
+          <ol className="text-sm text-warning-foreground opacity-90 space-y-1 list-decimal list-inside">
+
             <li>Copy the SQL script below</li>
             <li>Go to your Supabase project dashboard</li>
             <li>Navigate to SQL Editor</li>

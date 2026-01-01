@@ -3,18 +3,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ArrowTrendingUpIcon, 
-  UsersIcon, 
-  CalendarIcon, 
-  CurrencyDollarIcon,
-  ChartBarIcon,
-  SparklesIcon,
-  BuildingStorefrontIcon,
-  FireIcon
-} from '@heroicons/react/24/outline';
+  TrendingUp, 
+  Users, 
+  Calendar, 
+  DollarSign,
+  BarChart3,
+  Sparkles,
+  Building2,
+  Flame
+} from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+
 import { Badge } from '@/components/ui/Badge';
 import { Separator } from '@/components/ui/separator';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface MetricCardProps {
   title: string;
@@ -51,37 +54,56 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, trend, ic
 );
 
 const InvestorDashboard: React.FC = () => {
+  const { data: stats, isLoading: loading, error } = useDashboardStats();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-red-500">Failed to load investor data</p>
+      </div>
+    );
+  }
+
+
   const metrics = [
     {
       title: 'Monthly Revenue',
-      value: '$127,500',
-      change: '+23.5%',
+      value: `KSH ${stats.totalRevenue.toLocaleString()}`,
+      change: `+${stats.growthRates?.revenue || 0}%`,
       trend: 'up' as const,
-      icon: <CurrencyDollarIcon className="h-6 w-6 text-primary" />,
+      icon: <DollarSign className="h-6 w-6 text-primary" />,
       description: 'Across all business units'
     },
     {
       title: 'Active Customers',
-      value: '2,847',
-      change: '+12.3%',
+      value: stats.totalCustomers.toLocaleString(),
+      change: `+${stats.growthRates?.customers || 0}%`,
       trend: 'up' as const,
-      icon: <UsersIcon className="h-6 w-6 text-primary" />,
+      icon: <Users className="h-6 w-6 text-primary" />,
       description: 'Monthly active users'
     },
     {
       title: 'Events Booked',
-      value: '156',
-      change: '+8.7%',
+      value: stats.moduleStats.events.toString(),
+      change: `+${stats.growthRates?.events || 0}%`,
       trend: 'up' as const,
-      icon: <CalendarIcon className="h-6 w-6 text-primary" />,
+      icon: <Calendar className="h-6 w-6 text-primary" />,
       description: 'This month'
     },
     {
       title: 'Avg. Order Value',
-      value: '$89.50',
-      change: '+15.2%',
+      value: `KSH ${stats.totalRevenue > 0 && stats.moduleStats.restaurant > 0 ? Math.round(stats.revenueByUnit?.restaurant / stats.moduleStats.restaurant).toLocaleString() : '0'}`,
+      change: `+${stats.growthRates?.revenue || 0}%`,
       trend: 'up' as const,
-      icon: <ArrowTrendingUpIcon className="h-6 w-6 text-primary" />,
+      icon: <TrendingUp className="h-6 w-6 text-primary" />,
       description: 'Restaurant & services'
     }
   ];
@@ -89,32 +111,33 @@ const InvestorDashboard: React.FC = () => {
   const businessUnits = [
     {
       name: 'Event Management',
-      revenue: '$52,300',
-      growth: '+28%',
-      icon: <SparklesIcon className="h-8 w-8 text-primary" />,
+      revenue: `KSH ${stats.revenueByUnit?.events?.toLocaleString() || '0'}`,
+      growth: stats.revenueByUnit?.events > 0 ? `${((stats.revenueByUnit.events / stats.totalRevenue) * 100).toFixed(1)}% of total` : '0%',
+      icon: <Sparkles className="h-8 w-8 text-primary" />,
       description: 'Premium event planning & execution'
     },
     {
       name: 'Restaurant Operations',
-      revenue: '$38,200',
-      growth: '+18%',
-      icon: <BuildingStorefrontIcon className="h-8 w-8 text-primary" />,
+      revenue: `KSH ${stats.revenueByUnit?.restaurant?.toLocaleString() || '0'}`,
+      growth: stats.revenueByUnit?.restaurant > 0 ? `${((stats.revenueByUnit.restaurant / stats.totalRevenue) * 100).toFixed(1)}% of total` : '0%',
+      icon: <Building2 className="h-8 w-8 text-primary" />,
       description: 'Fine dining & catering services'
     },
     {
       name: 'Gym & Fitness',
-      revenue: '$24,800',
-      growth: '+22%',
-      icon: <ChartBarIcon className="h-8 w-8 text-primary" />,
+      revenue: `KSH ${stats.revenueByUnit?.gym?.toLocaleString() || '0'}`,
+      growth: stats.revenueByUnit?.gym > 0 ? `${((stats.revenueByUnit.gym / stats.totalRevenue) * 100).toFixed(1)}% of total` : '0%',
+      icon: <BarChart3 className="h-8 w-8 text-primary" />,
       description: 'Premium fitness memberships'
     },
     {
       name: 'Sauna & Spa',
-      revenue: '$12,200',
-      growth: '+35%',
-      icon: <FireIcon className="h-8 w-8 text-primary" />,
+      revenue: `KSH ${stats.revenueByUnit?.sauna?.toLocaleString() || '0'}`,
+      growth: stats.revenueByUnit?.sauna > 0 ? `${((stats.revenueByUnit.sauna / stats.totalRevenue) * 100).toFixed(1)}% of total` : '0%',
+      icon: <Flame className="h-8 w-8 text-primary" />,
       description: 'Luxury wellness experiences'
     }
+
   ];
 
   return (
@@ -134,7 +157,7 @@ const InvestorDashboard: React.FC = () => {
           </p>
           <div className="flex items-center justify-center gap-2">
             <Badge variant="outline" className="text-sm">
-              🚀 Revenue Growth: +23.5%
+              🚀 Revenue Growth: +{stats.growthRates?.revenue || 0}%
             </Badge>
             <Badge variant="outline" className="text-sm">
               📈 Customer Satisfaction: 98.2%
@@ -231,10 +254,10 @@ const InvestorDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-3xl font-bold text-primary">$1.5M</div>
+                  <div className="text-3xl font-bold text-primary">{stats.totalRevenue > 0 ? 'KSH' : '0'}</div>
                   <div className="text-sm font-medium">Annual Revenue Target</div>
                   <div className="text-xs text-muted-foreground">
-                    Projected 12-month growth
+                    Current: KSH {stats.totalRevenue.toLocaleString()}
                   </div>
                 </div>
               </div>
