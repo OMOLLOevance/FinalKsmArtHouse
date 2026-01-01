@@ -1,7 +1,12 @@
 'use client';
 
-import React from 'react';
-import SaunaManagement from '@/components/features/SaunaManagement';
+import dynamic from 'next/dynamic';
+import { PageLoader } from '@/components/ui/LoadingSpinner';
+
+const SaunaManagement = dynamic(() => import('@/components/features/SaunaManagement'), {
+  loading: () => <PageLoader text="Loading Sauna & Spa..." />,
+  ssr: false,
+});
 
 export default function SaunaPage() {
   return <SaunaManagement />;
