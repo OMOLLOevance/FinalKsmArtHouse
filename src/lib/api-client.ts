@@ -1,17 +1,18 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { toast } from 'sonner';
 import { tokenStorage } from './token-storage';
-import { safeLog } from './sanitizer';
+import { logger } from './logger';
 
 class APIClient {
   private client: AxiosInstance;
   
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
-      timeout: 30000,
+      baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+      timeout: 10000,
       headers: { 'Content-Type': 'application/json' }
     });
+
     
     this.setupInterceptors();
   }
@@ -24,26 +25,36 @@ class APIClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => {
+        logger.error('API Request Error:', error);
+        return Promise.reject(error);
+      }
     );
     
     // Response interceptor
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        logger.debug(`API Response: ${response.status} ${response.config.url}`);
+        return response;
+      },
       async (error) => {
         if (error.response?.status === 401) {
+          logger.warn('Unauthorized request, initiating logout/refresh');
           await this.handleTokenRefresh();
         }
         
         const message = error.response?.data?.message || 'Network error';
+        logger.error(`API Error: ${error.response?.status || 'Network'} ${error.config?.url}`, { message, data: error.response?.data });
         toast.error(message);
         
         return Promise.reject(error);
       }
     );
   }
+
   
   private async handleTokenRefresh() {
     try {
@@ -51,7 +62,8 @@ class APIClient {
       tokenStorage.removeToken();
       window.location.href = '/login';
     } catch (error) {
-      safeLog.error('Token refresh failed:', error);
+      logger.error('Token refresh failed:', error);
+
     }
   }
   

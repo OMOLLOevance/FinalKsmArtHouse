@@ -1,65 +1,68 @@
 'use client';
 
 import React from 'react';
+import { Sparkles } from 'lucide-react';
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
-  color?: 'primary' | 'secondary' | 'white';
   text?: string;
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-  size = 'md', 
-  color = 'primary',
-  text 
-}) => {
-  const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12'
-  };
-
-  const colorClasses = {
-    primary: 'border-primary',
-    secondary: 'border-secondary',
-    white: 'border-white'
+/**
+ * Standardized Professional Loader for KSM.ART HOUSE
+ * Features the Logo with cool professional gradients and a smooth indeterminate progress animation
+ */
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ text, className, size }) => {
+  const sizeMap = {
+    sm: 'scale-75',
+    md: 'scale-100',
+    lg: 'scale-125'
   };
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-4">
-      <div 
-        className={`animate-spin rounded-full border-2 border-t-transparent ${sizeClasses[size]} ${colorClasses[color]} shadow-[0_0_15px_rgba(var(--primary),0.2)]`}
-      />
-      {text && (
-        <p className="text-sm text-muted-foreground font-medium animate-pulse">{text}</p>
-      )}
+    <div className={`flex flex-col items-center justify-center p-8 space-y-6 ${size ? sizeMap[size] : ''} ${className}`}>
+      {/* Branded Logo Container - Using Cool Colors (Blue/Indigo/Teal) */}
+      <div className="relative group">
+        <div className="w-20 h-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-teal-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/30 transform transition-transform group-hover:scale-105 duration-500">
+          <Sparkles className="w-10 h-10 text-white animate-pulse" />
+        </div>
+        {/* Cool Glow effect */}
+        <div className="absolute -inset-3 bg-indigo-500/20 rounded-[2rem] blur-xl animate-pulse" />
+        {/* Orbiting ring */}
+        <div className="absolute -inset-1 border-2 border-primary/10 rounded-[1.75rem] animate-spin-slow" />
+      </div>
+
+      <div className="w-64 space-y-5 text-center">
+        {/* Branded Abbreviation with cool luxury gradient */}
+        <div className="text-2xl font-serif font-black tracking-tighter text-logo">
+          KSM.ART HOUSE
+        </div>
+
+        {/* Indeterminate Progress Bar - Cool Indigo/Teal */}
+        <div className="space-y-2">
+          <div className="h-1 w-full bg-muted rounded-full overflow-hidden relative shadow-inner">
+            <div className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-blue-600 via-indigo-500 to-teal-400 w-1/4 rounded-full animate-progress-slide shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
+          </div>
+          
+          {text && text !== "KSM.ART HOUSE" && (
+            <p className="text-[10px] text-muted-foreground font-bold tracking-[0.3em] uppercase opacity-60 animate-pulse">
+              {text}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-export const PageLoader: React.FC<{ text?: string }> = ({ text = "Initializing Premium Suite..." }) => (
-  <div className="min-h-screen flex items-center justify-center animated-bg">
-    <div className="text-center space-y-8">
-      <div className="relative">
-        <div className="w-20 h-20 bg-gradient-to-br from-primary via-amber-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/40 ring-4 ring-primary/20 animate-pulse">
-          <div className="w-10 h-10 border-4 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-        </div>
-        <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-amber-400/20 rounded-3xl blur-xl animate-pulse" />
-      </div>
-      
-      <div className="space-y-3">
-        <h2 className="text-4xl font-serif font-bold text-gradient text-luxury">
-          KSM.ART HOUSE
-        </h2>
-        <p className="text-sm text-muted-foreground font-medium tracking-wider uppercase">
-          {text}
-        </p>
-        <div className="flex justify-center space-x-1 mt-4">
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
-      </div>
+export const PageLoader: React.FC<{ text?: string }> = ({ text = "KSM.ART HOUSE" }) => (
+  <div className="min-h-screen flex items-center justify-center bg-background animated-bg overflow-hidden">
+    <div className="relative">
+      <LoadingSpinner text={text} className="scale-110" />
+      {/* Decorative background elements */}
+      <div className="absolute -top-20 -left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-secondary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
     </div>
   </div>
 );

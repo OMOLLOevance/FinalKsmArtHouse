@@ -14,9 +14,10 @@ export function QueryProvider({ children }: Props) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
+            staleTime: 5 * 60 * 1000, // 5 minutes
+            gcTime: 30 * 60 * 1000, // 30 minutes
+            refetchOnWindowFocus: false, // Prevent refetching when switching tabs
             retry: (failureCount, error: any) => {
-              // Don't retry on 4xx errors
               if (error?.response?.status >= 400 && error?.response?.status < 500) {
                 return false;
               }
@@ -29,6 +30,7 @@ export function QueryProvider({ children }: Props) {
         },
       })
   );
+
 
   return (
     <QueryClientProvider client={queryClient}>

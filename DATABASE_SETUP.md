@@ -1,56 +1,116 @@
-# Database Setup Instructions
+# Database Setup Instructions for Supabase
 
-## 1. Run the Database Schema
+## 🚀 **Step-by-Step Database Migration**
 
-1. Go to your Supabase project dashboard
-2. Navigate to the SQL Editor
-3. Copy and paste the contents of `database-setup.sql`
-4. Click "Run" to execute the schema
+### **1. Access Supabase SQL Editor**
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project: `mqnfdmdqfysqxxamgvwc`
+3. Navigate to **SQL Editor** in the left sidebar
 
-## 2. Verify Tables Created
+### **2. Run Migration Script**
+1. Copy the contents of `database-migration.sql`
+2. Paste into Supabase SQL Editor
+3. Click **Run** to execute the migration
+4. Wait for completion message
 
-The following tables should be created:
-- `users` - User profiles
-- `customers` - Event customers
-- `gym_members` - Gym memberships
-- `gym_finances` - Gym financial records
-- `sauna_bookings` - Sauna reservations
-- `spa_bookings` - Spa reservations
-- `sauna_spa_finances` - Sauna/Spa finances
-- `restaurant_sales` - Restaurant sales records
-- `event_items` - Event equipment and services
-- `catering_inventory` - Catering inventory tracking
-- `quotations` - Customer quotations
+### **3. Verify Database Structure**
+1. Copy the contents of `database-verification.sql`
+2. Paste into Supabase SQL Editor
+3. Click **Run** to verify all tables exist
+4. Check the results to ensure all tables are created
 
-## 3. Row Level Security (RLS)
+### **4. Insert Sample Data (Optional)**
+1. Copy the contents of `sample-data.sql`
+2. Paste into Supabase SQL Editor
+3. Click **Run** to insert test data
+4. This will help test the backend API endpoints
 
-All tables have RLS enabled with policies that ensure:
-- Users can only access their own data
-- Admins can access all data
-- Secure multi-tenant architecture
+### **5. Enable Authentication**
+1. Go to **Authentication** > **Settings**
+2. Ensure **Enable email confirmations** is configured
+3. Set up **Email templates** if needed
 
-## 4. Default Data
+### **6. Configure Row Level Security**
+The migration script automatically:
+- ✅ Enables RLS on all tables
+- ✅ Creates policies for user data isolation
+- ✅ Sets up proper foreign key constraints
 
-The system will automatically seed default data when a user first logs in:
-- Catering inventory structure
-- Default event items
-- User profile creation
+### **7. Test API Endpoints**
+After migration, test these endpoints:
+- `GET /api/customers?userId=YOUR_USER_ID`
+- `GET /api/gym/members?userId=YOUR_USER_ID`
+- `GET /api/sauna?userId=YOUR_USER_ID&type=bookings`
+- `GET /api/restaurant?userId=YOUR_USER_ID`
+- `GET /api/catering?userId=YOUR_USER_ID`
+- `GET /api/event-items?userId=YOUR_USER_ID`
 
-## 5. Features Enabled
+## 📊 **Expected Tables After Migration**
 
-✅ **Real-time Updates** - All data syncs in real-time
-✅ **Multi-user Support** - Each user has isolated data
-✅ **Audit Trail** - Created/updated timestamps on all records
-✅ **Data Validation** - Database constraints ensure data integrity
-✅ **Performance** - Proper indexing for fast queries
+| Table Name | Purpose | Records |
+|------------|---------|---------|
+| `users` | User management | Auth users |
+| `customers` | Event customers | Customer data |
+| `gym_members` | Gym memberships | Member records |
+| `gym_finances` | Gym transactions | Financial data |
+| `sauna_bookings` | Sauna reservations | Booking data |
+| `spa_bookings` | Spa appointments | Spa records |
+| `sauna_spa_finances` | Sauna/Spa finances | Financial data |
+| `restaurant_sales` | Restaurant transactions | Sales data |
+| `event_items` | Event equipment | Inventory items |
+| `catering_inventory` | Catering items | Food inventory |
+| `quotations` | Customer quotes | Quote data |
 
-## 6. Connection Status
+## 🔒 **Security Features**
 
-The application will show connection status and guide users through any setup issues.
+- **Row Level Security (RLS)** enabled on all tables
+- **User data isolation** - users only see their own data
+- **Foreign key constraints** for data integrity
+- **Indexes** for optimal performance
+- **Triggers** for automatic timestamp updates
 
-## Troubleshooting
+## 🧪 **Testing Commands**
 
-If you see "Tables not found" errors:
-1. Ensure you've run the `database-setup.sql` script
-2. Check that RLS policies are enabled
-3. Verify your Supabase credentials in `.env.local`
+Run these in Supabase SQL Editor to test:
+
+```sql
+-- Check if all tables exist
+SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
+
+-- Check RLS policies
+SELECT tablename, policyname FROM pg_policies WHERE schemaname = 'public';
+
+-- Count records in each table
+SELECT 'customers' as table_name, COUNT(*) FROM customers
+UNION ALL
+SELECT 'gym_members', COUNT(*) FROM gym_members
+UNION ALL
+SELECT 'event_items', COUNT(*) FROM event_items;
+```
+
+## ⚠️ **Important Notes**
+
+1. **User ID**: Replace `auth.uid()` with actual user UUID when testing
+2. **Environment**: Ensure `.env.local` has correct Supabase credentials
+3. **Authentication**: Users must be authenticated to access data
+4. **Permissions**: RLS policies ensure data security
+
+## 🔧 **Troubleshooting**
+
+If you encounter issues:
+
+1. **Permission Denied**: Check RLS policies
+2. **Table Not Found**: Re-run migration script
+3. **Foreign Key Error**: Ensure user exists in auth.users
+4. **Connection Error**: Verify Supabase URL and keys
+
+## ✅ **Success Verification**
+
+After running all scripts, you should see:
+- ✅ 11 tables created successfully
+- ✅ RLS policies applied
+- ✅ Indexes created for performance
+- ✅ Sample data inserted (if run)
+- ✅ API endpoints working correctly
+
+The database is now ready for the KSM Art House backend API integration!
