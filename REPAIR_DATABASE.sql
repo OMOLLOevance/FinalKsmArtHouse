@@ -1,7 +1,7 @@
--- KSM.ART HOUSE Database Setup
--- Copy and paste this into your Supabase SQL Editor
+-- KSM.ART HOUSE Complete Professional Database Setup & Repair
+-- Run this in your Supabase SQL Editor.
 
--- Create users table
+-- 1. Users
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create customers table
+-- 2. Customers
 CREATE TABLE IF NOT EXISTS public.customers (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create gym tables
+-- 3. Gym Members
 CREATE TABLE IF NOT EXISTS public.gym_members (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS public.gym_members (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 4. Gym Finances
 CREATE TABLE IF NOT EXISTS public.gym_finances (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.gym_finances (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create restaurant table
+-- 5. Restaurant Sales
 CREATE TABLE IF NOT EXISTS public.restaurant_sales (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS public.restaurant_sales (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create sauna tables
+-- 6. Sauna Bookings
 CREATE TABLE IF NOT EXISTS public.sauna_bookings (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -92,71 +93,86 @@ CREATE TABLE IF NOT EXISTS public.sauna_bookings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS public.sauna_spa_finances (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  transaction_date DATE NOT NULL DEFAULT NOW(),
-  description TEXT NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  transaction_type TEXT NOT NULL,
-  payment_method TEXT DEFAULT 'cash',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create event items table
+-- 7. Event Items (Inventory for Decor, Sanitation, Entertainment)
 CREATE TABLE IF NOT EXISTS public.event_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  item_name TEXT NOT NULL,
-  category TEXT,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  quantity_available INTEGER DEFAULT 0,
   price DECIMAL(10,2) NOT NULL DEFAULT 0,
-  quantity INTEGER DEFAULT 1,
+  unit TEXT DEFAULT 'pieces',
   description TEXT,
+  status TEXT DEFAULT 'available',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS
+-- 8. Catering Inventory
+CREATE TABLE IF NOT EXISTS public.catering_inventory (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  unit TEXT NOT NULL,
+  quantity INTEGER DEFAULT 0,
+  price_per_plate DECIMAL(10,2) NOT NULL DEFAULT 0,
+  min_order INTEGER DEFAULT 1,
+  description TEXT,
+  available BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 9. Enable RLS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gym_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gym_finances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.restaurant_sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sauna_bookings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sauna_spa_finances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.catering_inventory ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
--- Check if policies exist before creating to avoid errors
+-- 10. Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_customers_user_id ON public.customers(user_id);
+CREATE INDEX IF NOT EXISTS idx_gym_members_user_id ON public.gym_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_gym_finances_user_id ON public.gym_finances(user_id);
+CREATE INDEX IF NOT EXISTS idx_restaurant_sales_user_id ON public.restaurant_sales(user_id);
+CREATE INDEX IF NOT EXISTS idx_sauna_bookings_user_id ON public.sauna_bookings(user_id);
+CREATE INDEX IF NOT EXISTS idx_event_items_user_id ON public.event_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_catering_inventory_user_id ON public.catering_inventory(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_restaurant_sale_date ON public.restaurant_sales(sale_date);
+CREATE INDEX IF NOT EXISTS idx_gym_transaction_date ON public.gym_finances(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_sauna_booking_date ON public.sauna_bookings(booking_date);
+
+-- 11. Create unified security policies
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view own profile') THEN
-        CREATE POLICY "Users can view own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own customers') THEN
+        CREATE POLICY "Manage own customers" ON public.customers FOR ALL USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update own profile') THEN
-        CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own gym members') THEN
+        CREATE POLICY "Manage own gym members" ON public.gym_members FOR ALL USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own customers') THEN
-        CREATE POLICY "Users can manage own customers" ON public.customers FOR ALL USING (auth.uid() = user_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own gym finances') THEN
+        CREATE POLICY "Manage own gym finances" ON public.gym_finances FOR ALL USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own gym members') THEN
-        CREATE POLICY "Users can manage own gym members" ON public.gym_members FOR ALL USING (auth.uid() = user_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own restaurant sales') THEN
+        CREATE POLICY "Manage own restaurant sales" ON public.restaurant_sales FOR ALL USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own gym finances') THEN
-        CREATE POLICY "Users can manage own gym finances" ON public.gym_finances FOR ALL USING (auth.uid() = user_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own sauna bookings') THEN
+        CREATE POLICY "Manage own sauna bookings" ON public.sauna_bookings FOR ALL USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own restaurant sales') THEN
-        CREATE POLICY "Users can manage own restaurant sales" ON public.restaurant_sales FOR ALL USING (auth.uid() = user_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own event items') THEN
+        CREATE POLICY "Manage own event items" ON public.event_items FOR ALL USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own sauna bookings') THEN
-        CREATE POLICY "Users can manage own sauna bookings" ON public.sauna_bookings FOR ALL USING (auth.uid() = user_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Manage own catering inventory') THEN
+        CREATE POLICY "Manage own catering inventory" ON public.catering_inventory FOR ALL USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own sauna finances') THEN
-        CREATE POLICY "Users can manage own sauna finances" ON public.sauna_spa_finances FOR ALL USING (auth.uid() = user_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own event items') THEN
-        CREATE POLICY "Users can manage own event items" ON public.event_items FOR ALL USING (auth.uid() = user_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'View own profile') THEN
+        CREATE POLICY "View own profile" ON public.users FOR SELECT USING (auth.uid() = id);
     END IF;
 END
 $$;
