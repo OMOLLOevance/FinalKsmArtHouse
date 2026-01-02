@@ -67,7 +67,6 @@ export const useDecorCategoriesQuery = () => {
 };
 
 export const useUpdateDecorInventoryMutation = () => {
-  const { userId } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -76,7 +75,6 @@ export const useUpdateDecorInventoryMutation = () => {
         .from('decor_inventory')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', userId)
         .select()
         .single();
 
@@ -94,7 +92,6 @@ export const useUpdateDecorInventoryMutation = () => {
 };
 
 export const useDecorActionMutation = () => {
-  const { userId } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -104,7 +101,6 @@ export const useDecorActionMutation = () => {
         .from('decor_inventory')
         .select('in_store, hired, damaged')
         .eq('id', id)
-        .eq('user_id', userId)
         .single();
 
       if (fetchError) throw fetchError;
@@ -134,7 +130,6 @@ export const useDecorActionMutation = () => {
         .from('decor_inventory')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', userId)
         .select()
         .single();
 
