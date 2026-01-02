@@ -183,53 +183,73 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
 
   if (loading) return <LoadingSpinner text="Loading catering..." />;
 
-  const renderInventoryTable = () => {
+  const renderInventoryForm = () => {
     return structure.map((category, catIndex) => {
       const isHighlighted = highlightedCategory === category.name;
       return (
-        <React.Fragment key={category.name}>
-          <tr className={isHighlighted ? 'bg-primary/10' : ''}>
-            <td className={`px-4 py-2 border font-bold text-lg ${isHighlighted ? 'bg-primary/10' : 'bg-muted'} flex justify-between items-center`}>
+        <div key={category.name} className="space-y-4">
+          <div className={`flex items-center justify-between border-b pb-2 transition-colors ${isHighlighted ? 'border-primary' : 'border-muted'}`}>
+            <h3 className={`text-lg font-black tracking-tight ${isHighlighted ? 'text-primary animate-pulse' : 'text-foreground'}`}>
               {category.name}
-              {isManagingStructure && (
-                <Button size="sm" variant="ghost" onClick={() => handleAddRow(catIndex)}>+ Add Row</Button>
-              )}
-            </td>
-            <td className="px-4 py-2 border bg-muted/50"></td>
-            <td className="px-4 py-2 border bg-muted/50"></td>
-          </tr>
-          {category.rows.map((rowKey) => (
-            <tr key={rowKey}>
-              <td className="px-4 py-2 border">
-                <input
-                  type="text"
-                  value={(inventoryData as any)[rowKey]?.particular || ''}
-                  onChange={(e) => handleInventoryChange(rowKey, 'particular', e.target.value)}
-                  className="w-full bg-transparent border-0 focus:ring-0 text-sm"
-                  placeholder="Enter item name"
-                />
-              </td>
-              <td className="px-4 py-2 border">
-                <input
-                  type="text"
-                  value={(inventoryData as any)[rowKey]?.good || ''}
-                  onChange={(e) => handleInventoryChange(rowKey, 'good', e.target.value)}
-                  className="w-full bg-transparent border-0 focus:ring-0 text-sm text-center"
-                  placeholder="0"
-                />
-              </td>
-              <td className="px-4 py-2 border">
-                <input
-                  type="text"
-                  value={(inventoryData as any)[rowKey]?.repair || ''}
-                  onChange={(e) => handleInventoryChange(rowKey, 'repair', e.target.value)}
-                  className="w-full bg-transparent border-0 focus:ring-0 text-sm text-center"
-                  placeholder="0"
-                />
-              </td>
-            </tr>
-          ))}
-        </React.Fragment>
+            </h3>
+            {isManagingStructure && (
+              <Button size="xs" variant="outline" onClick={() => handleAddRow(catIndex)}>
+                <Plus className="h-3 w-3 mr-1" /> Add Slot
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {category.rows.map((rowKey) => (
+              <Card key={rowKey} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 hover:shadow-sm">
+                <div className="p-3 space-y-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1">
+                      <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1 block">Particulars</label>
+                      <Input
+                        value={(inventoryData as any)[rowKey]?.particular || ''}
+                        onChange={(e) => handleInventoryChange(rowKey, 'particular', e.target.value)}
+                        className="h-8 text-xs font-medium bg-background"
+                        placeholder="Enter item name"
+                      />
+                    </div>
+                    {isManagingStructure && (
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-6 w-6 text-destructive hover:bg-destructive/10" 
+                        onClick={() => handleDeleteRow(catIndex, rowKey)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block text-center">Good</label>
+                      <Input
+                        type="text"
+                        value={(inventoryData as any)[rowKey]?.good || ''}
+                        onChange={(e) => handleInventoryChange(rowKey, 'good', e.target.value)}
+                        className="h-8 text-xs text-center font-bold"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block text-center">Repair</label>
+                      <Input
+                        type="text"
+                        value={(inventoryData as any)[rowKey]?.repair || ''}
+                        onChange={(e) => handleInventoryChange(rowKey, 'repair', e.target.value)}
+                        className="h-8 text-xs text-center font-bold text-destructive"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
       );
     });
   };
@@ -239,30 +259,47 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
-          <h2 className="text-3xl font-bold tracking-tight">Catering</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Catering Management</h2>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setIsAdding(true)}><Plus className="h-4 w-4 mr-2" /> Add Item</Button>
-          <Button variant="outline" onClick={() => fetchItems()}><Database className="h-4 w-4 mr-2" /> Sync</Button>
+          <Button onClick={() => setIsAdding(true)} size="sm"><Plus className="h-4 w-4 mr-2" /> Add Service Item</Button>
+          <Button variant="outline" onClick={() => fetchItems()} size="sm"><Database className="h-4 w-4 mr-2" /> Sync Data</Button>
         </div>
       </div>
 
+      {/* Standardized Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4 bg-primary/5">
-          <p className="text-xs font-bold text-muted-foreground uppercase">Inventory Value</p>
-          <p className="text-xl font-black">{formatCurrency(totals.value)}</p>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold">{formatCurrency(totals.value)}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Inventory Value</div>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-4 bg-secondary/5">
-          <p className="text-xs font-bold text-muted-foreground uppercase">Total Budget</p>
-          <p className="text-xl font-black">{formatCurrency(totals.budget)}</p>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold">{formatCurrency(totals.budget)}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Budget</div>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-4 bg-success/5">
-          <p className="text-xs font-bold text-muted-foreground uppercase">Amount Paid</p>
-          <p className="text-xl font-black">{formatCurrency(totals.paid)}</p>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-success">{formatCurrency(totals.paid)}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Amount Paid</div>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-4 bg-accent/5">
-          <p className="text-xs font-bold text-muted-foreground uppercase">Service Progress</p>
-          <p className="text-xl font-black">{totals.served} / {items.length}</p>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-primary">{totals.served} / {items.length}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Service Progress</div>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
@@ -286,75 +323,94 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
         </Card>
       )}
 
-      {/* Catering Inventory Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Catering Stock Inventory</CardTitle>
+      {/* Catering Inventory Form Section */}
+      <Card className="border-primary/10 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-6">
+          <div>
+            <CardTitle className="text-xl font-bold">Catering Stock Inventory</CardTitle>
+            <CardDescription className="text-xs">Physical inventory tracking and maintenance records</CardDescription>
+          </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsManagingStructure(!isManagingStructure)}>
+            <Button variant="outline" size="sm" onClick={() => setIsManagingStructure(!isManagingStructure)}>
               {isManagingStructure ? 'Done' : 'Edit Structure'}
             </Button>
-            <Button onClick={handleSaveInventoryToDatabase}>Save to DB</Button>
+            <Button onClick={handleSaveInventoryToDatabase} size="sm">
+              <Save className="h-4 w-4 mr-2" /> Save to DB
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto border rounded-xl">
-            <table className="min-w-full border-collapse">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="px-4 py-2 text-left font-bold text-xs uppercase border-r w-1/2">Particulars</th>
-                  <th className="px-4 py-2 text-center font-bold text-xs uppercase border-r">Good</th>
-                  <th className="px-4 py-2 text-center font-bold text-xs uppercase">Repair</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {renderInventoryTable()}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="space-y-10">
+          {renderInventoryForm()}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle>Service Items List</CardTitle></CardHeader>
+      <Card className="border-primary/10 shadow-sm">
+        <CardHeader className="border-b pb-4 mb-6">
+          <CardTitle className="text-xl font-bold">Service Items List</CardTitle>
+          <CardDescription className="text-xs">Active catering services and billing status</CardDescription>
+        </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead>
-                <tr className="bg-muted text-[10px] font-black uppercase">
-                  <th className="px-3 py-3 text-left">Item</th>
-                  <th className="px-3 py-3 text-left">Qty</th>
-                  <th className="px-3 py-3 text-left">Price</th>
-                  <th className="px-3 py-3 text-left">Budget</th>
-                  <th className="px-3 py-3 text-left">Paid</th>
-                  <th className="px-3 py-3 text-left">Status</th>
-                  <th className="px-3 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y text-xs">
-                {items.map((item: any) => {
-                  const parsed = parseDescription(item.description);
-                  return (
-                    <tr key={item.id} className="hover:bg-muted/50">
-                      <td className="px-3 py-3 font-medium">{item.name}</td>
-                      <td className="px-3 py-3">{item.min_order}</td>
-                      <td className="px-3 py-3">{formatCurrency(item.price_per_plate)}</td>
-                      <td className="px-3 py-3">{formatCurrency(parsed.budget)}</td>
-                      <td className="px-3 py-3 text-success font-bold">{formatCurrency(parsed.paid)}</td>
-                      <td className="px-3 py-3">
-                        <Badge variant={item.description?.includes('Status: served') ? 'success' : 'outline'}>
-                          {item.description?.includes('Status: served') ? 'SERVED' : 'PENDING'}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {items.map((item: any) => {
+              const parsed = parseDescription(item.description);
+              const isServed = item.description?.includes('Status: served');
+              return (
+                <Card key={item.id} className={`overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${isServed ? 'border-l-success' : 'border-l-warning'}`}>
+                  <div className="p-4 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-lg text-primary">{item.name}</h4>
+                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{item.category}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Badge variant={isServed ? 'success' : 'warning'} className="text-[10px] h-5">
+                          {isServed ? 'SERVED' : 'PENDING'}
                         </Badge>
-                      </td>
-                      <td className="px-3 py-3 text-right space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Edit className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteItem(item.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <Button variant="ghost" size="xs" onClick={() => handleEdit(item)} className="h-7 w-7 p-0">
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="xs" onClick={() => deleteItem(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 bg-muted/10 p-3 rounded-lg border">
+                      <div className="space-y-0.5">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Quantity</label>
+                        <p className="text-sm font-bold">{item.min_order}</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Unit Price</label>
+                        <p className="text-sm font-bold">{formatCurrency(item.price_per_plate)}</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Budget</label>
+                        <p className="text-sm font-bold text-primary">{formatCurrency(parsed.budget)}</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Paid</label>
+                        <p className="text-sm font-bold text-success">{formatCurrency(parsed.paid)}</p>
+                      </div>
+                    </div>
+                    
+                    {parsed.notes && (
+                      <div className="px-1">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block mb-1">Notes</label>
+                        <p className="text-xs text-muted-foreground line-clamp-2 italic">"{parsed.notes}"</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+            {items.length === 0 && (
+              <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border-2 border-dashed">
+                <Clock className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p className="text-lg font-medium">No service items recorded yet.</p>
+                <Button variant="link" onClick={() => setIsAdding(true)}>Add your first service item</Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
