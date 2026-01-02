@@ -335,16 +335,54 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
             <DialogTitle>Add New Decor Item</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Input
-              placeholder="Category (e.g., table_clothes)"
-              value={newItem.category}
-              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-            />
-            <Input
-              placeholder="Item name"
-              value={newItem.item_name}
-              onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
-            />
+            <div>
+              <label className="text-sm font-medium">Category:</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    {newItem.category || 'Select Category'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-full">
+                  {categories.map(category => (
+                    <DropdownMenuItem 
+                      key={category} 
+                      onClick={() => setNewItem({ ...newItem, category, item_name: '' })}
+                    >
+                      {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Item Name:</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start" disabled={!newItem.category}>
+                    {newItem.item_name || (newItem.category ? 'Select Item' : 'Select Category First')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-full">
+                  {items
+                    .filter(item => item.category === newItem.category)
+                    .map(item => (
+                      <DropdownMenuItem 
+                        key={item.id} 
+                        onClick={() => setNewItem({ ...newItem, item_name: item.item_name, price: item.price })}
+                      >
+                        {item.item_name}
+                      </DropdownMenuItem>
+                    ))}
+                  {newItem.category && items.filter(item => item.category === newItem.category).length === 0 && (
+                    <DropdownMenuItem disabled>
+                      No items in this category
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Input
               placeholder="Initial quantity"
               type="number"
