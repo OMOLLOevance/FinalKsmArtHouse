@@ -2,8 +2,17 @@
 -- Run this script to clean up policy clutter and enforce strict user data isolation.
 
 -- 1. FIX TABLE NAMES (Sync with Codebase)
--- Ensures the table name matches the TypeScript interfaces used in the frontend.
-ALTER TABLE IF EXISTS decor_inventory_data RENAME TO decor_inventory;
+-- Uses a safe block to prevent "already exists" errors.
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'decor_inventory_data') 
+       AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'decor_inventory') THEN
+        ALTER TABLE decor_inventory_data RENAME TO decor_inventory;
+        RAISE NOTICE 'Renamed decor_inventory_data to decor_inventory';
+    ELSIF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'decor_inventory') THEN
+        RAISE NOTICE 'Table decor_inventory already exists, skipping rename';
+    END IF;
+END $$;
 
 -- 2. CLEAN UP REDUNDANT/OVER-PERMISSIVE POLICIES
 -- Removing policies that might allow "any" authenticated user to see data.
