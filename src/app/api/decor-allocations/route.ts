@@ -5,6 +5,7 @@ import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 
 const DecorAllocationSchema = z.object({
+  id: z.string().uuid().optional(),
   customer_name: z.string().min(1),
   month: z.number().int().min(1).max(12),
   year: z.number().int(),
@@ -41,24 +42,34 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const month = searchParams.get('month');
-    const year = searchParams.get('year');
+    const monthStr = searchParams.get('month');
+    const yearStr = searchParams.get('year');
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     let query = supabase.from('decor_allocations').select('*').eq('user_id', userId);
     
-    if (month) query = query.eq('month', parseInt(month) + 1);
-    if (year) query = query.eq('year', parseInt(year));
+    if (monthStr) {
+      const month = parseInt(monthStr);
+      if (!isNaN(month)) query = query.eq('month', month + 1);
+    }
+    
+    if (yearStr) {
+      const year = parseInt(yearStr);
+      if (!isNaN(year)) query = query.eq('year', year);
+    }
 
     const { data, error } = await query.order('row_number', { ascending: true });
 
-    if (error) throw ApiError.fromSupabase(error);
+    if (error) {
+      logger.error('Supabase fetch error:', error);
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
+    }
 
     return NextResponse.json({ data: data || [] });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Decor Allocations GET Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -78,11 +89,11 @@ export async function POST(request: NextRequest) {
     if (error) throw ApiError.fromSupabase(error);
 
     return NextResponse.json({ data });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Decor Allocations POST Error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
