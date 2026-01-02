@@ -273,6 +273,7 @@ export const useAddCustomerMutation = () => {
     },
   });
 };
+export const useUpdateAllocationMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({

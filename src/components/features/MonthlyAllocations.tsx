@@ -157,7 +157,7 @@ const MonthlyAllocations: React.FC = () => {
           <p className="text-gray-600">Reservation dashboard for {monthNames[currentMonth]} {currentYear}</p>
         </div>
         <div className="flex items-center space-x-4">
-          <Button onClick={() => addCustomer(currentMonth, currentYear)}>
+          <Button onClick={() => addCustomer({ month: currentMonth, year: currentYear })}>
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
