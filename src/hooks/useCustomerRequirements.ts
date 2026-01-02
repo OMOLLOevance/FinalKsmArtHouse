@@ -30,8 +30,8 @@ export const useCustomerRequirementsQuery = (customerId?: string) => {
         .from('customer_requirements')
         .select(`
           *,
-          customers!inner(name),
-          decor_inventory!inner(item_name, category, price)
+          customers (name),
+          decor_inventory (item_name, category, price)
         `)
         .eq('user_id', userId);
 
