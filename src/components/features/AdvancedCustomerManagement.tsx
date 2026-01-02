@@ -74,6 +74,35 @@ const AdvancedCustomerManagement: React.FC = () => {
   const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showDecorForm, setShowDecorForm] = useState(false);
+  const [newDecorAllocation, setNewDecorAllocation] = useState({
+    customer_name: '',
+    walkway_stands: 0,
+    arc: 0,
+    aisle_stands: 0,
+    photobooth: 0,
+    lecturn: 0,
+    stage_boards: 0,
+    backdrop_boards: 0,
+    dance_floor: 0,
+    walkway_boards: 0,
+    white_sticker: 0,
+    centerpieces: 0,
+    glass_charger_plates: 0,
+    melamine_charger_plates: 0,
+    african_mats: 0,
+    gold_napkin_holders: 0,
+    silver_napkin_holders: 0,
+    roof_top_decor: 0,
+    parcan_lights: 0,
+    revolving_heads: 0,
+    fairy_lights: 0,
+    snake_lights: 0,
+    neon_lights: 0,
+    small_chandeliers: 0,
+    large_chandeliers: 0,
+    african_lampshades: 0
+  });
   
   // Database queries
   const { data: savedDecorAllocations = [], isLoading } = useDecorAllocationsQuery(currentMonth, currentYear);
@@ -269,6 +298,26 @@ const AdvancedCustomerManagement: React.FC = () => {
     }
   };
 
+  const handleAddDecorItem = () => {
+    setShowDecorForm(true);
+  };
+
+  const handleSaveDecorForm = () => {
+    if (!newDecorAllocation.customer_name.trim()) return;
+    
+    const nextEmptyRow = decorItems.findIndex(row => row.customer_name.trim() === '');
+    if (nextEmptyRow !== -1) {
+      setDecorItems(prev => prev.map((item, index) => 
+        index === nextEmptyRow ? {
+          ...item,
+          ...newDecorAllocation
+        } : item
+      ));
+      setHasUnsavedChanges(true);
+      setShowDecorForm(false);
+    }
+  };
+
   const handleSaveDecorItems = () => {
     saveDecorMutation.mutate({
       allocations: decorItems.map(item => ({
@@ -366,6 +415,10 @@ const AdvancedCustomerManagement: React.FC = () => {
           <Button onClick={addCustomer}>
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
+          </Button>
+          <Button onClick={handleAddDecorItem}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Decor Item
           </Button>
         </div>
       </div>
@@ -470,6 +523,10 @@ const AdvancedCustomerManagement: React.FC = () => {
                 <Save className="h-4 w-4 mr-2" />
                 {saveDecorMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
+              <Button onClick={handleAddDecorItem} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Item
+              </Button>
               <Button variant="outline" size="sm">
                 <Printer className="h-4 w-4 mr-2" />
                 Print
@@ -548,6 +605,84 @@ const AdvancedCustomerManagement: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Decor Form Dialog */}
+      {showDecorForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add Decor & Lighting Items</h3>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-1 text-gray-700">Customer Name *</label>
+              <Input
+                value={newDecorAllocation.customer_name}
+                onChange={(e) => setNewDecorAllocation({...newDecorAllocation, customer_name: e.target.value})}
+                placeholder="Enter customer name"
+                className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="text-md font-medium mb-3 text-gray-800">Popular Items</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Centerpieces</label>
+                  <Input
+                    type="number"
+                    value={newDecorAllocation.centerpieces}
+                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, centerpieces: parseInt(e.target.value) || 0})}
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Parcan Lights</label>
+                  <Input
+                    type="number"
+                    value={newDecorAllocation.parcan_lights}
+                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, parcan_lights: parseInt(e.target.value) || 0})}
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Fairy Lights</label>
+                  <Input
+                    type="number"
+                    value={newDecorAllocation.fairy_lights}
+                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, fairy_lights: parseInt(e.target.value) || 0})}
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">African Lampshades</label>
+                  <Input
+                    type="number"
+                    value={newDecorAllocation.african_lampshades}
+                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, african_lampshades: parseInt(e.target.value) || 0})}
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDecorForm(false)}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveDecorForm}
+                disabled={!newDecorAllocation.customer_name.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Add Decor Items
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
