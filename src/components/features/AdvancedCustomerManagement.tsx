@@ -201,7 +201,12 @@ const AdvancedCustomerManagement: React.FC = () => {
   const addCustomer = () => {
     const nextEmptyRow = monthlyAllocations.findIndex(row => row.customer_name.trim() === '');
     if (nextEmptyRow !== -1) {
-      handleCellClick(nextEmptyRow, 'allocation_customer_name', '');
+      const customerNameField = document.querySelector(`[data-row="${nextEmptyRow}"][data-field="customer_name"]`) as HTMLElement;
+      if (customerNameField) {
+        customerNameField.click();
+      } else {
+        handleCellClick(nextEmptyRow, 'customer_name', '');
+      }
     }
   };
 

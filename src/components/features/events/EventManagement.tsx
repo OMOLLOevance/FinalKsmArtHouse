@@ -2,6 +2,7 @@
 
 import React, { useState, Suspense, lazy } from 'react';
 import { Utensils, Palette, Users, Wrench, Music, FileText, ArrowLeft, DollarSign } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,15 @@ interface EventManagementProps {
 
 const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
   const [activeModule, setActiveModule] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleModuleClick = (moduleId: string) => {
+    if (moduleId === 'customers') {
+      router.push('/customers');
+    } else {
+      setActiveModule(moduleId);
+    }
+  };
 
   const modules = [
     { 
@@ -54,7 +64,7 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
       icon: Users, 
       color: 'text-blue-600 dark:text-blue-400', 
       bg: 'bg-blue-100 dark:bg-blue-900/20',
-      description: 'Manage client details and history' 
+      description: 'Advanced customer management with monthly allocations' 
     },
     { 
       id: 'requirements', 
@@ -146,7 +156,7 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
         {modules.map((module) => (
           <Card
             key={module.id}
-            onClick={() => setActiveModule(module.id)}
+            onClick={() => handleModuleClick(module.id)}
             className="cursor-pointer group hover-lift hover-glow border-primary/5 transition-all duration-300"
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
