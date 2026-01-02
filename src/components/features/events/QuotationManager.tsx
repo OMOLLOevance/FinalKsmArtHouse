@@ -325,9 +325,83 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
               </div>
 
               {sections.map((section, sIdx) => (
-                <div key={sIdx} className="mb-8">
-                  <h4 className="text-sm font-bold bg-muted p-2 mb-2 uppercase border rounded">{section.name}</h4>
-                  <table className="min-w-full border-collapse">
+                <div key={sIdx} className="mb-10">
+                  <div className="flex items-center justify-between border-b-2 border-primary/20 pb-2 mb-4">
+                    <h4 className="text-sm font-black uppercase text-primary tracking-widest">{section.name}</h4>
+                    <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded uppercase">
+                      {section.items.filter(i => i.description).length} Items Configured
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 print:hidden">
+                    {section.items.map((item, iIdx) => (
+                      <Card key={iIdx} className={`overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 ${item.description ? 'border-l-4 border-l-primary/40' : 'bg-muted/5 opacity-60'}`}>
+                        <div className="p-3 space-y-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1">
+                              <label className="text-[8px] font-black uppercase text-muted-foreground tracking-widest mb-1 block">Description</label>
+                              <Input 
+                                value={item.description} 
+                                onChange={(e) => handleItemChange(sIdx, iIdx, 'description', e.target.value)} 
+                                className="h-8 text-xs font-bold bg-background border-none shadow-none focus-visible:ring-1"
+                                placeholder="Enter item description..."
+                              />
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="xs" 
+                              className="h-6 w-6 p-0 text-destructive/50 hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteItem(sIdx, iIdx)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-0.5">
+                              <label className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">Unit</label>
+                              <Input 
+                                value={item.unit} 
+                                onChange={(e) => handleItemChange(sIdx, iIdx, 'unit', e.target.value)} 
+                                className="h-7 text-[10px] text-center bg-muted/20 border-none shadow-none"
+                                placeholder="e.g. PCS"
+                              />
+                            </div>
+                            <div className="space-y-0.5">
+                              <label className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">Price</label>
+                              <Input 
+                                type="number" 
+                                value={item.unitPrice || ''} 
+                                onChange={(e) => handleItemChange(sIdx, iIdx, 'unitPrice', e.target.value)} 
+                                className="h-7 text-[10px] text-center bg-muted/20 border-none shadow-none font-bold"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div className="space-y-0.5">
+                              <label className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">Qty</label>
+                              <Input 
+                                type="number" 
+                                value={item.quantity || ''} 
+                                onChange={(e) => handleItemChange(sIdx, iIdx, 'quantity', e.target.value)} 
+                                className="h-7 text-[10px] text-center bg-muted/20 border-none shadow-none font-bold"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                          
+                          {item.total > 0 && (
+                            <div className="flex justify-between items-center border-t pt-2 mt-1">
+                              <span className="text-[9px] font-black text-muted-foreground uppercase">Subtotal</span>
+                              <span className="text-xs font-black text-primary">{formatCurrency(item.total)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Print-only Table view */}
+                  <table className="min-w-full border-collapse hidden print:table">
                     <thead>
                       <tr className="bg-muted/50 border-b text-xs font-bold">
                         <th className="px-2 py-2 text-left">DESCRIPTION</th>
@@ -338,13 +412,13 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {section.items.map((item, iIdx) => (
+                      {section.items.filter(i => i.description).map((item, iIdx) => (
                         <tr key={iIdx} className="text-xs">
-                          <td className="px-2 py-1"><Input value={item.description} onChange={(e) => handleItemChange(sIdx, iIdx, 'description', e.target.value)} className="h-7 border-0 p-0" /></td>
-                          <td className="px-2 py-1"><Input value={item.unit} onChange={(e) => handleItemChange(sIdx, iIdx, 'unit', e.target.value)} className="h-7 border-0 p-0" /></td>
-                          <td className="px-2 py-1 text-right"><Input type="number" value={item.unitPrice || ''} onChange={(e) => handleItemChange(sIdx, iIdx, 'unitPrice', e.target.value)} className="h-7 border-0 p-0 text-right" /></td>
-                          <td className="px-2 py-1 text-center"><Input type="number" value={item.quantity || ''} onChange={(e) => handleItemChange(sIdx, iIdx, 'quantity', e.target.value)} className="h-7 border-0 p-0 text-center" /></td>
-                          <td className="px-2 py-1 text-right font-semibold">{item.total.toLocaleString()}</td>
+                          <td className="px-2 py-1.5">{item.description}</td>
+                          <td className="px-2 py-1.5">{item.unit}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">{item.unitPrice.toLocaleString()}</td>
+                          <td className="px-2 py-1.5 text-center">{item.quantity}</td>
+                          <td className="px-2 py-1.5 text-right font-bold font-mono">{item.total.toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>

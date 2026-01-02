@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, ArrowLeft, Trash2, Edit } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, Edit, Calendar, Users } from 'lucide-react';
 import { useCustomersQuery, useCreateCustomerMutation, useDeleteCustomerMutation } from '@/hooks/use-customer-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -140,42 +140,52 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ onBack }) => {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Location</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Event Date</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-card divide-y divide-border">
-                {customers?.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-muted/50">
-                    <td className="px-6 py-4 text-sm font-medium">{customer.name}</td>
-                    <td className="px-6 py-4 text-sm">{customer.contact}</td>
-                    <td className="px-6 py-4 text-sm">{customer.location}</td>
-                    <td className="px-6 py-4 text-sm">{customer.eventDate}</td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(customer.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {customers?.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                      No customers found. Click "Add Customer" to get started.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      <Card className="border-none shadow-none bg-transparent">
+        <CardContent className="px-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {customers?.map((customer) => (
+              <Card key={customer.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 hover:shadow-md border-l-4 border-l-primary/40">
+                <div className="p-4 space-y-4">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-lg truncate" title={customer.name}>
+                        {customer.name}
+                      </h4>
+                      <div className="flex items-center text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                        <Calendar className="h-3 w-3 mr-1 opacity-70" />
+                        {customer.eventDate}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="xs" 
+                      onClick={() => handleDelete(customer.id)} 
+                      className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 bg-muted/30 p-2 rounded-lg border">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground uppercase tracking-tighter font-bold text-[9px]">Contact</span>
+                      <span className="font-medium">{customer.contact || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs border-t pt-1 border-muted">
+                      <span className="text-muted-foreground uppercase tracking-tighter font-bold text-[9px]">Location</span>
+                      <span className="font-medium truncate max-w-[120px]">{customer.location || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+            {customers?.length === 0 && (
+              <div className="col-span-full py-16 text-center text-muted-foreground bg-muted/5 border-2 border-dashed rounded-2xl">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p className="text-lg font-medium">No customers found.</p>
+                <Button variant="link" onClick={() => setIsAdding(true)}>Add your first customer</Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
