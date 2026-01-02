@@ -311,7 +311,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     
     return (
       <div 
-        className={`cursor-pointer hover:bg-muted/50 p-2 min-h-[32px] flex items-center ${className}`}
+        className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className}`}
         onClick={() => handleCellEdit(allocation.id, field, value)}
       >
         {value || <span className="text-gray-400 italic">Click to edit</span>}
@@ -654,35 +654,35 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
 
       {/* Summary Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{allocations.length}</div>
-              <div className="text-sm text-gray-600">Total Events</div>
+              <div className="text-xl font-bold">{allocations.length}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Total Events</div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">KSH {totalRevenue.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Total Revenue</div>
+              <div className="text-xl font-bold text-green-600">KSH {totalRevenue.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Total Revenue</div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">KSH {totalDeposits.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Deposits Paid</div>
+              <div className="text-xl font-bold text-blue-600">KSH {totalDeposits.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Deposits Paid</div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">KSH {totalBalance.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Balance Due</div>
+              <div className="text-xl font-bold text-red-600">KSH {totalBalance.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Balance Due</div>
             </div>
           </CardContent>
         </Card>
@@ -692,10 +692,10 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-muted/50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left">
+            <table className="min-w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="border p-1 w-8">
                     <input
                       type="checkbox"
                       checked={selectedRows.size === allocations.length && allocations.length > 0}
@@ -709,23 +709,23 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                       className="rounded"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left font-medium">Date</th>
-                  <th className="px-4 py-3 text-left font-medium">Customer</th>
-                  <th className="px-4 py-3 text-left font-medium">Location</th>
-                  <th className="px-4 py-3 text-left font-medium">Phone</th>
-                  <th className="px-4 py-3 text-center font-medium">Status</th>
-                  <th className="px-4 py-3 text-center font-medium">Tents</th>
-                  <th className="px-4 py-3 text-center font-medium">Tables</th>
-                  <th className="px-4 py-3 text-center font-medium">Seats</th>
-                  <th className="px-4 py-3 text-right font-medium">Total KSH</th>
-                  <th className="px-4 py-3 text-right font-medium">Deposit</th>
-                  <th className="px-4 py-3 text-right font-medium">Balance</th>
+                  <th className="border p-1 text-left font-medium">Date</th>
+                  <th className="border p-1 text-left font-medium">Customer</th>
+                  <th className="border p-1 text-left font-medium">Location</th>
+                  <th className="border p-1 text-left font-medium">Phone</th>
+                  <th className="border p-1 text-center font-medium">Status</th>
+                  <th className="border p-1 text-center font-medium">Tents</th>
+                  <th className="border p-1 text-center font-medium">Tables</th>
+                  <th className="border p-1 text-center font-medium">Seats</th>
+                  <th className="border p-1 text-right font-medium">Total KSH</th>
+                  <th className="border p-1 text-right font-medium">Deposit</th>
+                  <th className="border p-1 text-right font-medium">Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {allocations.map((allocation) => (
                   <tr key={allocation.id}>
-                    <td className="px-4 py-3">
+                    <td className="border p-1 text-center">
                       <input
                         type="checkbox"
                         checked={selectedRows.has(allocation.id)}
@@ -741,23 +741,23 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                         className="rounded"
                       />
                     </td>
-                    <td className="px-4 py-3 border-r">
+                    <td className="border p-1">
                       {renderEditableCell(allocation, 'date')}
                     </td>
-                    <td className="px-4 py-3 border-r">
+                    <td className="border p-1">
                       {renderEditableCell(allocation, 'customer_name', 'font-medium')}
                     </td>
-                    <td className="px-4 py-3 border-r">
+                    <td className="border p-1">
                       {renderEditableCell(allocation, 'location')}
                     </td>
-                    <td className="px-4 py-3 border-r">
+                    <td className="border p-1">
                       {renderEditableCell(allocation, 'phone_number')}
                     </td>
-                    <td className="px-4 py-3 text-center border-r">
+                    <td className="border p-1 text-center">
                       <Select
                         value={allocation.status}
                         onValueChange={(value) => handleStatusChange(allocation.id, value)}
-                        className="w-28"
+                        className="w-28 text-xs h-7"
                         options={[
                           { value: 'pending', label: 'Pending' },
                           { value: 'confirmed', label: 'Confirmed' },
@@ -766,22 +766,22 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                         ]}
                       />
                     </td>
-                    <td className="px-4 py-3 text-center border-r">
+                    <td className="border p-1 text-center">
                       <span className="font-medium">{allocation.tent_total}</span>
                     </td>
-                    <td className="px-4 py-3 text-center border-r">
+                    <td className="border p-1 text-center">
                       <span className="font-medium">{allocation.table_total}</span>
                     </td>
-                    <td className="px-4 py-3 text-center border-r">
+                    <td className="border p-1 text-center">
                       <span className="font-medium">{allocation.seat_total}</span>
                     </td>
-                    <td className="px-4 py-3 text-right border-r">
+                    <td className="border p-1 text-right">
                       {renderEditableCell(allocation, 'total_ksh', 'text-right font-medium')}
                     </td>
-                    <td className="px-4 py-3 text-right border-r">
+                    <td className="border p-1 text-right">
                       {renderEditableCell(allocation, 'deposit_paid', 'text-right')}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="border p-1 text-right">
                       <span className={`font-medium ${allocation.balance_due > 0 ? 'text-red-600' : 'text-green-600'}`}>
                         {allocation.balance_due.toLocaleString()}
                       </span>
