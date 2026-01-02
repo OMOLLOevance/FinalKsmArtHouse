@@ -311,7 +311,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     
     return (
       <div 
-        className={`cursor-pointer hover:bg-blue-50 p-2 min-h-[32px] flex items-center ${className}`}
+        className={`cursor-pointer hover:bg-muted/50 p-2 min-h-[32px] flex items-center ${className}`}
         onClick={() => handleCellEdit(allocation.id, field, value)}
       >
         {value || <span className="text-gray-400 italic">Click to edit</span>}
@@ -693,7 +693,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted/50 border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <input
@@ -724,7 +724,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {allocations.map((allocation) => (
-                  <tr key={allocation.id} className="hover:bg-blue-50">
+                  <tr key={allocation.id}>
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
@@ -791,6 +791,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
               </tbody>
             </table>
           </div>
+
           
           {allocations.length === 0 && (
             <div className="text-center py-12">
