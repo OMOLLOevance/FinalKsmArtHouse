@@ -303,10 +303,6 @@ const AdvancedCustomerManagement: React.FC = () => {
           <p className="text-muted-foreground">Monthly customer allocation and equipment tracking</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
         </div>
       </div>
 
