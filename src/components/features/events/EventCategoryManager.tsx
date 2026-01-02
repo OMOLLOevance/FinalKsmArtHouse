@@ -30,7 +30,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
           </Button>
           <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         </div>
-        <Button>
+        <Button onClick={() => console.log('Add item clicked for category:', category)}>
           <Plus className="h-4 w-4 mr-2" /> Add Item
         </Button>
       </div>
