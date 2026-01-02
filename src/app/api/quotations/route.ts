@@ -4,15 +4,41 @@ import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 
-const CateringItemSchema = z.object({
+const QuotationItemSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  unit: z.string(),
+  unitPrice: z.number(),
+  quantity: z.number(),
+  total: z.number(),
+  remarks: z.string().optional(),
+});
+
+const QuotationSectionSchema = z.object({
+  name: z.string(),
+  items: z.array(QuotationItemSchema),
+});
+
+const QuotationSchema = z.object({
   user_id: z.string().uuid(),
-  name: z.string().min(1),
-  category: z.string(),
-  unit: z.string().default('pieces'),
-  price_per_plate: z.number().min(0),
-  min_order: z.number().int().min(0),
-  description: z.string().optional(),
-  available: z.boolean().default(true),
+  customer_name: z.string().min(1),
+  customer_email: z.string().email().optional().or(z.literal('')),
+  customer_phone: z.string().optional(),
+  number_of_guests: z.number().int().default(0),
+  theme: z.string().optional(),
+  event_date: z.string().optional().nullable(),
+  event_type: z.string().optional(),
+  custom_event_type: z.string().optional(),
+  quotation_type: z.enum(['Event/Decor', 'Food/Catering']),
+  sections: z.array(QuotationSectionSchema),
+  additional_charges: z.object({
+    cateringLabour: z.number().default(0),
+    serviceCharge: z.number().default(0),
+    transport: z.number().default(0),
+  }).optional(),
+  status: z.enum(['draft', 'sent', 'approved', 'rejected']).default('draft'),
+  total_amount: z.number().min(0),
+  notes: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -23,7 +49,7 @@ export async function GET(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     const { data, error } = await supabase
-      .from('catering_items')
+      .from('quotations')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -32,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: data || [] });
   } catch (error) {
-    logger.error('Catering Items GET Error:', error);
+    logger.error('Quotations GET Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -40,18 +66,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Handle inventory data separate from service items
-    if (body.inventory_data) {
-        // This handles the "Save to DB" for stock inventory
-        // In a more complex app, this might have its own table or JSONB field
-        return NextResponse.json({ success: true, message: 'Inventory saved (simulated)' });
-    }
-
-    const validatedData = CateringItemSchema.parse(body);
+    const validatedData = QuotationSchema.parse(body);
 
     const { data, error } = await supabase
-      .from('catering_items')
+      .from('quotations')
       .insert([validatedData])
       .select()
       .single();
@@ -60,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    logger.error('Catering Items POST Error:', error);
+    logger.error('Quotations POST Error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 });
     }
@@ -76,7 +94,7 @@ export async function PUT(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     const { data, error } = await supabase
-      .from('catering_items')
+      .from('quotations')
       .update(updates)
       .eq('id', id)
       .select()
@@ -86,7 +104,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    logger.error('Catering Items PUT Error:', error);
+    logger.error('Quotations PUT Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -99,7 +117,7 @@ export async function DELETE(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     const { error } = await supabase
-      .from('catering_items')
+      .from('quotations')
       .delete()
       .eq('id', id);
 
@@ -107,7 +125,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('Catering Items DELETE Error:', error);
+    logger.error('Quotations DELETE Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
