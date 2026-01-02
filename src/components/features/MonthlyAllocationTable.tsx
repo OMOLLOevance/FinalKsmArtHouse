@@ -14,11 +14,14 @@ import { useAuth } from '@/contexts/AuthContext';
 interface MonthlyAllocation {
   id: string;
   customer_name: string;
-  event_date: string;
+  date: string;
   location: string;
   phone_number: string;
   event_type: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  month: number;
+  year: number;
+  event_date: string;
   // Tent totals
   tent_total: number;
   double_tent: number;
@@ -43,12 +46,14 @@ interface MonthlyAllocation {
   plastic_seats: number;
   banquet_seats: number;
   cross_bar_seats: number;
+  walkway_stands: number;
   // Financial
   total_ksh: number;
   deposit_paid: number;
   balance_due: number;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 interface MonthlyAllocationTableProps {
@@ -87,9 +92,9 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       const { data, error } = await supabase
         .from('monthly_allocations')
         .select('*')
-        .gte('event_date', startDate)
-        .lte('event_date', endDate)
-        .order('event_date', { ascending: true });
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
 
       if (error) throw error;
 
@@ -127,8 +132,11 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
         .from('monthly_allocations')
         .insert({
           customer_name: 'New Customer',
+          date: eventDate,
+          location: 'Location TBD',
+          month: month + 1,
+          year: year,
           event_date: eventDate,
-          location: '',
           phone_number: '',
           event_type: 'Wedding',
           status: 'pending',
@@ -286,7 +294,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
 
   const handleExportData = () => {
     const csvData = allocations.map(allocation => ({
-      Date: allocation.event_date,
+      Date: allocation.date,
       Customer: allocation.customer_name,
       Location: allocation.location,
       Phone: allocation.phone_number,
@@ -358,7 +366,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
             <tbody>
               ${allocations.map(allocation => `
                 <tr>
-                  <td>${allocation.event_date}</td>
+                  <td>${allocation.date}</td>
                   <td>${allocation.customer_name}</td>
                   <td>${allocation.location || '-'}</td>
                   <td>${allocation.phone_number || '-'}</td>
@@ -520,7 +528,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                       />
                     </td>
                     <td className="px-4 py-3 border-r">
-                      {renderEditableCell(allocation, 'event_date')}
+                      {renderEditableCell(allocation, 'date')}
                     </td>
                     <td className="px-4 py-3 border-r">
                       {renderEditableCell(allocation, 'customer_name', 'font-medium')}
