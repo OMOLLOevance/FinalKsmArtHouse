@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useCustomers } from '@/hooks/useCustomers';
-import MonthlyAllocations from './MonthlyAllocations';
+import MonthlyAllocationTable from './MonthlyAllocationTable';
 
 interface MonthlyAllocation {
   id: string;
@@ -317,7 +317,11 @@ const AdvancedCustomerManagement: React.FC = () => {
           <p className="text-sm text-muted-foreground">{filledRows} of 25 rows filled</p>
         </CardHeader>
         <CardContent>
-          <MonthlyAllocations />
+          <MonthlyAllocationTable 
+            month={currentMonth} 
+            year={currentYear} 
+            onAddCustomer={addCustomer}
+          />
         </CardContent>
       </Card>
 
