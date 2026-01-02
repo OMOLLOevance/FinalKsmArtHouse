@@ -239,7 +239,40 @@ export const useInventoryLimitsQuery = () => {
   });
 };
 
-export const useUpdateAllocationMutation = () => {
+export const useAddCustomerMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ month, year }: { month: number; year: number }) => {
+      // Create a new customer for the selected month
+      const eventDate = new Date(year, month, 15).toISOString().split('T')[0]; // Mid-month date
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .insert({
+          name: 'New Customer',
+          event_date: eventDate,
+          phone: '',
+          email: '',
+          event_type: 'Wedding',
+          location: '',
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monthly-allocations'] });
+      toast.success('New customer added successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to add customer: ${error.message}`);
+    },
+  });
+};
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -309,6 +342,7 @@ export const useMonthlyAllocations = (month: number, year: number) => {
   const allocationsQuery = useMonthlyAllocationsQuery(month, year);
   const limitsQuery = useInventoryLimitsQuery();
   const updateMutation = useUpdateAllocationMutation();
+  const addCustomerMutation = useAddCustomerMutation();
 
   return {
     allocations: allocationsQuery.data || [],
@@ -316,6 +350,7 @@ export const useMonthlyAllocations = (month: number, year: number) => {
     loading: allocationsQuery.isLoading || limitsQuery.isLoading,
     error: allocationsQuery.error || limitsQuery.error,
     updateAllocation: updateMutation.mutateAsync,
+    addCustomer: addCustomerMutation.mutateAsync,
     isUpdating: updateMutation.isPending,
   };
 };

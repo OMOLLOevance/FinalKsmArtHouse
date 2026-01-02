@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,7 +13,7 @@ const MonthlyAllocations: React.FC = () => {
   const [editingCell, setEditingCell] = useState<{customerId: string, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const { allocations, inventoryLimits, loading, updateAllocation, isUpdating } = useMonthlyAllocations(currentMonth, currentYear);
+  const { allocations, inventoryLimits, loading, updateAllocation, addCustomer, isUpdating } = useMonthlyAllocations(currentMonth, currentYear);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -156,16 +156,22 @@ const MonthlyAllocations: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-900">Monthly Customer Allocation</h2>
           <p className="text-gray-600">Reservation dashboard for {monthNames[currentMonth]} {currentYear}</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
-            <ChevronLeft className="h-4 w-4" />
+        <div className="flex items-center space-x-4">
+          <Button onClick={() => addCustomer(currentMonth, currentYear)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Customer
           </Button>
-          <span className="text-lg font-medium text-gray-900 min-w-[140px] text-center">
-            {monthNames[currentMonth]} {currentYear}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-medium text-gray-900 min-w-[140px] text-center">
+              {monthNames[currentMonth]} {currentYear}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -280,7 +286,7 @@ const MonthlyAllocations: React.FC = () => {
           
           {allocations.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              No events scheduled for {monthNames[currentMonth]} {currentYear}
+              <p className="mb-4">No allocations for {monthNames[currentMonth]} {currentYear}. Click "Add Customer" to create entries.</p>
             </div>
           )}
           
