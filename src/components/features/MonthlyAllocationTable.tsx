@@ -190,7 +190,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       toast.success('Customer added successfully');
     } catch (error) {
       console.error('Error adding customer:', error);
-      toast.error(`Failed to add customer: ${error.message}`);
+      toast.error(`Failed to add customer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -233,7 +233,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       toast.success('Updated successfully');
     } catch (error) {
       console.error('Error updating allocation:', error);
-      toast.error('Failed to update');
+      toast.error(`Failed to update: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -265,7 +265,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       toast.success(`Deleted ${selectedRows.size} allocation(s)`);
     } catch (error) {
       console.error('Error deleting allocations:', error);
-      toast.error('Failed to delete allocations');
+      toast.error(`Failed to delete allocations: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -287,7 +287,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       toast.success('Status updated successfully');
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      toast.error(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

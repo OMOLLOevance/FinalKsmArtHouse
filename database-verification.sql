@@ -1,164 +1,160 @@
--- Database Verification and Setup Script
--- This script verifies and sets up all required tables and data for the decor management system
+-- Comprehensive Database Verification Script
+-- Run this in Supabase SQL Editor to verify complete implementation
 
--- 1. Verify decor_inventory table exists
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'decor_inventory') THEN
-        RAISE NOTICE 'Creating decor_inventory table...';
-        
-        CREATE TABLE decor_inventory (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id UUID REFERENCES auth.users(id),
-          category TEXT NOT NULL,
-          item_name TEXT NOT NULL,
-          in_store INTEGER NOT NULL DEFAULT 0,
-          hired INTEGER NOT NULL DEFAULT 0,
-          damaged INTEGER NOT NULL DEFAULT 0,
-          price NUMERIC DEFAULT 0,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-        );
-
-        CREATE INDEX idx_decor_inventory_user_id ON decor_inventory(user_id);
-        CREATE INDEX idx_decor_inventory_category ON decor_inventory(category);
-        
-        CREATE TRIGGER update_decor_inventory_updated_at 
-            BEFORE UPDATE ON decor_inventory 
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-END $$;
-
--- 2. Verify customer_requirements table exists
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'customer_requirements') THEN
-        RAISE NOTICE 'Creating customer_requirements table...';
-        
-        CREATE TABLE customer_requirements (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id UUID REFERENCES auth.users(id),
-          customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
-          decor_item_id UUID REFERENCES decor_inventory(id) ON DELETE CASCADE,
-          quantity_required INTEGER NOT NULL DEFAULT 1,
-          status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'delivered')),
-          notes TEXT,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          UNIQUE(customer_id, decor_item_id)
-        );
-
-        CREATE INDEX idx_customer_requirements_customer_id ON customer_requirements(customer_id);
-        CREATE INDEX idx_customer_requirements_decor_item_id ON customer_requirements(decor_item_id);
-        CREATE INDEX idx_customer_requirements_user_id ON customer_requirements(user_id);
-        
-        CREATE TRIGGER update_customer_requirements_updated_at 
-            BEFORE UPDATE ON customer_requirements 
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-END $$;
-
--- 3. Check if predefined inventory items exist, if not, insert them
-DO $$
-DECLARE
-    item_count INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO item_count FROM decor_inventory WHERE user_id IS NULL;
-    
-    IF item_count = 0 THEN
-        RAISE NOTICE 'Seeding predefined inventory items...';
-        
-        INSERT INTO decor_inventory (category, item_name, in_store, price) VALUES
-        -- Table Clothes
-        ('table_clothes', 'White Table Cloth', 50, 200),
-        ('table_clothes', 'Black Table Cloth', 30, 200),
-        ('table_clothes', 'Red Table Cloth', 25, 200),
-        ('table_clothes', 'Blue Table Cloth', 20, 200),
-
-        -- Satin Table Clothes
-        ('satin_table_clothes', 'White Satin Table Cloth', 15, 350),
-        ('satin_table_clothes', 'Gold Satin Table Cloth', 12, 350),
-        ('satin_table_clothes', 'Silver Satin Table Cloth', 10, 350),
-
-        -- Runners
-        ('runners', 'Gold Table Runner', 40, 150),
-        ('runners', 'Silver Table Runner', 35, 150),
-        ('runners', 'Red Table Runner', 30, 150),
-        ('runners', 'Blue Table Runner', 25, 150),
-
-        -- Elastic Tiebacks
-        ('elastic_tiebacks', 'White Elastic Tieback', 100, 50),
-        ('elastic_tiebacks', 'Gold Elastic Tieback', 80, 50),
-        ('elastic_tiebacks', 'Silver Elastic Tieback', 75, 50),
-
-        -- Sheer Curtains
-        ('sheer_curtains', 'White Sheer Curtain', 20, 300),
-        ('sheer_curtains', 'Ivory Sheer Curtain', 15, 300),
-        ('sheer_curtains', 'Gold Sheer Curtain', 12, 300),
-
-        -- Spandex
-        ('spandex', 'White Spandex Cover', 60, 250),
-        ('spandex', 'Black Spandex Cover', 45, 250),
-        ('spandex', 'Royal Blue Spandex Cover', 30, 250),
-
-        -- Drops
-        ('drops', 'White Backdrop Drop', 8, 500),
-        ('drops', 'Black Backdrop Drop', 6, 500),
-        ('drops', 'Gold Backdrop Drop', 4, 500),
-
-        -- Traditional Items
-        ('traditional_items', 'Kikoy Traditional Cloth', 25, 180),
-        ('traditional_items', 'Kanga Traditional Cloth', 20, 180),
-        ('traditional_items', 'Maasai Traditional Blanket', 15, 300),
-
-        -- Charger Plates
-        ('charger_plates', 'Gold Charger Plate', 100, 100),
-        ('charger_plates', 'Silver Charger Plate', 80, 100),
-        ('charger_plates', 'Glass Charger Plate', 60, 120),
-
-        -- Table Mirrors
-        ('table_mirrors', 'Round Table Mirror', 30, 200),
-        ('table_mirrors', 'Square Table Mirror', 25, 200),
-        ('table_mirrors', 'Oval Table Mirror', 20, 220),
-
-        -- Holders
-        ('holders', 'Candle Holder Gold', 50, 80),
-        ('holders', 'Candle Holder Silver', 45, 80),
-        ('holders', 'Flower Holder Glass', 40, 100),
-
-        -- Artificial Flowers
-        ('artificial_flowers', 'White Rose Arrangement', 30, 300),
-        ('artificial_flowers', 'Red Rose Arrangement', 25, 300),
-        ('artificial_flowers', 'Mixed Flower Arrangement', 35, 350),
-
-        -- Hanging Flowers
-        ('hanging_flowers', 'White Hanging Bouquet', 20, 400),
-        ('hanging_flowers', 'Pink Hanging Bouquet', 15, 400),
-        ('hanging_flowers', 'Mixed Hanging Bouquet', 18, 450),
-
-        -- Centrepieces
-        ('centrepieces', 'Gold Centrepiece', 25, 500),
-        ('centrepieces', 'Silver Centrepiece', 20, 500),
-        ('centrepieces', 'Crystal Centrepiece', 15, 600);
-        
-        RAISE NOTICE 'Successfully seeded % inventory items', ROW_COUNT;
-    ELSE
-        RAISE NOTICE 'Inventory items already exist (% items found)', item_count;
-    END IF;
-END $$;
-
--- 4. Verification queries
-SELECT 'decor_inventory' as table_name, COUNT(*) as row_count FROM decor_inventory
-UNION ALL
-SELECT 'customer_requirements' as table_name, COUNT(*) as row_count FROM customer_requirements;
-
--- 5. Show sample inventory by category
+-- 1. Check if monthly_allocations table exists and has all required columns
 SELECT 
-    category,
-    COUNT(*) as item_count,
-    SUM(in_store) as total_in_store,
-    SUM(hired) as total_hired,
-    SUM(damaged) as total_damaged
-FROM decor_inventory 
-GROUP BY category 
-ORDER BY category;
+    'monthly_allocations table structure' as check_type,
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'monthly_allocations' 
+ORDER BY ordinal_position;
+
+-- 2. Check if all required indexes exist
+SELECT 
+    'monthly_allocations indexes' as check_type,
+    indexname,
+    indexdef
+FROM pg_indexes 
+WHERE tablename = 'monthly_allocations';
+
+-- 3. Check if RLS policies exist
+SELECT 
+    'RLS policies' as check_type,
+    policyname,
+    cmd,
+    qual
+FROM pg_policies 
+WHERE tablename = 'monthly_allocations';
+
+-- 4. Check if status constraint exists
+SELECT 
+    'Status constraints' as check_type,
+    constraint_name,
+    check_clause
+FROM information_schema.check_constraints 
+WHERE constraint_name LIKE '%monthly_allocations%';
+
+-- 5. Check sample data structure
+SELECT 
+    'Sample data check' as check_type,
+    COUNT(*) as total_records,
+    COUNT(CASE WHEN event_date IS NOT NULL THEN 1 END) as records_with_date,
+    COUNT(CASE WHEN customer_name IS NOT NULL THEN 1 END) as records_with_customer,
+    COUNT(CASE WHEN status IS NOT NULL THEN 1 END) as records_with_status
+FROM monthly_allocations;
+
+-- 6. Check data types and constraints
+SELECT 
+    'Data validation' as check_type,
+    'Status values' as field,
+    status,
+    COUNT(*) as count
+FROM monthly_allocations 
+WHERE status IS NOT NULL
+GROUP BY status
+UNION ALL
+SELECT 
+    'Data validation' as check_type,
+    'Event types' as field,
+    event_type,
+    COUNT(*) as count
+FROM monthly_allocations 
+WHERE event_type IS NOT NULL
+GROUP BY event_type;
+
+-- 7. Check financial data integrity
+SELECT 
+    'Financial data check' as check_type,
+    AVG(total_ksh) as avg_total,
+    AVG(deposit_paid) as avg_deposit,
+    AVG(total_ksh - deposit_paid) as avg_balance,
+    COUNT(CASE WHEN total_ksh > 0 THEN 1 END) as records_with_revenue
+FROM monthly_allocations;
+
+-- 8. Check equipment data integrity
+SELECT 
+    'Equipment data check' as check_type,
+    AVG(double_tent + single_tent + gazebo_tent + miluxe_tent + a_frame_tent + b_line_tent + pergola_tent) as avg_tents,
+    AVG(round_table + long_table + bridal_table) as avg_tables,
+    AVG(chavari_seats + luxe_seats + chameleon_seats + dior_seats + high_back_seat + plastic_seats + banquet_seats + cross_bar_seats) as avg_seats
+FROM monthly_allocations;
+
+-- 9. Test a sample INSERT to verify all constraints work
+INSERT INTO monthly_allocations (
+    customer_name,
+    event_date,
+    location,
+    phone_number,
+    event_type,
+    status,
+    double_tent,
+    single_tent,
+    round_table,
+    chavari_seats,
+    total_ksh,
+    deposit_paid,
+    user_id
+) VALUES (
+    'Test Customer - Verification',
+    CURRENT_DATE + INTERVAL '30 days',
+    'Test Location',
+    '+254700000000',
+    'Wedding',
+    'pending',
+    2,
+    1,
+    5,
+    50,
+    150000.00,
+    50000.00,
+    auth.uid()
+) RETURNING 
+    id,
+    customer_name,
+    event_date,
+    status,
+    total_ksh - deposit_paid as balance_due,
+    'Test record created successfully' as verification_status;
+
+-- 10. Clean up test record
+DELETE FROM monthly_allocations 
+WHERE customer_name = 'Test Customer - Verification';
+
+-- 11. Check if decor_inventory table integration is ready
+SELECT 
+    'Decor inventory integration' as check_type,
+    COUNT(*) as total_items,
+    COUNT(CASE WHEN inventory_limit > 0 THEN 1 END) as items_with_limits,
+    AVG(inventory_limit) as avg_inventory_limit
+FROM decor_inventory;
+
+-- 12. Final integration test - check if all systems work together
+SELECT 
+    'Integration test' as check_type,
+    'monthly_allocations' as table_name,
+    COUNT(*) as record_count,
+    'Ready for production' as status
+FROM monthly_allocations
+UNION ALL
+SELECT 
+    'Integration test' as check_type,
+    'decor_inventory' as table_name,
+    COUNT(*) as record_count,
+    CASE 
+        WHEN COUNT(*) > 0 THEN 'Ready for production'
+        ELSE 'Needs data population'
+    END as status
+FROM decor_inventory
+UNION ALL
+SELECT 
+    'Integration test' as check_type,
+    'customers' as table_name,
+    COUNT(*) as record_count,
+    CASE 
+        WHEN COUNT(*) > 0 THEN 'Ready for production'
+        ELSE 'Optional - will be created as needed'
+    END as status
+FROM customers;

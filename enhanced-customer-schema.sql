@@ -93,72 +93,24 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Update decor_items table with enhanced columns
+-- 2. Add inventory_limit column to decor_inventory table
 DO $$
 BEGIN
-    -- Add missing decor columns
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='white_sticker') THEN
-        ALTER TABLE decor_items ADD COLUMN white_sticker INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='glass_charger_plates') THEN
-        ALTER TABLE decor_items ADD COLUMN glass_charger_plates INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='melamine_charger_plates') THEN
-        ALTER TABLE decor_items ADD COLUMN melamine_charger_plates INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='gold_napkin_holders') THEN
-        ALTER TABLE decor_items ADD COLUMN gold_napkin_holders INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='silver_napkin_holders') THEN
-        ALTER TABLE decor_items ADD COLUMN silver_napkin_holders INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='parcan_lights') THEN
-        ALTER TABLE decor_items ADD COLUMN parcan_lights INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='revolving_heads') THEN
-        ALTER TABLE decor_items ADD COLUMN revolving_heads INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='fairy_lights') THEN
-        ALTER TABLE decor_items ADD COLUMN fairy_lights INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='snake_lights') THEN
-        ALTER TABLE decor_items ADD COLUMN snake_lights INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='neon_lights') THEN
-        ALTER TABLE decor_items ADD COLUMN neon_lights INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='small_chandeliers') THEN
-        ALTER TABLE decor_items ADD COLUMN small_chandeliers INTEGER DEFAULT 0;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='large_chandeliers') THEN
-        ALTER TABLE decor_items ADD COLUMN large_chandeliers INTEGER DEFAULT 0;
-    END IF;
-    
-    -- Remove old generic columns
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='charger_plates') THEN
-        ALTER TABLE decor_items DROP COLUMN charger_plates;
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='napkin_holders') THEN
-        ALTER TABLE decor_items DROP COLUMN napkin_holders;
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='lighting_items') THEN
-        ALTER TABLE decor_items DROP COLUMN lighting_items;
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_items' AND column_name='chandeliers') THEN
-        ALTER TABLE decor_items DROP COLUMN chandeliers;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='decor_inventory' AND column_name='inventory_limit') THEN
+        ALTER TABLE decor_inventory ADD COLUMN inventory_limit INTEGER DEFAULT 0;
     END IF;
 END $$;
+
+-- 3. Update existing decor_inventory items with inventory limits
+UPDATE decor_inventory SET inventory_limit = 50 WHERE item_name = 'Walkway Stands';
+UPDATE decor_inventory SET inventory_limit = 200 WHERE item_name = 'Glass Charger Plates';
+UPDATE decor_inventory SET inventory_limit = 150 WHERE item_name = 'Melamine Charger Plates';
+UPDATE decor_inventory SET inventory_limit = 100 WHERE item_name = 'Gold Napkin Holders';
+UPDATE decor_inventory SET inventory_limit = 80 WHERE item_name = 'Silver Napkin Holders';
+UPDATE decor_inventory SET inventory_limit = 30 WHERE item_name = 'Parcan Lights';
+UPDATE decor_inventory SET inventory_limit = 20 WHERE item_name = 'Revolving Heads';
+UPDATE decor_inventory SET inventory_limit = 100 WHERE item_name = 'Fairy Lights';
+UPDATE decor_inventory SET inventory_limit = 60 WHERE item_name = 'Snake Lights';
+UPDATE decor_inventory SET inventory_limit = 40 WHERE item_name = 'Neon Lights';
+UPDATE decor_inventory SET inventory_limit = 25 WHERE item_name = 'Small Chandeliers';
+UPDATE decor_inventory SET inventory_limit = 15 WHERE item_name = 'Large Chandeliers';
