@@ -1,14 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Printer, Calendar, Save, Trash2, Edit3, Check, X, AlertCircle } from 'lucide-react';
+import { Plus, Printer, Calendar, Save, Trash2, Edit3, Check, X, AlertCircle, Download, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
-import { Badge } from '@/components/ui/Badge';
+import { Select, StatusBadge } from '@/components/ui/Select';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -283,18 +281,108 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800'
-    };
+    return <StatusBadge status={status} />;
+  };
+
+  const handleExportData = () => {
+    const csvData = allocations.map(allocation => ({
+      Date: allocation.event_date,
+      Customer: allocation.customer_name,
+      Location: allocation.location,
+      Phone: allocation.phone_number,
+      Status: allocation.status,
+      Tents: allocation.tent_total,
+      Tables: allocation.table_total,
+      Seats: allocation.seat_total,
+      'Total KSH': allocation.total_ksh,
+      'Deposit Paid': allocation.deposit_paid,
+      'Balance Due': allocation.balance_due
+    }));
     
-    return (
-      <Badge className={variants[status as keyof typeof variants] || variants.pending}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
+    const csvContent = [
+      Object.keys(csvData[0] || {}).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `allocations-${monthNames[month]}-${year}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    const printContent = `
+      <html>
+        <head>
+          <title>Monthly Allocations - ${monthNames[month]} ${year}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .summary { display: flex; justify-content: space-around; margin: 20px 0; }
+            .summary div { text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Monthly Customer Allocations</h1>
+            <h2>${monthNames[month]} ${year}</h2>
+          </div>
+          <div class="summary">
+            <div><strong>Total Events:</strong> ${allocations.length}</div>
+            <div><strong>Total Revenue:</strong> KSH ${totalRevenue.toLocaleString()}</div>
+            <div><strong>Deposits Paid:</strong> KSH ${totalDeposits.toLocaleString()}</div>
+            <div><strong>Balance Due:</strong> KSH ${totalBalance.toLocaleString()}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Location</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Tents</th>
+                <th>Tables</th>
+                <th>Seats</th>
+                <th>Total KSH</th>
+                <th>Deposit</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${allocations.map(allocation => `
+                <tr>
+                  <td>${allocation.event_date}</td>
+                  <td>${allocation.customer_name}</td>
+                  <td>${allocation.location || '-'}</td>
+                  <td>${allocation.phone_number || '-'}</td>
+                  <td>${allocation.status}</td>
+                  <td>${allocation.tent_total}</td>
+                  <td>${allocation.table_total}</td>
+                  <td>${allocation.seat_total}</td>
+                  <td>${allocation.total_ksh.toLocaleString()}</td>
+                  <td>${allocation.deposit_paid.toLocaleString()}</td>
+                  <td>${allocation.balance_due.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   const totalRevenue = allocations.reduce((sum, allocation) => sum + (allocation.total_ksh || 0), 0);
@@ -327,7 +415,11 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
               Delete ({selectedRows.size})
             </Button>
           )}
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExportData}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
@@ -443,17 +535,14 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                       <Select
                         value={allocation.status}
                         onValueChange={(value) => handleStatusChange(allocation.id, value)}
-                      >
-                        <SelectTrigger className="w-24 h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="confirmed">Confirmed</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        className="w-28"
+                        options={[
+                          { value: 'pending', label: 'Pending' },
+                          { value: 'confirmed', label: 'Confirmed' },
+                          { value: 'completed', label: 'Completed' },
+                          { value: 'cancelled', label: 'Cancelled' }
+                        ]}
+                      />
                     </td>
                     <td className="px-4 py-3 text-center border-r">
                       <span className="font-medium">{allocation.tent_total}</span>
