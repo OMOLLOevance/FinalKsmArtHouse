@@ -47,6 +47,14 @@ class APIClient {
         }
         
         const message = error.response?.data?.message || 'Network error';
+        
+        // Handle Network Errors (no response) gracefully
+        if (!error.response) {
+            logger.warn(`API Network Error: ${error.message} - ${error.config?.url}`);
+            // Don't toast for network errors to avoid spam during reloads/connection issues
+            return Promise.reject(error);
+        }
+
         logger.error(`API Error: ${error.response?.status || 'Network'} ${error.config?.url}`, { message, data: error.response?.data });
         toast.error(message);
         
