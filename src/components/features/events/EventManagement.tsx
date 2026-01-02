@@ -13,6 +13,7 @@ const CustomerManager = lazy(() => import('./CustomerManager'));
 const QuotationManager = lazy(() => import('./QuotationManager'));
 const EventCategoryManager = lazy(() => import('./EventCategoryManager'));
 const EventPaymentForm = lazy(() => import('./EventPaymentForm'));
+const DecorManagement = lazy(() => import('../DecorManagement'));
 
 interface EventManagementProps {
   onBack?: () => void;
@@ -98,9 +99,7 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
           </div>
         );
       case 'decor':
-// ...
-
-        return <EventCategoryManager onBack={() => setActiveModule(null)} category="decor" title="Decor Management" />;
+        return <DecorManagement onBack={() => setActiveModule(null)} />;
       case 'sanitation':
         return <EventCategoryManager onBack={() => setActiveModule(null)} category="sanitation" title="Sanitation Management" />;
       case 'entertainment':
