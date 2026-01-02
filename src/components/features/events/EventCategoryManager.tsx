@@ -1,9 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Plus, Database } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
 import { useEventItemsQuery } from '@/hooks/use-event-api';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
@@ -16,6 +18,7 @@ interface ManagerProps {
 
 const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title }) => {
   const { data: items, isLoading } = useEventItemsQuery();
+  const [showAddDialog, setShowAddDialog] = useState(false);
   
   const filteredItems = items?.filter(item => item.category === category) || [];
 
@@ -30,7 +33,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
           </Button>
           <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         </div>
-        <Button onClick={() => console.log('Add item clicked for category:', category)}>
+        <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="h-4 w-4 mr-2" /> Add Item
         </Button>
       </div>
@@ -72,6 +75,23 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New {category} Item</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input placeholder="Item name" />
+            <Input placeholder="Quantity" type="number" />
+            <Input placeholder="Price (KSH)" type="number" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+            <Button onClick={() => setShowAddDialog(false)}>Add Item</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
