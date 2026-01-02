@@ -80,7 +80,22 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
   const [highlightedCategory, setHighlightedCategory] = useState('');
 
   const parseDescription = (desc: string = '') => {
-    const data = { budget: 0, paid: 0, method: 'cash', status: 'deposit', location: '-', notes: '' };
+    const data: { 
+      budget: number; 
+      paid: number; 
+      method: 'cash' | 'mpesa' | 'bank'; 
+      status: 'deposit' | 'full'; 
+      location: string; 
+      notes: string; 
+    } = { 
+      budget: 0, 
+      paid: 0, 
+      method: 'cash', 
+      status: 'deposit', 
+      location: '-', 
+      notes: '' 
+    };
+    
     try {
       const budgetMatch = desc.match(/Budget: (\d+)/);
       const paidMatch = desc.match(/Paid: (\d+)/);
@@ -89,7 +104,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       
       if (budgetMatch) data.budget = Number(budgetMatch[1]);
       if (paidMatch) data.paid = Number(paidMatch[1]);
-      if (methodMatch) data.method = methodMatch[1] as any;
+      if (methodMatch) data.method = methodMatch[1] as 'cash' | 'mpesa' | 'bank';
       if (locMatch) data.location = locMatch[1];
       data.notes = desc.split(', ').pop() || '';
     } catch (e) {}
