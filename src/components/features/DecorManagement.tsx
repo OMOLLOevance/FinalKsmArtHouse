@@ -15,6 +15,7 @@ import {
   useDecorInventoryQuery, 
   useDecorCategoriesQuery, 
   useDecorActionMutation, 
+  useUpdateDecorInventoryMutation,
   useAddDecorItemMutation,
   DecorInventoryItem 
 } from '@/hooks/useDecorInventory';
@@ -29,6 +30,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   const { data: customers = [] } = useCustomersQuery();
   const actionMutation = useDecorActionMutation();
   const addItemMutation = useAddDecorItemMutation();
+  const updateMutation = useUpdateDecorInventoryMutation();
   const addToCustomerMutation = useAddItemToCustomerMutation();
   
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -37,6 +39,9 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingCell, setEditingCell] = useState<{id: string, field: string} | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
   const [newItem, setNewItem] = useState({
     category: '',
     item_name: '',
@@ -49,6 +54,74 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     const matchesSearch = item.item_name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const handleCellEdit = (id: string, field: string, currentValue: any) => {
+    setEditingCell({ id, field });
+    setEditValue(currentValue?.toString() || '');
+  };
+
+  const handleCellSave = async () => {
+    if (!editingCell) return;
+
+    try {
+      setSaving(true);
+      const { id, field } = editingCell;
+      
+      let value: any = editValue;
+      if (['in_store', 'hired', 'damaged', 'price'].includes(field)) {
+        value = isNaN(parseFloat(editValue)) ? 0 : parseFloat(editValue);
+      }
+
+      await updateMutation.mutateAsync({ 
+        id, 
+        updates: { [field]: value } 
+      });
+
+      setEditingCell(null);
+      setEditValue('');
+    } catch (error) {
+      console.error('Error updating item:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleCellSave();
+    } else if (e.key === 'Escape') {
+      setEditingCell(null);
+      setEditValue('');
+    }
+  };
+
+  const renderEditableCell = (item: DecorInventoryItem, field: string, className = '') => {
+    const value = item[field as keyof DecorInventoryItem];
+    const isEditing = editingCell?.id === item.id && editingCell?.field === field;
+    
+    if (isEditing) {
+      return (
+        <Input
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          onBlur={handleCellSave}
+          className={`h-7 text-xs ${className}`}
+          autoFocus
+          disabled={saving}
+        />
+      );
+    }
+    
+    return (
+      <div 
+        className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className}`}
+        onClick={() => handleCellEdit(item.id, field, value)}
+      >
+        {value || <span className="text-gray-400 italic">0</span>}
+      </div>
+    );
+  };
 
   const handleItemClick = (item: DecorInventoryItem) => {
     setSelectedItem(item);
@@ -72,7 +145,15 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   };
 
   const handleAction = (id: string, action: 'hire' | 'return' | 'damage' | 'repair') => {
-    actionMutation.mutate({ id, action });
+    handleActionSilent(id, action);
+  };
+
+  const handleActionSilent = async (id: string, action: 'hire' | 'return' | 'damage' | 'repair') => {
+    try {
+      await actionMutation.mutateAsync({ id, action });
+    } catch (error) {
+      console.error('Action failed:', error);
+    }
   };
 
   const handleAddItem = () => {
@@ -103,50 +184,51 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           </Button>
           <h2 className="text-3xl font-bold tracking-tight">Decor Management</h2>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Add Item
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm">
+            Print Inventory
+          </Button>
+          <Button onClick={() => setShowAddDialog(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" /> Add Item
+          </Button>
+        </div>
       </div>
 
-      {/* Overview Cards */}
+      {/* Overview Cards - Refactored to match MonthlyAllocationTable style */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalItems}</div>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold">{totalItems}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Total Items</div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Store</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{totalInStore}</div>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-primary">{totalInStore}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">In Store</div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Currently Hired</CardTitle>
-            <TrendingDown className="h-4 w-4 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-secondary">{totalHired}</div>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-secondary">{totalHired}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Currently Hired</div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Damaged</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{totalDamaged}</div>
+        <Card className="bg-muted/20">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-destructive">{totalDamaged}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Damaged</div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -155,7 +237,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
       <div className="flex space-x-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline">
+            <Button variant="outline" size="sm">
               Category: {selectedCategory === 'all' ? 'All' : selectedCategory.replace('_', ' ')}
             </Button>
           </DropdownMenuTrigger>
@@ -175,82 +257,100 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           placeholder="Search items..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm h-9"
         />
       </div>
 
       {/* Inventory Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>All Items Inventory</CardTitle>
-          <CardDescription>Manage your decor items and availability</CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">All Items Inventory</CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">Manage your decor items and availability</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
+            <table className="min-w-full text-xs border-collapse">
               <thead>
-                <tr className="bg-muted">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Item Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">In Store</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Hired</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Damaged</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Actions</th>
+                <tr className="bg-muted/50">
+                  <th className="border p-1 text-left font-semibold uppercase tracking-wider">Item Name</th>
+                  <th className="border p-1 text-left font-semibold uppercase tracking-wider w-32">Category</th>
+                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-20">In Store</th>
+                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-20">Hired</th>
+                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-20">Damaged</th>
+                  <th className="border p-1 text-right font-semibold uppercase tracking-wider w-24">Price</th>
+                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-48">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {filteredItems.map((item) => (
-                  <tr key={item.id}>
-                    <td 
-                      className="px-6 py-4 text-sm font-medium cursor-pointer hover:text-primary hover:bg-primary/5 transition-colors"
-                      onClick={() => handleItemClick(item)}
-                      title="Click to add to customer requirements"
-                    >
-                      {item.item_name}
+                  <tr key={item.id} className="hover:bg-muted/30">
+                    <td className="border p-0">
+                      {renderEditableCell(item, 'item_name', 'font-medium')}
                     </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                    <td className="border p-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground uppercase tracking-tighter">
                         {item.category.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm">{item.in_store}</td>
-                    <td className="px-6 py-4 text-sm">{item.hired}</td>
-                    <td className="px-6 py-4 text-sm">{item.damaged}</td>
-                    <td className="px-6 py-4 text-sm">{formatCurrency(item.price)}</td>
-                    <td className="px-6 py-4 text-sm space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAction(item.id, 'hire')}
-                        disabled={item.in_store === 0 || actionMutation.isPending}
-                      >
-                        Hire
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAction(item.id, 'return')}
-                        disabled={item.hired === 0 || actionMutation.isPending}
-                      >
-                        Return
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAction(item.id, 'damage')}
-                        disabled={item.in_store === 0 || actionMutation.isPending}
-                      >
-                        Damage
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAction(item.id, 'repair')}
-                        disabled={item.damaged === 0 || actionMutation.isPending}
-                      >
-                        Repair
-                      </Button>
+                    <td className="border p-0">
+                      {renderEditableCell(item, 'in_store', 'text-center')}
+                    </td>
+                    <td className="border p-0">
+                      {renderEditableCell(item, 'hired', 'text-center')}
+                    </td>
+                    <td className="border p-0">
+                      {renderEditableCell(item, 'damaged', 'text-center')}
+                    </td>
+                    <td className="border p-0">
+                      {renderEditableCell(item, 'price', 'text-right font-medium')}
+                    </td>
+                    <td className="border p-1">
+                      <div className="flex items-center justify-center space-x-1">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleAction(item.id, 'hire')}
+                          disabled={item.in_store === 0 || actionMutation.isPending}
+                          className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                        >
+                          Hire
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleAction(item.id, 'return')}
+                          disabled={item.hired === 0 || actionMutation.isPending}
+                          className="hover:bg-secondary hover:text-secondary-foreground transition-colors"
+                        >
+                          Return
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleAction(item.id, 'damage')}
+                          disabled={item.in_store === 0 || actionMutation.isPending}
+                          className="hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                        >
+                          Damage
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleAction(item.id, 'repair')}
+                          disabled={item.damaged === 0 || actionMutation.isPending}
+                          className="hover:bg-green-600 hover:text-white transition-colors"
+                        >
+                          Repair
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          onClick={() => handleItemClick(item)}
+                          title="Assign to Customer"
+                        >
+                          <Users className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
