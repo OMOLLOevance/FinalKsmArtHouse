@@ -5,7 +5,6 @@ import { Plus, Printer, Calendar, ChevronLeft, ChevronRight, Save } from 'lucide
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useCustomers } from '@/hooks/useCustomers';
 import { useDecorAllocationsQuery, useSaveDecorAllocationsMutation } from '@/hooks/useDecorAllocations';
 import MonthlyAllocationTable from './MonthlyAllocationTable';
 
@@ -106,7 +105,7 @@ const AdvancedCustomerManagement: React.FC = () => {
   });
   
   // Database queries
-  const { data: savedDecorAllocations = [], isLoading } = useDecorAllocationsQuery(currentMonth, currentYear);
+  const { data: decorData } = useDecorAllocationsQuery(currentMonth, currentYear);
   const saveDecorMutation = useSaveDecorAllocationsMutation();
   
   // Initialize decorItems as empty array
@@ -114,6 +113,7 @@ const AdvancedCustomerManagement: React.FC = () => {
 
   // Load saved data when it changes
   useEffect(() => {
+    const savedDecorAllocations = decorData || [];
     if (savedDecorAllocations.length > 0) {
       const newDecorItems = savedDecorAllocations.map(savedItem => ({
         id: `decor-row-${savedItem.row_number}`,
@@ -150,7 +150,7 @@ const AdvancedCustomerManagement: React.FC = () => {
       setDecorItems([]);
     }
     setHasUnsavedChanges(false);
-  }, [savedDecorAllocations]);
+  }, [decorData]);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -296,15 +296,7 @@ const AdvancedCustomerManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold">Customer Management</h2>
-          <p className="text-muted-foreground">Monthly customer allocation and equipment tracking</p>
-        </div>
-        <div className="flex space-x-2">
-        </div>
-      </div>
+      {/* Header removed */}
 
       {/* Month Navigation */}
       <div className="flex items-center justify-between">
