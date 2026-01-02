@@ -140,47 +140,15 @@ const AdvancedCustomerManagement: React.FC = () => {
     }))
   );
   
-  // Initialize 25 empty rows for decor items
-  const [decorItems, setDecorItems] = useState<DecorItem[]>(
-    Array.from({ length: 25 }, (_, i) => ({
-      id: `decor-row-${i + 1}`,
-      row_number: i + 1,
-      customer_name: '',
-      walkway_stands: 0,
-      arc: 0,
-      aisle_stands: 0,
-      photobooth: 0,
-      lecturn: 0,
-      stage_boards: 0,
-      backdrop_boards: 0,
-      dance_floor: 0,
-      walkway_boards: 0,
-      white_sticker: 0,
-      centerpieces: 0,
-      glass_charger_plates: 0,
-      melamine_charger_plates: 0,
-      african_mats: 0,
-      gold_napkin_holders: 0,
-      silver_napkin_holders: 0,
-      roof_top_decor: 0,
-      parcan_lights: 0,
-      revolving_heads: 0,
-      fairy_lights: 0,
-      snake_lights: 0,
-      neon_lights: 0,
-      small_chandeliers: 0,
-      large_chandeliers: 0,
-      african_lampshades: 0
-    }))
-  );
+  // Initialize decorItems as empty array
+  const [decorItems, setDecorItems] = useState<DecorItem[]>([]);
 
   // Load saved data when it changes
   useEffect(() => {
-    const newDecorItems = Array.from({ length: 25 }, (_, i) => {
-      const savedItem = savedDecorAllocations.find(item => item.row_number === i + 1);
-      return savedItem ? {
-        id: `decor-row-${i + 1}`,
-        row_number: i + 1,
+    if (savedDecorAllocations.length > 0) {
+      const newDecorItems = savedDecorAllocations.map(savedItem => ({
+        id: `decor-row-${savedItem.row_number}`,
+        row_number: savedItem.row_number,
         customer_name: savedItem.customer_name,
         walkway_stands: savedItem.walkway_stands,
         arc: savedItem.arc,
@@ -207,38 +175,11 @@ const AdvancedCustomerManagement: React.FC = () => {
         small_chandeliers: savedItem.small_chandeliers,
         large_chandeliers: savedItem.large_chandeliers,
         african_lampshades: savedItem.african_lampshades
-      } : {
-        id: `decor-row-${i + 1}`,
-        row_number: i + 1,
-        customer_name: '',
-        walkway_stands: 0,
-        arc: 0,
-        aisle_stands: 0,
-        photobooth: 0,
-        lecturn: 0,
-        stage_boards: 0,
-        backdrop_boards: 0,
-        dance_floor: 0,
-        walkway_boards: 0,
-        white_sticker: 0,
-        centerpieces: 0,
-        glass_charger_plates: 0,
-        melamine_charger_plates: 0,
-        african_mats: 0,
-        gold_napkin_holders: 0,
-        silver_napkin_holders: 0,
-        roof_top_decor: 0,
-        parcan_lights: 0,
-        revolving_heads: 0,
-        fairy_lights: 0,
-        snake_lights: 0,
-        neon_lights: 0,
-        small_chandeliers: 0,
-        large_chandeliers: 0,
-        african_lampshades: 0
-      };
-    });
-    setDecorItems(newDecorItems);
+      }));
+      setDecorItems(newDecorItems);
+    } else {
+      setDecorItems([]);
+    }
     setHasUnsavedChanges(false);
   }, [savedDecorAllocations]);
 
@@ -310,17 +251,17 @@ const AdvancedCustomerManagement: React.FC = () => {
   const handleSaveDecorForm = () => {
     if (!newDecorAllocation.customer_name.trim()) return;
     
-    const nextEmptyRow = decorItems.findIndex(row => row.customer_name.trim() === '');
-    if (nextEmptyRow !== -1) {
-      setDecorItems(prev => prev.map((item, index) => 
-        index === nextEmptyRow ? {
-          ...item,
-          ...newDecorAllocation
-        } : item
-      ));
-      setHasUnsavedChanges(true);
-      setShowDecorForm(false);
-    }
+    setDecorItems(prev => [
+      ...prev,
+      {
+        ...newDecorAllocation,
+        id: `decor-row-${prev.length + 1}`,
+        row_number: prev.length + 1
+      }
+    ]);
+    setHasUnsavedChanges(true);
+    setShowDecorForm(false);
+    setShowLightingForm(false);
   };
 
   const handleSaveDecorItems = () => {
@@ -421,14 +362,6 @@ const AdvancedCustomerManagement: React.FC = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
-          <Button onClick={handleAddDecorItem}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Decor
-          </Button>
-          <Button onClick={handleAddLightingItem}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Lighting
-          </Button>
         </div>
       </div>
 
@@ -520,7 +453,7 @@ const AdvancedCustomerManagement: React.FC = () => {
             <div>
               <CardTitle>Decor & Lighting Items</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {filledDecorRows} of 25 rows filled {hasUnsavedChanges && '(unsaved changes)'}
+                {filledDecorRows} items {hasUnsavedChanges && '(unsaved changes)'}
               </p>
             </div>
             <div className="flex space-x-2">
