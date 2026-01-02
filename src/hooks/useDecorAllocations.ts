@@ -61,6 +61,43 @@ export const useDecorAllocationsQuery = (month: number, year: number) => {
   });
 };
 
+export const useUpsertDecorAllocationMutation = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (allocation: Omit<DecorAllocation, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { id?: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      const dataToSave = {
+        ...allocation,
+        user_id: user.id,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('decor_allocations')
+        .upsert(dataToSave, { 
+          onConflict: 'month, year, row_number, user_id' 
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as DecorAllocation;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['decor-allocations', data.month - 1, data.year] 
+      });
+    },
+    onError: (error) => {
+      console.error('Error upserting decor allocation:', error);
+      toast.error(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    },
+  });
+};
+
 export const useSaveDecorAllocationsMutation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();

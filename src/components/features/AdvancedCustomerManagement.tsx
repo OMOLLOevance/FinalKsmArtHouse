@@ -5,7 +5,7 @@ import { Plus, Printer, Calendar, ChevronLeft, ChevronRight, Save, Sparkles } fr
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useDecorAllocationsQuery, useSaveDecorAllocationsMutation } from '@/hooks/useDecorAllocations';
+import { useDecorAllocationsQuery, useUpsertDecorAllocationMutation } from '@/hooks/useDecorAllocations';
 import MonthlyAllocationTable from './MonthlyAllocationTable';
 
 interface MonthlyAllocation {
@@ -72,7 +72,6 @@ const AdvancedCustomerManagement: React.FC = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showDecorForm, setShowDecorForm] = useState(false);
   const [showLightingForm, setShowLightingForm] = useState(false);
   const [newDecorAllocation, setNewDecorAllocation] = useState({
@@ -106,7 +105,7 @@ const AdvancedCustomerManagement: React.FC = () => {
   
   // Database queries
   const { data: decorData } = useDecorAllocationsQuery(currentMonth, currentYear);
-  const saveDecorMutation = useSaveDecorAllocationsMutation();
+  const upsertDecorMutation = useUpsertDecorAllocationMutation();
   
   // Initialize decorItems as empty array
   const [decorItems, setDecorItems] = useState<DecorItem[]>([]);
@@ -116,7 +115,7 @@ const AdvancedCustomerManagement: React.FC = () => {
     const savedDecorAllocations = decorData || [];
     if (savedDecorAllocations.length > 0) {
       const newDecorItems = savedDecorAllocations.map(savedItem => ({
-        id: `decor-row-${savedItem.row_number}`,
+        id: savedItem.id,
         row_number: savedItem.row_number,
         customer_name: savedItem.customer_name,
         walkway_stands: savedItem.walkway_stands,
@@ -149,7 +148,6 @@ const AdvancedCustomerManagement: React.FC = () => {
     } else {
       setDecorItems([]);
     }
-    setHasUnsavedChanges(false);
   }, [decorData]);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -178,21 +176,30 @@ const AdvancedCustomerManagement: React.FC = () => {
     setEditValue(currentValue.toString());
   };
 
-  const handleCellSave = () => {
+  const handleCellSave = async () => {
     if (!editingCell) return;
     
     const { row, field } = editingCell;
-    
-    if (field.includes('decor_')) {
+    const item = decorItems[row];
+    if (!item) return;
+
+    try {
       const actualField = field.replace('decor_', '');
-      setDecorItems(prev => prev.map((item, index) => 
-        index === row ? { ...item, [actualField]: isNaN(Number(editValue)) ? editValue : Number(editValue) } : item
-      ));
-      setHasUnsavedChanges(true);
+      const newValue = isNaN(Number(editValue)) ? editValue : Number(editValue);
+      
+      // Save to database immediately
+      await upsertDecorMutation.mutateAsync({
+        ...item,
+        [actualField]: newValue,
+        month: currentMonth + 1,
+        year: currentYear
+      });
+
+      setEditingCell(null);
+      setEditValue('');
+    } catch (error) {
+      console.error('Error saving cell:', error);
     }
-    
-    setEditingCell(null);
-    setEditValue('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -212,61 +219,58 @@ const AdvancedCustomerManagement: React.FC = () => {
     setShowLightingForm(true);
   };
 
-  const handleSaveDecorForm = () => {
+  const handleSaveDecorForm = async () => {
     if (!newDecorAllocation.customer_name.trim()) return;
     
-    setDecorItems(prev => [
-      ...prev,
-      {
+    try {
+      await upsertDecorMutation.mutateAsync({
         ...newDecorAllocation,
-        id: `decor-row-${prev.length + 1}`,
-        row_number: prev.length + 1
-      }
-    ]);
-    setHasUnsavedChanges(true);
-    setShowDecorForm(false);
-    setShowLightingForm(false);
-  };
-
-  const handleSaveDecorItems = () => {
-    saveDecorMutation.mutate({
-      allocations: decorItems.map(item => ({
-        customer_name: item.customer_name,
         month: currentMonth + 1,
         year: currentYear,
-        row_number: item.row_number,
-        walkway_stands: item.walkway_stands,
-        arc: item.arc,
-        aisle_stands: item.aisle_stands,
-        photobooth: item.photobooth,
-        lecturn: item.lecturn,
-        stage_boards: item.stage_boards,
-        backdrop_boards: item.backdrop_boards,
-        dance_floor: item.dance_floor,
-        walkway_boards: item.walkway_boards,
-        white_sticker: item.white_sticker,
-        centerpieces: item.centerpieces,
-        glass_charger_plates: item.glass_charger_plates,
-        melamine_charger_plates: item.melamine_charger_plates,
-        african_mats: item.african_mats,
-        gold_napkin_holders: item.gold_napkin_holders,
-        silver_napkin_holders: item.silver_napkin_holders,
-        roof_top_decor: item.roof_top_decor,
-        parcan_lights: item.parcan_lights,
-        revolving_heads: item.revolving_heads,
-        fairy_lights: item.fairy_lights,
-        snake_lights: item.snake_lights,
-        neon_lights: item.neon_lights,
-        small_chandeliers: item.small_chandeliers,
-        large_chandeliers: item.large_chandeliers,
-        african_lampshades: item.african_lampshades
-      })),
-      month: currentMonth,
-      year: currentYear
-    });
+        row_number: decorItems.length + 1
+      });
+      
+      setShowDecorForm(false);
+      setShowLightingForm(false);
+      setNewDecorAllocation({
+        customer_name: '',
+        walkway_stands: 0,
+        arc: 0,
+        aisle_stands: 0,
+        photobooth: 0,
+        lecturn: 0,
+        stage_boards: 0,
+        backdrop_boards: 0,
+        dance_floor: 0,
+        walkway_boards: 0,
+        white_sticker: 0,
+        centerpieces: 0,
+        glass_charger_plates: 0,
+        melamine_charger_plates: 0,
+        african_mats: 0,
+        gold_napkin_holders: 0,
+        silver_napkin_holders: 0,
+        roof_top_decor: 0,
+        parcan_lights: 0,
+        revolving_heads: 0,
+        fairy_lights: 0,
+        snake_lights: 0,
+        neon_lights: 0,
+        small_chandeliers: 0,
+        large_chandeliers: 0,
+        african_lampshades: 0
+      });
+    } catch (error) {
+      console.error('Error adding decor item:', error);
+    }
   };
 
-  const filledDecorRows = decorItems.filter(row => row.customer_name.trim() !== '').length;
+  const handleSyncState = () => {
+    // Re-fetch data from database
+    window.location.reload();
+  };
+
+  const filledDecorRows = decorItems.length;
 
   const renderEditableCell = (value: any, row: number, field: string, placeholder?: string) => {
     const isEditing = editingCell?.row === row && editingCell?.field === field;
@@ -278,15 +282,16 @@ const AdvancedCustomerManagement: React.FC = () => {
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyPress}
           onBlur={handleCellSave}
-          className="w-full h-8 text-xs"
+          className="w-full h-8 text-xs bg-background"
           autoFocus
+          disabled={upsertDecorMutation.isPending}
         />
       );
     }
     
     return (
       <div 
-        className="cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] text-xs"
+        className="cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] text-xs flex items-center"
         onClick={() => handleCellClick(row, field, value)}
       >
         {value || placeholder || '0'}
@@ -302,7 +307,7 @@ const AdvancedCustomerManagement: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-lg font-medium">Week of {currentYear}-{String(currentMonth + 1).padStart(2, '0')}</span>
-          <Button variant="outline" size="sm" onClick={() => console.log('Sync data')}>🔄 Update All Devices</Button>
+          <Button variant="outline" size="sm" onClick={handleSyncState}>🔄 Refresh & Sync</Button>
         </div>
         <div className="flex space-x-1">
           {monthNames.map((month, index) => (
@@ -319,19 +324,11 @@ const AdvancedCustomerManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="text-center">
-        <Button 
-          onClick={handleSaveDecorItems} 
-          disabled={saveDecorMutation.isPending || !hasUnsavedChanges}
-          className="mb-4"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {saveDecorMutation.isPending ? 'Saving...' : 'Save Decor Items to Database'}
-        </Button>
-        <p className="text-sm text-muted-foreground">
-          {hasUnsavedChanges ? 
-            `${filledDecorRows} decor items ready to save` : 
-            `${filledDecorRows} decor items saved to database`
+      <div className="text-center py-2">
+        <p className="text-xs text-muted-foreground italic">
+          {upsertDecorMutation.isPending ? 
+            'Saving changes to cloud...' : 
+            `Auto-save enabled • ${filledDecorRows} decor configurations saved`
           }
         </p>
       </div>
@@ -352,19 +349,10 @@ const AdvancedCustomerManagement: React.FC = () => {
               Decor & Lighting Items
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              {filledDecorRows} customers configured {hasUnsavedChanges && '(unsaved changes)'}
+              {filledDecorRows} customers configured
             </p>
           </div>
           <div className="flex space-x-2">
-            <Button 
-              onClick={handleSaveDecorItems} 
-              disabled={saveDecorMutation.isPending || !hasUnsavedChanges}
-              size="sm"
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saveDecorMutation.isPending ? 'Saving...' : 'Save All'}
-            </Button>
             <Button onClick={handleAddDecorItem} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Add Decor
@@ -409,7 +397,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                     ].map(group => (
                       <div key={group.field} className="space-y-0.5">
                         <label className="text-[9px] font-bold text-muted-foreground uppercase truncate block">{group.label}</label>
-                        <div className="bg-white rounded border">
+                        <div className="bg-background rounded border">
                           {renderEditableCell((item as any)[group.field], index, `decor_${group.field}`)}
                         </div>
                       </div>
@@ -433,7 +421,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                     ].map(group => (group &&
                       <div key={group.field} className="space-y-0.5">
                         <label className="text-[9px] font-bold text-muted-foreground uppercase truncate block">{group.label}</label>
-                        <div className="bg-white rounded border">
+                        <div className="bg-background rounded border">
                           {renderEditableCell((item as any)[group.field], index, `decor_${group.field}`)}
                         </div>
                       </div>
@@ -457,7 +445,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                     ].map(group => (
                       <div key={group.field} className="space-y-0.5">
                         <label className="text-[9px] font-bold text-muted-foreground uppercase truncate block">{group.label}</label>
-                        <div className="bg-white rounded border">
+                        <div className="bg-background rounded border">
                           {renderEditableCell((item as any)[group.field], index, `decor_${group.field}`)}
                         </div>
                       </div>
@@ -484,11 +472,11 @@ const AdvancedCustomerManagement: React.FC = () => {
       {/* Decor Form Dialog */}
       {showDecorForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add Decor Items</h3>
+          <div className="bg-card rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto text-card-foreground">
+            <h3 className="text-lg font-semibold mb-4">Add Decor Items</h3>
             
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-1 text-gray-700">Customer Name *</label>
+              <label className="block text-sm font-medium mb-1 text-muted-foreground">Customer Name *</label>
               <Input
                 value={newDecorAllocation.customer_name}
                 onChange={(e) => setNewDecorAllocation({...newDecorAllocation, customer_name: e.target.value})}
@@ -498,10 +486,10 @@ const AdvancedCustomerManagement: React.FC = () => {
             </div>
             
             <div className="mb-6">
-              <h4 className="text-md font-medium mb-3 text-gray-800">Decor Items</h4>
+              <h4 className="text-md font-medium mb-3 text-card-foreground">Decor Items</h4>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Walkway Stands</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Walkway Stands</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.walkway_stands}
@@ -510,7 +498,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Arc</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Arc</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.arc}
@@ -519,7 +507,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Aisle Stands</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Aisle Stands</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.aisle_stands}
@@ -528,7 +516,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Photobooth</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Photobooth</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.photobooth}
@@ -537,7 +525,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Lecturn</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Lecturn</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.lecturn}
@@ -546,7 +534,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Stage Boards</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Stage Boards</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.stage_boards}
@@ -555,7 +543,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Backdrop Boards</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Backdrop Boards</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.backdrop_boards}
@@ -564,7 +552,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Dance Floor</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Dance Floor</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.dance_floor}
@@ -573,7 +561,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Walkway Boards</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Walkway Boards</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.walkway_boards}
@@ -582,7 +570,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">White Sticker</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">White Sticker</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.white_sticker}
@@ -591,7 +579,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Centerpieces</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Centerpieces</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.centerpieces}
@@ -600,7 +588,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Glass Charger Plates</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Glass Charger Plates</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.glass_charger_plates}
@@ -609,7 +597,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Melamine Charger Plates</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Melamine Charger Plates</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.melamine_charger_plates}
@@ -618,7 +606,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">African Mats</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">African Mats</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.african_mats}
@@ -627,7 +615,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Gold Napkin Holders</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Gold Napkin Holders</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.gold_napkin_holders}
@@ -636,7 +624,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Silver Napkin Holders</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Silver Napkin Holders</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.silver_napkin_holders}
@@ -645,7 +633,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Roof Top Decor</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Roof Top Decor</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.roof_top_decor}
@@ -660,7 +648,7 @@ const AdvancedCustomerManagement: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowDecorForm(false)}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="hover:bg-muted"
               >
                 Cancel
               </Button>
@@ -679,11 +667,11 @@ const AdvancedCustomerManagement: React.FC = () => {
       {/* Lighting Form Dialog */}
       {showLightingForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add Lighting Items</h3>
+          <div className="bg-card rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto text-card-foreground">
+            <h3 className="text-lg font-semibold mb-4">Add Lighting Items</h3>
             
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-1 text-gray-700">Customer Name *</label>
+              <label className="block text-sm font-medium mb-1 text-muted-foreground">Customer Name *</label>
               <Input
                 value={newDecorAllocation.customer_name}
                 onChange={(e) => setNewDecorAllocation({...newDecorAllocation, customer_name: e.target.value})}
@@ -693,10 +681,10 @@ const AdvancedCustomerManagement: React.FC = () => {
             </div>
             
             <div className="mb-6">
-              <h4 className="text-md font-medium mb-3 text-gray-800">Lighting Items</h4>
+              <h4 className="text-md font-medium mb-3 text-card-foreground">Lighting Items</h4>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Parcan Lights</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Parcan Lights</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.parcan_lights}
@@ -705,7 +693,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Revolving Heads</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Revolving Heads</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.revolving_heads}
@@ -714,7 +702,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Fairy Lights</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Fairy Lights</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.fairy_lights}
@@ -723,7 +711,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Snake Lights</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Snake Lights</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.snake_lights}
@@ -732,7 +720,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Neon Lights</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Neon Lights</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.neon_lights}
@@ -741,7 +729,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Small Chandeliers</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Small Chandeliers</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.small_chandeliers}
@@ -750,7 +738,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Large Chandeliers</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">Large Chandeliers</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.large_chandeliers}
@@ -759,7 +747,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">African Lampshades</label>
+                  <label className="block text-sm font-medium mb-1 text-muted-foreground">African Lampshades</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.african_lampshades}
@@ -774,7 +762,7 @@ const AdvancedCustomerManagement: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowLightingForm(false)}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="hover:bg-muted"
               >
                 Cancel
               </Button>

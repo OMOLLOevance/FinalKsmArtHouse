@@ -315,7 +315,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
         className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className}`}
         onClick={() => handleCellEdit(allocation.id, field, value)}
       >
-        {value || <span className="text-gray-400 italic">Click to edit</span>}
+        {value || <span className="text-muted-foreground/50 italic text-[10px]">Click to edit</span>}
       </div>
     );
   };
@@ -434,7 +434,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading allocations...</p>
+          <p className="text-muted-foreground">Loading allocations...</p>
         </div>
       </div>
     );
@@ -579,15 +579,15 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                 <div className="space-y-1">
                   <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest ml-1">Equipment Totals</label>
                   <div className="bg-muted/10 rounded-lg border p-2 grid grid-cols-3 gap-2">
-                    <div className="text-center p-1 bg-white rounded border">
+                    <div className="text-center p-1 bg-background rounded border">
                       <p className="text-[8px] font-bold text-muted-foreground uppercase">Tents</p>
                       <p className="text-sm font-black text-primary">{allocation.tent_total}</p>
                     </div>
-                    <div className="text-center p-1 bg-white rounded border">
+                    <div className="text-center p-1 bg-background rounded border">
                       <p className="text-[8px] font-bold text-muted-foreground uppercase">Tables</p>
                       <p className="text-sm font-black text-primary">{allocation.table_total}</p>
                     </div>
-                    <div className="text-center p-1 bg-white rounded border">
+                    <div className="text-center p-1 bg-background rounded border">
                       <p className="text-[8px] font-bold text-muted-foreground uppercase">Seats</p>
                       <p className="text-sm font-black text-primary">{allocation.seat_total}</p>
                     </div>
