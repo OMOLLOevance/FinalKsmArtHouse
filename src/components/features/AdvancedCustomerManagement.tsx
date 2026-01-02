@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Plus, Printer, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Plus, Printer, Calendar, ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useDecorAllocationsQuery, useSaveDecorAllocationsMutation } from '@/hooks/useDecorAllocations';
 import MonthlyAllocationTable from './MonthlyAllocationTable';
 
 interface MonthlyAllocation {
@@ -72,6 +73,11 @@ const AdvancedCustomerManagement: React.FC = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Database queries
+  const { data: savedDecorAllocations = [], isLoading } = useDecorAllocationsQuery(currentMonth, currentYear);
+  const saveDecorMutation = useSaveDecorAllocationsMutation();
   
   // Initialize 25 empty rows for monthly allocations
   const [monthlyAllocations, setMonthlyAllocations] = useState<MonthlyAllocation[]>(
@@ -138,6 +144,74 @@ const AdvancedCustomerManagement: React.FC = () => {
     }))
   );
 
+  // Load saved data when it changes
+  useEffect(() => {
+    const newDecorItems = Array.from({ length: 25 }, (_, i) => {
+      const savedItem = savedDecorAllocations.find(item => item.row_number === i + 1);
+      return savedItem ? {
+        id: `decor-row-${i + 1}`,
+        row_number: i + 1,
+        customer_name: savedItem.customer_name,
+        walkway_stands: savedItem.walkway_stands,
+        arc: savedItem.arc,
+        aisle_stands: savedItem.aisle_stands,
+        photobooth: savedItem.photobooth,
+        lecturn: savedItem.lecturn,
+        stage_boards: savedItem.stage_boards,
+        backdrop_boards: savedItem.backdrop_boards,
+        dance_floor: savedItem.dance_floor,
+        walkway_boards: savedItem.walkway_boards,
+        white_sticker: savedItem.white_sticker,
+        centerpieces: savedItem.centerpieces,
+        glass_charger_plates: savedItem.glass_charger_plates,
+        melamine_charger_plates: savedItem.melamine_charger_plates,
+        african_mats: savedItem.african_mats,
+        gold_napkin_holders: savedItem.gold_napkin_holders,
+        silver_napkin_holders: savedItem.silver_napkin_holders,
+        roof_top_decor: savedItem.roof_top_decor,
+        parcan_lights: savedItem.parcan_lights,
+        revolving_heads: savedItem.revolving_heads,
+        fairy_lights: savedItem.fairy_lights,
+        snake_lights: savedItem.snake_lights,
+        neon_lights: savedItem.neon_lights,
+        small_chandeliers: savedItem.small_chandeliers,
+        large_chandeliers: savedItem.large_chandeliers,
+        african_lampshades: savedItem.african_lampshades
+      } : {
+        id: `decor-row-${i + 1}`,
+        row_number: i + 1,
+        customer_name: '',
+        walkway_stands: 0,
+        arc: 0,
+        aisle_stands: 0,
+        photobooth: 0,
+        lecturn: 0,
+        stage_boards: 0,
+        backdrop_boards: 0,
+        dance_floor: 0,
+        walkway_boards: 0,
+        white_sticker: 0,
+        centerpieces: 0,
+        glass_charger_plates: 0,
+        melamine_charger_plates: 0,
+        african_mats: 0,
+        gold_napkin_holders: 0,
+        silver_napkin_holders: 0,
+        roof_top_decor: 0,
+        parcan_lights: 0,
+        revolving_heads: 0,
+        fairy_lights: 0,
+        snake_lights: 0,
+        neon_lights: 0,
+        small_chandeliers: 0,
+        large_chandeliers: 0,
+        african_lampshades: 0
+      };
+    });
+    setDecorItems(newDecorItems);
+    setHasUnsavedChanges(false);
+  }, [savedDecorAllocations]);
+
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -179,6 +253,7 @@ const AdvancedCustomerManagement: React.FC = () => {
       setDecorItems(prev => prev.map((item, index) => 
         index === row ? { ...item, [actualField]: isNaN(Number(editValue)) ? editValue : Number(editValue) } : item
       ));
+      setHasUnsavedChanges(true);
     }
     
     setEditingCell(null);
@@ -194,6 +269,45 @@ const AdvancedCustomerManagement: React.FC = () => {
     }
   };
 
+  const handleSaveDecorItems = () => {
+    saveDecorMutation.mutate({
+      allocations: decorItems.map(item => ({
+        customer_name: item.customer_name,
+        month: currentMonth + 1,
+        year: currentYear,
+        row_number: item.row_number,
+        walkway_stands: item.walkway_stands,
+        arc: item.arc,
+        aisle_stands: item.aisle_stands,
+        photobooth: item.photobooth,
+        lecturn: item.lecturn,
+        stage_boards: item.stage_boards,
+        backdrop_boards: item.backdrop_boards,
+        dance_floor: item.dance_floor,
+        walkway_boards: item.walkway_boards,
+        white_sticker: item.white_sticker,
+        centerpieces: item.centerpieces,
+        glass_charger_plates: item.glass_charger_plates,
+        melamine_charger_plates: item.melamine_charger_plates,
+        african_mats: item.african_mats,
+        gold_napkin_holders: item.gold_napkin_holders,
+        silver_napkin_holders: item.silver_napkin_holders,
+        roof_top_decor: item.roof_top_decor,
+        parcan_lights: item.parcan_lights,
+        revolving_heads: item.revolving_heads,
+        fairy_lights: item.fairy_lights,
+        snake_lights: item.snake_lights,
+        neon_lights: item.neon_lights,
+        small_chandeliers: item.small_chandeliers,
+        large_chandeliers: item.large_chandeliers,
+        african_lampshades: item.african_lampshades
+      })),
+      month: currentMonth,
+      year: currentYear
+    });
+  };
+
+  const filledDecorRows = decorItems.filter(row => row.customer_name.trim() !== '').length;
   const filledRows = monthlyAllocations.filter(row => row.customer_name.trim() !== '').length;
   const servedCount = monthlyAllocations.filter(row => row.customer_name.trim() !== '' && row.total_ksh > 0).length;
   const pendingCount = monthlyAllocations.filter(row => row.customer_name.trim() !== '' && row.total_ksh === 0).length;
@@ -306,8 +420,20 @@ const AdvancedCustomerManagement: React.FC = () => {
       </div>
 
       <div className="text-center">
-        <Button className="mb-4">Save to Database</Button>
-        <p className="text-sm text-muted-foreground">Click to sync {filledRows} customers to database for admin</p>
+        <Button 
+          onClick={handleSaveDecorItems} 
+          disabled={saveDecorMutation.isPending || !hasUnsavedChanges}
+          className="mb-4"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {saveDecorMutation.isPending ? 'Saving...' : 'Save Decor Items to Database'}
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          {hasUnsavedChanges ? 
+            `${filledDecorRows} decor items ready to save` : 
+            `${filledDecorRows} decor items saved to database`
+          }
+        </p>
       </div>
 
       {/* Monthly Allocation Table */}
@@ -329,11 +455,26 @@ const AdvancedCustomerManagement: React.FC = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Decor & Lighting Items</CardTitle>
-            <Button>
-              <Printer className="h-4 w-4 mr-2" />
-              Print Decor Items
-            </Button>
+            <div>
+              <CardTitle>Decor & Lighting Items</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {filledDecorRows} of 25 rows filled {hasUnsavedChanges && '(unsaved changes)'}
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleSaveDecorItems} 
+                disabled={saveDecorMutation.isPending || !hasUnsavedChanges}
+                size="sm"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saveDecorMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+              <Button variant="outline" size="sm">
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
