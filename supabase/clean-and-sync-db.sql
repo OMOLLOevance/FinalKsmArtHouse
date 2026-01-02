@@ -53,5 +53,9 @@ BEGIN
     CREATE POLICY "Owner Access" ON users FOR ALL TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 END $$;
 
+Decor & Lighting Items
+0 customers configured
+
+
 -- 3. VERIFY FINAL STATE
 SELECT tablename, policyname, cmd FROM pg_policies WHERE schemaname = 'public' ORDER BY tablename;

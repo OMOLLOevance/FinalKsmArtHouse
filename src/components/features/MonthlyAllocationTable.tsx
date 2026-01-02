@@ -197,7 +197,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     }
   };
 
-  const handleCellEdit = (id: string, field: string, currentValue: any) => {
+  const handleCellEdit = (id: string, field: keyof MonthlyAllocation, currentValue: string | number) => {
     setEditingCell({ id, field });
     setEditValue(currentValue?.toString() || '');
   };
@@ -210,7 +210,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       const { id, field } = editingCell;
       
       // Convert value based on field type
-      let value: any = editValue;
+      let value: string | number = editValue;
       if (['total_ksh', 'deposit_paid', 'double_tent', 'single_tent', 'gazebo_tent', 
            'miluxe_tent', 'a_frame_tent', 'b_line_tent', 'pergola_tent', 'round_table', 
            'long_table', 'bridal_table', 'chavari_seats', 'luxe_seats', 'chameleon_seats', 
@@ -313,7 +313,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     return (
       <div 
         className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className}`}
-        onClick={() => handleCellEdit(allocation.id, field, value)}
+        onClick={() => handleCellEdit(allocation.id, field as keyof MonthlyAllocation, value)}
       >
         {value || <span className="text-muted-foreground/50 italic text-[10px]">Click to edit</span>}
       </div>

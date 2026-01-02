@@ -27,8 +27,8 @@ interface DashboardStats {
   };
 }
 
-interface MinimalCustomer { id: string; }
-interface MinimalGymMember { status: string; }
+interface MinimalCustomer { id: string; service_status: string; }
+interface MinimalGymMember { status: string; expiry_date: string; }
 interface MinimalGymFinance { amount: number; transaction_type: string; }
 interface MinimalSaunaBooking { status: string; amount: number; }
 interface MinimalRestaurantSale { total_amount: number; }
@@ -43,8 +43,8 @@ export const useDashboardStats = () => {
     queryFn: async () => {
       try {
         const [customersRes, gymMembersRes, gymFinancesRes, saunaBookingsRes, restaurantRes, eventItemsRes] = await Promise.all([
-          apiClient.get<{data: MinimalCustomer[]}>(`/api/customers?userId=${userId}&fields=id`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalGymMember[]}>(`/api/gym?userId=${userId}&fields=status`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalCustomer[]}>(`/api/customers?userId=${userId}&fields=id,service_status`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymMember[]}>(`/api/gym?userId=${userId}&fields=status,expiry_date`).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalGymFinance[]}>(`/api/gym/finances?userId=${userId}&fields=amount,transaction_type`).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalSaunaBooking[]}>(`/api/sauna?userId=${userId}&fields=status,amount`).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalRestaurantSale[]}>(`/api/restaurant?userId=${userId}&fields=total_amount`).catch(() => ({ data: [] })),
@@ -60,7 +60,19 @@ export const useDashboardStats = () => {
 
         // Calculate statistics
         const totalCustomers = customers.length;
-        const activeGymMembers = gymMembers.filter(m => m.status === 'active').length;
+        const activeGymMembers = gymMembers.filter(m => m.status === 'active');
+        
+        // Accurate expiring members calculation (within 7 days)
+        const today = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(today.getDate() + 7);
+        
+        const expiringSoonCount = activeGymMembers.filter(m => {
+          const expiryDate = new Date(m.expiry_date);
+          return expiryDate >= today && expiryDate <= nextWeek;
+        }).length;
+
+        const pendingServicesCount = customers.filter(c => c.service_status === 'pending').length;
         const activeSaunaBookings = saunaBookings.filter(b => b.status === 'booked').length;
         const totalRestaurantSales = restaurantSales.length;
 
@@ -80,11 +92,11 @@ export const useDashboardStats = () => {
         return {
           totalRevenue,
           totalCustomers,
-          pendingServices: Math.floor(totalCustomers * 0.1),
-          expiringSoon: Math.floor(activeGymMembers * 0.15),
+          pendingServices: pendingServicesCount,
+          expiringSoon: expiringSoonCount,
           moduleStats: {
             events: eventItemsCount,
-            gym: activeGymMembers,
+            gym: activeGymMembers.length,
             sauna: activeSaunaBookings,
             restaurant: totalRestaurantSales
           },

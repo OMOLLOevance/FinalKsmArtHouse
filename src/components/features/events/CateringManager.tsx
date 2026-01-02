@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { logger } from '@/lib/logger';
 import { formatCurrency } from '@/utils/formatters';
+import { CateringItem } from '@/types';
 
 interface CateringManagerProps {
   onBack: () => void;
@@ -31,16 +32,6 @@ const DEFAULT_STRUCTURE = [
   { name: 'COOKING STUFFS', key: 'cooking_stuffs', rows: Array.from({length: 15}, (_, i) => `cooking_stuffs_${i+1}`) },
   { name: 'UNIFORMS', key: 'uniforms', rows: Array.from({length: 9}, (_, i) => `uniforms_${i+1}`) },
 ];
-
-interface CateringItem {
-  id: string;
-  name: string;
-  category: string;
-  min_order: number;
-  price_per_plate: number;
-  description: string;
-  available: boolean;
-}
 
 interface InventoryEntry {
   particular: string;
@@ -161,20 +152,20 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const itemData: any = {
+      const itemData = {
         name: formData.item,
         category: formData.category,
-        unit: 'pieces',
         price_per_plate: formData.unitPrice,
         min_order: formData.quantity,
         description: `Budget: ${formData.eventBudget}, Paid: ${formData.amountPaid}, Payment: ${formData.paymentMethod}, Status: ${formData.serviceStatus}, Location: ${formData.eventLocation}, ${formData.notes}`,
-        available: true
+        available: true,
+        unit: 'pieces'
       };
 
       if (editingItem) {
         await updateItem(editingItem.id, itemData);
       } else {
-        await addItem(itemData);
+        await addItem(itemData as any);
       }
 
       setIsAdding(false);
@@ -186,7 +177,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
     }
   };
 
-  const handleEdit = (item: any) => {
+  const handleEdit = (item: CateringItem) => {
     const parsed = parseDescription(item.description);
     setEditingItem(item);
     setFormData({
@@ -206,7 +197,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
   };
 
   const totals = useMemo(() => {
-    return items.reduce((acc, item: any) => {
+    return items.reduce((acc, item: CateringItem) => {
       const parsed = parseDescription(item.description);
       acc.value += (item.price_per_plate * item.min_order);
       acc.budget += parsed.budget;
@@ -386,7 +377,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {items.map((item: any) => {
+            {items.map((item: CateringItem) => {
               const parsed = parseDescription(item.description);
               const isServed = item.description?.includes('Status: served');
               return (

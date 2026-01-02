@@ -119,6 +119,13 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
   return (
     <div className="space-y-6">
+      {/* Branded Header - Print Only */}
+      <div className="hidden print:block text-center border-b-4 border-primary pb-4 mb-8">
+        <h1 className="text-4xl font-black tracking-tighter text-primary">KISUMU ART HOUSE</h1>
+        <p className="text-sm font-bold uppercase tracking-[0.3em]">Restaurant Inventory & Expenses</p>
+        <p className="text-xs mt-2 font-medium">Record Date: {selectedDate}</p>
+      </div>
+
       <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center space-x-2">
           {onBack && (
@@ -179,8 +186,8 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
         </CardContent>
       </Card>
 
-      <Card className="border-primary/10 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-6">
+      <Card className="border-primary/10 shadow-sm print:shadow-none print:border-none">
+        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-6 print:hidden">
           <div>
             <CardTitle className="text-xl font-bold">Daily Inventory</CardTitle>
             <CardDescription className="text-xs">{selectedDate}</CardDescription>
@@ -191,7 +198,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 print:hidden">
             {inventory.map((item, index) => (
               <Card key={index} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300">
                 <div className="p-3 space-y-3">
@@ -226,7 +233,39 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
             ))}
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-muted/20 p-4 rounded-xl border border-primary/10 gap-4">
+          {/* Print Only Inventory Table */}
+          <div className="hidden print:block">
+            <table className="min-w-full border-collapse">
+              <thead>
+                <tr className="bg-muted/50 border-b-2 border-black">
+                  <th className="py-2 text-left text-xs font-black uppercase">Item Particulars</th>
+                  <th className="py-2 text-center text-xs font-black uppercase w-32">Quantity</th>
+                  <th className="py-2 text-right text-xs font-black uppercase w-32">Unit Price</th>
+                  <th className="py-2 text-right text-xs font-black uppercase w-32">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {inventory.filter(i => i.quantity || i.price).map((item, index) => (
+                  <tr key={index}>
+                    <td className="py-2 text-xs font-bold uppercase">{item.item}</td>
+                    <td className="py-2 text-xs text-center">{item.quantity || '-'}</td>
+                    <td className="py-2 text-xs text-right font-mono">{item.price ? Number(item.price).toLocaleString() : '-'}</td>
+                    <td className="py-2 text-xs text-right font-black font-mono">
+                      {item.price && item.quantity ? (Number(item.price) * 1).toLocaleString() : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-black font-black">
+                  <td colSpan={3} className="py-4 text-right text-sm uppercase tracking-widest">Grand Total:</td>
+                  <td className="py-4 text-right text-base text-primary">{formatCurrency(totalCost)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-muted/20 p-4 rounded-xl border border-primary/10 gap-4 print:hidden">
             <div className="text-center sm:text-left">
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest block">Accumulated Cost</span>
               <span className="text-3xl font-black text-primary">{formatCurrency(totalCost)}</span>
@@ -243,7 +282,9 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
         </CardContent>
       </Card>
 
-      <ItemServingsManager />
+      <div className="print:break-before-page">
+        <ItemServingsManager />
+      </div>
     </div>
   );
 };

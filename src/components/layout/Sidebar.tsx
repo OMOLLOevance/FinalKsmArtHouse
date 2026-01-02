@@ -68,7 +68,7 @@ const Sidebar = () => {
 
   return (
     <>
-      <div className="md:hidden fixed top-4 left-4 z-50">
+      <div className="md:hidden fixed top-4 left-4 z-50 print:hidden">
         <Button
           variant="outline"
           size="sm"
@@ -81,7 +81,7 @@ const Sidebar = () => {
 
       {isMobileMenuOpen && (
         <div 
-          className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+          className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40 print:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -91,6 +91,7 @@ const Sidebar = () => {
         md:translate-x-0 fixed md:static inset-y-0 left-0 z-50
         flex flex-col w-72 bg-card border-r border-border h-screen
         transition-all duration-300 ease-in-out overflow-y-auto
+        print:hidden
       `}>
         <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between">

@@ -19,6 +19,15 @@ interface SaunaManagementProps {
   onBack?: () => void;
 }
 
+interface SaunaBooking {
+  id: string;
+  date: string;
+  time: string;
+  client: string;
+  amount: number;
+  status: 'booked' | 'completed';
+}
+
 const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   const { data: bookings, isLoading: bookingsLoading } = useSaunaBookingsQuery();
   const createBookingMutation = useCreateSaunaBookingMutation();
@@ -162,7 +171,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-success">
-                {formatCurrency(bookings?.reduce((sum: number, b: any) => sum + Number(b.amount), 0) || 0)}
+                {formatCurrency(bookings?.reduce((sum: number, b: SaunaBooking) => sum + Number(b.amount), 0) || 0)}
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Revenue</div>
             </div>
@@ -172,7 +181,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-primary">
-                {bookings?.filter((b: any) => b.status === 'booked').length || 0}
+                {bookings?.filter((b: SaunaBooking) => b.status === 'booked').length || 0}
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Upcoming</div>
             </div>
@@ -187,7 +196,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {bookings?.map((item: any) => (
+            {bookings?.map((item: SaunaBooking) => (
               <Card key={item.id} className={`overflow-hidden border-l-4 ${item.status === 'completed' ? 'border-l-success' : 'border-l-warning'} hover:shadow-md transition-shadow`}>
                 <div className="p-4 space-y-4">
                   <div className="flex justify-between items-start">
