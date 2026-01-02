@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, ArrowLeft, Save } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, Waves } from 'lucide-react';
 import { 
   useSaunaBookingsQuery, 
   useCreateSaunaBookingMutation, 
@@ -82,10 +82,10 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           )}
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Sauna Management</h2>
-            <p className="text-muted-foreground">Manage wellness bookings</p>
+            <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Wellness Operations</p>
           </div>
         </div>
-        <Button onClick={() => setIsAdding(true)}>
+        <Button onClick={() => setIsAdding(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Booking
         </Button>
@@ -148,46 +148,78 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Client</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-card divide-y divide-border">
-                {bookings?.map((item: any) => (
-                  <tr key={item.id} className="hover:bg-muted/50">
-                    <td className="px-6 py-4 text-sm">{item.date}</td>
-                    <td className="px-6 py-4 text-sm font-medium">{item.client}</td>
-                    <td className="px-6 py-4 text-sm">{formatCurrency(Number(item.amount))}</td>
-                    <td className="px-6 py-4">
-                      <Badge variant={item.status === 'completed' ? 'success' : 'warning'}>
+      {/* Standardized Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold">{bookings?.length || 0}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Bookings</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-success">
+                {formatCurrency(bookings?.reduce((sum: number, b: any) => sum + Number(b.amount), 0) || 0)}
+              </div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Revenue</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-primary">
+                {bookings?.filter((b: any) => b.status === 'booked').length || 0}
+              </div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Upcoming</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-none shadow-sm bg-transparent">
+        <CardHeader className="px-0 pb-4">
+          <CardTitle className="text-xl font-bold">Recent Bookings</CardTitle>
+          <CardDescription className="text-xs">History of wellness sessions</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {bookings?.map((item: any) => (
+              <Card key={item.id} className={`overflow-hidden border-l-4 ${item.status === 'completed' ? 'border-l-success' : 'border-l-warning'} hover:shadow-md transition-shadow`}>
+                <div className="p-4 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{item.date}</p>
+                      <h4 className="text-lg font-bold text-primary truncate max-w-[160px]">{item.client}</h4>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Badge variant={item.status === 'completed' ? 'success' : 'warning'} className="text-[9px] h-4 font-black uppercase tracking-tighter">
                         {item.status}
                       </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} aria-label="Delete record">
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                      <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
-                    </td>
-                  </tr>
-                ))}
-                {bookings?.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                      No bookings found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+
+                  <div className="bg-muted/30 p-2 rounded-lg border">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Amount Paid</label>
+                      <p className="text-sm font-black text-success">{formatCurrency(Number(item.amount))}</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+            {bookings?.length === 0 && (
+              <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
+                <Waves className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p className="text-lg font-medium">No bookings recorded yet.</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

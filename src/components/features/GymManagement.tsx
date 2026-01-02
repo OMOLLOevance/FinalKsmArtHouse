@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, ArrowLeft, Save, DollarSign, Users, TrendingUp, Calendar, Mail, AlertTriangle, MessageCircle, Send } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, DollarSign, Users, TrendingUp, Calendar, Mail, AlertTriangle, MessageCircle, Send, Waves } from 'lucide-react';
 import { GymFinance, GymMember } from '@/types';
 import { useGymMembersQuery, useCreateGymMemberMutation, useUpdateGymMemberMutation, useDeleteGymMemberMutation, useGymFinancesQuery, useCreateGymFinanceMutation, useUpdateGymFinanceMutation, useDeleteGymFinanceMutation } from '@/hooks/use-gym-api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/Dialog';
-
 
 import { calculateMembershipEndDate } from '@/utils/calculations';
 import { sanitizePhoneNumber, formatCurrency } from '@/utils/formatters';
@@ -93,85 +92,23 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
     const message = encodeURIComponent(
       `Hello ${member.name},
 
-` +
-      `This is a reminder from KSM.ART HOUSE Gym.
+This is a reminder from KSM.ART HOUSE Gym.
 
-` +
-      `Your ${packageInfo} membership package is expiring in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}.
+Your ${packageInfo} membership package is expiring in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}.
 
-` +
-      `Expiry Date: ${member.endDate}
+Expiry Date: ${member.endDate}
 
-` +
-      `Please renew your membership to continue enjoying our services.
+Please renew your membership to continue enjoying our services.
 
-` +
-      `Thank you for being part of our fitness community!`
+Thank you for being part of our fitness community!`
     );
 
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   }, []);
 
-  const sendEmailNotification = useCallback((member: GymMember, daysUntilExpiry: number) => {
-    if (!member.email) {
-      alert('No email address available for this member');
-      return;
-    }
-
-    const packageInfo = member.packageType.replace('-', ' ');
-    const subject = encodeURIComponent('KSM.ART HOUSE Gym - Membership Expiry Reminder');
-    const body = encodeURIComponent(
-      `Hello ${member.name},
-
-` +
-      `This is a reminder from KSM.ART HOUSE Gym.
-
-` +
-      `Your ${packageInfo} membership package is expiring in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}.
-
-` +
-      `Membership Details:
-` +
-      `- Package: ${packageInfo}
-` +
-      `- Start Date: ${member.startDate}
-` +
-      `- Expiry Date: ${member.endDate}
-` +
-      `- Amount Paid: KSH ${member.amountPaid.toLocaleString()}
-
-` +
-      `Please visit us to renew your membership and continue enjoying our fitness services.
-
-` +
-      `Best regards,
-` +
-      `KSM.ART HOUSE Gym Team`
-    );
-
-    window.open(`mailto:${member.email}?subject=${subject}&body=${body}`, '_blank');
-  }, []);
-
-  const sendSMSNotification = useCallback((member: GymMember, daysUntilExpiry: number) => {
-    if (!member.phoneNumber) {
-      alert('No phone number available for this member');
-      return;
-    }
-
-    const phoneNumber = sanitizePhoneNumber(member.phoneNumber);
-    const packageInfo = member.packageType.replace('-', ' ');
-    const message = encodeURIComponent(
-      `Hello ${member.name}, your ${packageInfo} gym membership expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''} (${member.endDate}). Please renew to continue. KSM.ART HOUSE Gym`
-    );
-
-    window.open(`sms:${phoneNumber}?body=${message}`, '_blank');
-  }, []);
-
   const handleFinanceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      logger.info('Saving gym finance record...', financeFormData);
-
       if (editingFinance) {
         await updateFinanceMutation.mutateAsync({ id: editingFinance.id, data: financeFormData });
         showSuccess('Success', 'Finance record updated');
@@ -181,7 +118,6 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
         showSuccess('Success', 'Finance record added');
         setIsAdding(false);
       }
-
       await refetchFinances();
       setFinanceFormData({
         date: new Date().toISOString().split('T')[0],
@@ -199,16 +135,9 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
     e.preventDefault();
     const endDate = calculateMembershipEndDate(memberFormData.startDate, memberFormData.packageType);
     const status = new Date(endDate) >= new Date() ? 'active' as const : 'expired' as const;
-
-    const memberData = {
-      ...memberFormData,
-      endDate,
-      status,
-    };
+    const memberData = { ...memberFormData, endDate, status };
 
     try {
-      logger.info('Saving gym member...', memberData);
-
       if (editingMember) {
         await updateMemberMutation.mutateAsync({ id: editingMember.id, data: memberData });
         showSuccess('Success', 'Member updated successfully');
@@ -218,15 +147,10 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
         showSuccess('Success', 'Member added successfully');
         setIsAdding(false);
       }
-
       await refetchMembers();
       setMemberFormData({
-        name: '',
-        phoneNumber: '',
-        email: '',
-        packageType: 'monthly',
-        amountPaid: 0,
-        startDate: new Date().toISOString().split('T')[0],
+        name: '', phoneNumber: '', email: '', packageType: 'monthly',
+        amountPaid: 0, startDate: new Date().toISOString().split('T')[0],
       });
     } catch (error) {
       logger.error('Error saving member:', error);
@@ -247,12 +171,8 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const handleEditMember = (member: GymMember) => {
     setEditingMember(member);
     setMemberFormData({
-      name: member.name,
-      phoneNumber: member.phoneNumber,
-      email: member.email,
-      packageType: member.packageType,
-      amountPaid: member.amountPaid,
-      startDate: member.startDate,
+      name: member.name, phoneNumber: member.phoneNumber, email: member.email,
+      packageType: member.packageType, amountPaid: member.amountPaid, startDate: member.startDate,
     });
   };
 
@@ -290,7 +210,6 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
       showError('Error', 'Amount and description are required');
       return;
     }
-
     try {
       await addFinanceMutation.mutateAsync({
         date: new Date().toISOString().split('T')[0],
@@ -298,7 +217,6 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
         amount: parseFloat(quickExpenseAmount),
         type: 'expense',
       });
-
       await refetchFinances();
       setQuickExpenseAmount('');
       setQuickExpenseDescription('');
@@ -309,6 +227,91 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
       showError('Error', 'Failed to add expense');
     }
   };
+
+  const renderFinanceCards = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+      {monthlyFinances.map((finance) => (
+        <Card key={finance.id} className={`overflow-hidden border-l-4 ${finance.type === 'income' ? 'border-l-success' : 'border-l-destructive'} hover:shadow-md transition-shadow`}>
+          <div className="p-4 space-y-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{finance.date}</p>
+                <h4 className="text-sm font-bold truncate max-w-[150px]">{finance.description}</h4>
+              </div>
+              <div className="flex space-x-1">
+                <Button variant="ghost" size="xs" onClick={() => handleEditFinance(finance)} className="h-7 w-7 p-0">
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <div className="bg-muted/30 p-2 rounded border">
+              <p className={`text-lg font-black ${finance.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                {finance.type === 'income' ? '+' : '-'}{formatCurrency(finance.amount)}
+              </p>
+            </div>
+          </div>
+        </Card>
+      ))}
+      {monthlyFinances.length === 0 && (
+        <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
+          <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-20" />
+          <p className="text-lg font-medium">No finance records for this month.</p>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderMemberCards = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+      {members?.slice(0, displayCount).map((member) => {
+        const isExpired = new Date(member.endDate) < new Date();
+        return (
+          <Card key={member.id} className={`overflow-hidden border-l-4 ${isExpired ? 'border-l-destructive' : 'border-l-primary'} hover:shadow-md transition-shadow`}>
+            <div className="p-4 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-lg font-bold text-primary truncate max-w-[160px]">{member.name}</h4>
+                  <Badge variant={isExpired ? 'destructive' : 'success'} className="text-[9px] h-4 font-black uppercase tracking-tighter">
+                    {isExpired ? 'Expired' : 'Active'}
+                  </Badge>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Button variant="ghost" size="xs" onClick={() => handleEditMember(member)} className="h-7 w-7 p-0">
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="xs" onClick={() => sendWhatsAppNotification(member, 7)} className="h-7 w-7 p-0 text-green-600 hover:bg-green-50">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: member.id, type: 'member' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 bg-muted/30 p-2 rounded-lg border">
+                <div className="space-y-0.5">
+                  <label className="text-[8px] font-black uppercase text-muted-foreground">Package</label>
+                  <p className="text-xs font-bold capitalize">{member.packageType.replace('-', ' ')}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <label className="text-[8px] font-black uppercase text-muted-foreground">Expires</label>
+                  <p className={`text-xs font-bold ${isExpired ? 'text-destructive' : 'text-foreground'}`}>{member.endDate}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+      {members?.length === 0 && (
+        <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
+          <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
+          <p className="text-lg font-medium">No gym members found.</p>
+        </div>
+      )}
+    </div>
+  );
 
   if (financesLoading || membersLoading) {
     return (
@@ -328,15 +331,15 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
           {onBack && (
             <Button variant="outline" size="sm" onClick={onBack} className="flex items-center">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+              Back
             </Button>
           )}
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Gym Management</h2>
-            <p className="text-muted-foreground">Manage gym finances and member activities</p>
+            <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Professional Operations</p>
           </div>
         </div>
-        <Button onClick={() => setIsAdding(true)} className="flex items-center">
+        <Button onClick={() => setIsAdding(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add {activeTab === 'finances' ? 'Finance' : 'Member'}
         </Button>
@@ -351,16 +354,17 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm w-full"
+            className="px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm w-full h-10"
           />
         </div>
         <Button
           onClick={() => setShowQuickExpense(!showQuickExpense)}
           variant="destructive"
-          className="flex items-center"
+          size="sm"
+          className="flex items-center h-10 px-6 font-bold"
         >
           <DollarSign className="h-4 w-4 mr-2" />
-          Quick Expense Entry
+          Quick Expense
         </Button>
       </div>
 
@@ -406,67 +410,58 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Income</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{formatCurrency(income)}</div>
-          </CardContent>
-        </Card>
-
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Expenses</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{formatCurrency(expenses)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Profit</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${profit >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              {formatCurrency(profit)}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-success">{formatCurrency(income)}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Monthly Income</div>
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{activeMembers}</div>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-destructive">{formatCurrency(expenses)}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Monthly Expenses</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className={`text-xl font-bold ${profit >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                {formatCurrency(profit)}
+              </div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Monthly Profit</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-primary">{activeMembers}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Active Members</div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Expiring Members Alert */}
       {expiringMembers.length > 0 && (
         <Card className="mb-6 border-warning/30 bg-warning/10">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center">
               <AlertTriangle className="h-5 w-5 text-warning mr-2" />
-              <CardTitle className="text-sm font-medium text-warning-foreground">
-                {expiringMembers.length} member(s) expiring within 7 days
+              <CardTitle className="text-sm font-black uppercase text-warning tracking-widest">
+                Expiring Members ({expiringMembers.length})
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 pb-4">
             <div className="space-y-1">
               {expiringMembers.slice(0, 3).map(member => (
-                <p key={member.id} className="text-xs text-warning-foreground opacity-80">
-                  {member.name} - expires on {member.endDate}
+                <p key={member.id} className="text-xs text-warning font-medium">
+                  • {member.name} - expires on {member.endDate}
                 </p>
               ))}
             </div>
@@ -476,61 +471,14 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
 
       {(isAdding || editingFinance) && activeTab === 'finances' && (
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {editingFinance ? 'Edit Finance Entry' : 'Add New Finance Entry'}
-            </CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg font-semibold">{editingFinance ? 'Edit Finance Entry' : 'Add New Finance Entry'}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleFinanceSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Date</label>
-                <Input
-                  type="date"
-                  value={financeFormData.date}
-                  onChange={(e) => setFinanceFormData({ ...financeFormData, date: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
-                <select
-                  value={financeFormData.type}
-                  onChange={(e) => setFinanceFormData({ ...financeFormData, type: e.target.value as 'income' | 'expense' })}
-                  className="w-full px-3 py-2 border rounded-md"
-                  required
-                >
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Amount (KSH)</label>
-                <Input
-                  type="number"
-                  value={financeFormData.amount}
-                  onChange={(e) => setFinanceFormData({ ...financeFormData, amount: parseFloat(e.target.value) || 0 })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <Input
-                  type="text"
-                  value={financeFormData.description}
-                  onChange={(e) => setFinanceFormData({ ...financeFormData, description: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="md:col-span-2 flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingFinance(null); }}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  <Save className="h-4 w-4 mr-2" />
-                  {editingFinance ? 'Update' : 'Save'}
-                </Button>
-              </div>
+              <div><label className="block text-sm font-medium mb-1">Date</label><Input type="date" value={financeFormData.date} onChange={(e) => setFinanceFormData({ ...financeFormData, date: e.target.value })} required /></div>
+              <div><label className="block text-sm font-medium mb-1">Type</label><select value={financeFormData.type} onChange={(e) => setFinanceFormData({ ...financeFormData, type: e.target.value as 'income' | 'expense' })} className="w-full px-3 py-2 border rounded-md bg-background text-foreground" required><option value="income">Income</option><option value="expense">Expense</option></select></div>
+              <div><label className="block text-sm font-medium mb-1">Amount (KSH)</label><Input type="number" value={financeFormData.amount} onChange={(e) => setFinanceFormData({ ...financeFormData, amount: parseFloat(e.target.value) || 0 })} required /></div>
+              <div><label className="block text-sm font-medium mb-1">Description</label><Input type="text" value={financeFormData.description} onChange={(e) => setFinanceFormData({ ...financeFormData, description: e.target.value })} required /></div>
+              <div className="md:col-span-2 flex justify-end space-x-2"><Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingFinance(null); }}>Cancel</Button><Button type="submit"><Save className="h-4 w-4 mr-2" />{editingFinance ? 'Update' : 'Save'}</Button></div>
             </form>
           </CardContent>
         </Card>
@@ -538,178 +486,29 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
 
       {(isAdding || editingMember) && activeTab === 'members' && (
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {editingMember ? 'Edit Gym Member' : 'Add New Gym Member'}
-            </CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg font-semibold">{editingMember ? 'Edit Gym Member' : 'Add New Gym Member'}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleMemberSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Full Name</label>
-                <Input
-                  type="text"
-                  value={memberFormData.name}
-                  onChange={(e) => setMemberFormData({ ...memberFormData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone Number</label>
-                <Input
-                  type="tel"
-                  value={memberFormData.phoneNumber}
-                  onChange={(e) => setMemberFormData({ ...memberFormData, phoneNumber: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <Input
-                  type="email"
-                  value={memberFormData.email}
-                  onChange={(e) => setMemberFormData({ ...memberFormData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Package</label>
-                <select
-                  value={memberFormData.packageType}
-                  onChange={(e) => setMemberFormData({ ...memberFormData, packageType: e.target.value as any })}
-                  className="w-full px-3 py-2 border rounded-md"
-                  required
-                >
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="three-months">3 Months</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Amount Paid</label>
-                <Input
-                  type="number"
-                  value={memberFormData.amountPaid}
-                  onChange={(e) => setMemberFormData({ ...memberFormData, amountPaid: parseFloat(e.target.value) || 0 })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Start Date</label>
-                <Input
-                  type="date"
-                  value={memberFormData.startDate}
-                  onChange={(e) => setMemberFormData({ ...memberFormData, startDate: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <p className="text-sm text-muted-foreground mb-4">
-                  End Date: {calculateMembershipEndDate(memberFormData.startDate, memberFormData.packageType)}
-                </p>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingMember(null); }}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    <Save className="h-4 w-4 mr-2" />
-                    {editingMember ? 'Update' : 'Save'}
-                  </Button>
-                </div>
-              </div>
+              <div><label className="block text-sm font-medium mb-1">Full Name</label><Input type="text" value={memberFormData.name} onChange={(e) => setMemberFormData({ ...memberFormData, name: e.target.value })} required /></div>
+              <div><label className="block text-sm font-medium mb-1">Phone Number</label><Input type="tel" value={memberFormData.phoneNumber} onChange={(e) => setMemberFormData({ ...memberFormData, phoneNumber: e.target.value })} required /></div>
+              <div><label className="block text-sm font-medium mb-1">Email</label><Input type="email" value={memberFormData.email} onChange={(e) => setMemberFormData({ ...memberFormData, email: e.target.value })} required /></div>
+              <div><label className="block text-sm font-medium mb-1">Package</label><select value={memberFormData.packageType} onChange={(e) => setMemberFormData({ ...memberFormData, packageType: e.target.value as any })} className="w-full px-3 py-2 border rounded-md bg-background text-foreground" required><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="three-months">3 Months</option></select></div>
+              <div><label className="block text-sm font-medium mb-1">Amount Paid</label><Input type="number" value={memberFormData.amountPaid} onChange={(e) => setMemberFormData({ ...memberFormData, amountPaid: parseFloat(e.target.value) || 0 })} required /></div>
+              <div><label className="block text-sm font-medium mb-1">Start Date</label><Input type="date" value={memberFormData.startDate} onChange={(e) => setMemberFormData({ ...memberFormData, startDate: e.target.value })} required /></div>
+              <div className="md:col-span-2"><p className="text-sm text-muted-foreground mb-4 font-bold italic">Calculated End Date: {calculateMembershipEndDate(memberFormData.startDate, memberFormData.packageType)}</p><div className="flex justify-end space-x-2"><Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingMember(null); }}>Cancel</Button><Button type="submit"><Save className="h-4 w-4 mr-2" />{editingMember ? 'Update' : 'Save'}</Button></div></div>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <div className="flex border-b">
-          <Button
-            variant={activeTab === 'finances' ? 'default' : 'ghost'}
-            className="rounded-none border-b-2 data-[state=active]:border-primary"
-            data-state={activeTab === 'finances' ? 'active' : ''}
-            onClick={() => setActiveTab('finances')}
-          >
-            <DollarSign className="h-4 w-4 mr-2" />
-            Finances
-          </Button>
-          <Button
-            variant={activeTab === 'members' ? 'default' : 'ghost'}
-            className="rounded-none border-b-2 data-[state=active]:border-primary"
-            data-state={activeTab === 'members' ? 'active' : ''}
-            onClick={() => setActiveTab('members')}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Members
-          </Button>
+      <Card className="border-none shadow-sm overflow-hidden">
+        <div className="flex border-b bg-muted/10">
+          <Button variant={activeTab === 'finances' ? 'default' : 'ghost'} className="flex-1 rounded-none border-b-2 data-[state=active]:border-primary h-12 font-black uppercase tracking-widest text-[10px]" data-state={activeTab === 'finances' ? 'active' : ''} onClick={() => setActiveTab('finances')}><DollarSign className="h-4 w-4 mr-2" />Finances</Button>
+          <Button variant={activeTab === 'members' ? 'default' : 'ghost'} className="flex-1 rounded-none border-b-2 data-[state=active]:border-primary h-12 font-black uppercase tracking-widest text-[10px]" data-state={activeTab === 'members' ? 'active' : ''} onClick={() => setActiveTab('members')}><Users className="h-4 w-4 mr-2" />Members</Button>
         </div>
-        
-        {activeTab === 'finances' ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {monthlyFinances.map((finance) => (
-                  <tr key={finance.id}>
-                    <td className="px-6 py-4 text-sm">{finance.date}</td>
-                    <td className="px-6 py-4 text-sm">{finance.description}</td>
-                    <td className="px-6 py-4 text-sm font-medium">
-                      {formatCurrency(finance.amount)}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditFinance(finance)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Package</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">End Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {members?.slice(0, displayCount).map((member) => (
-                  <tr key={member.id}>
-                    <td className="px-6 py-4 text-sm font-medium">{member.name}</td>
-                    <td className="px-6 py-4 text-sm capitalize">{member.packageType}</td>
-                    <td className="px-6 py-4 text-sm">{member.endDate}</td>
-                    <td className="px-6 py-4 text-sm space-x-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditMember(member)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => sendWhatsAppNotification(member, 7)}>
-                        <MessageCircle className="h-4 w-4 text-green-500" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteDialog({ isOpen: true, id: member.id, type: 'member' })}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <CardContent className="p-0">
+          {activeTab === 'finances' ? renderFinanceCards() : renderMemberCards()}
+        </CardContent>
       </Card>
 
       <ConfirmDialog
