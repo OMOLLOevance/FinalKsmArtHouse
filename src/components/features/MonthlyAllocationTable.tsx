@@ -74,6 +74,21 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
   const [editingCell, setEditingCell] = useState<{id: string, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    customer_name: '',
+    date: '',
+    location: '',
+    phone_number: '',
+    event_type: 'Wedding',
+    status: 'pending',
+    double_tent: 0,
+    single_tent: 0,
+    round_table: 0,
+    chavari_seats: 0,
+    total_ksh: 0,
+    deposit_paid: 0
+  });
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -86,16 +101,14 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
   const fetchAllocations = async () => {
     try {
       setLoading(true);
-      const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-      const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
-
+      
       const { data, error } = await supabase
         .from('monthly_allocations')
         .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
+        .eq('month', month + 1)
+        .eq('year', year)
         .order('date', { ascending: true });
-
+      
       if (error) throw error;
 
       // Calculate totals for each allocation
@@ -123,43 +136,61 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     }
   };
 
-  const handleAddCustomer = async () => {
+  const handleAddCustomer = () => {
+    if (!user) {
+      toast.error('Please log in to add customers');
+      return;
+    }
+    
+    // Set default date to middle of selected month
+    const defaultDate = new Date(year, month, 15).toISOString().split('T')[0];
+    setNewCustomer({
+      customer_name: '',
+      date: defaultDate,
+      location: '',
+      phone_number: '',
+      event_type: 'Wedding',
+      status: 'pending',
+      double_tent: 0,
+      single_tent: 0,
+      round_table: 0,
+      chavari_seats: 0,
+      total_ksh: 0,
+      deposit_paid: 0
+    });
+    setShowAddDialog(true);
+  };
+
+  const handleSaveCustomer = async () => {
+    if (!newCustomer.customer_name.trim()) {
+      toast.error('Customer name is required');
+      return;
+    }
+    
     try {
       setSaving(true);
-      const eventDate = new Date(year, month, 15).toISOString().split('T')[0];
       
-      const { data, error } = await supabase
+      const insertData = {
+        ...newCustomer,
+        month: month + 1,
+        year: year,
+        event_date: newCustomer.date,
+        status: 'pending',
+        user_id: user?.id
+      };
+      
+      const { error } = await supabase
         .from('monthly_allocations')
-        .insert({
-          customer_name: 'New Customer',
-          date: eventDate,
-          location: 'Location TBD',
-          month: month + 1,
-          year: year,
-          event_date: eventDate,
-          phone_number: '',
-          event_type: 'Wedding',
-          status: 'pending',
-          total_ksh: 0,
-          deposit_paid: 0,
-          user_id: user?.id
-        })
-        .select()
-        .single();
+        .insert(insertData);
 
       if (error) throw error;
 
       await fetchAllocations();
-      toast.success('New customer added successfully');
-      
-      // Auto-edit the customer name
-      setTimeout(() => {
-        setEditingCell({ id: data.id, field: 'customer_name' });
-        setEditValue('New Customer');
-      }, 100);
+      setShowAddDialog(false);
+      toast.success('Customer added successfully');
     } catch (error) {
       console.error('Error adding customer:', error);
-      toast.error('Failed to add customer');
+      toast.error(`Failed to add customer: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -438,6 +469,189 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
         </div>
       </div>
 
+      {/* Add Customer Dialog */}
+      {showAddDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add New Customer</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Customer Name *</label>
+                <Input
+                  value={newCustomer.customer_name}
+                  onChange={(e) => setNewCustomer({...newCustomer, customer_name: e.target.value})}
+                  placeholder="Enter customer name"
+                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Event Date</label>
+                <Input
+                  type="date"
+                  value={newCustomer.date}
+                  onChange={(e) => setNewCustomer({...newCustomer, date: e.target.value})}
+                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Location</label>
+                <Input
+                  value={newCustomer.location}
+                  onChange={(e) => setNewCustomer({...newCustomer, location: e.target.value})}
+                  placeholder="Event location"
+                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Phone Number</label>
+                <Input
+                  value={newCustomer.phone_number}
+                  onChange={(e) => setNewCustomer({...newCustomer, phone_number: e.target.value})}
+                  placeholder="Phone number"
+                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Event Type</label>
+                <select
+                  value={newCustomer.event_type}
+                  onChange={(e) => setNewCustomer({...newCustomer, event_type: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Wedding">Wedding</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="Birthday">Birthday</option>
+                  <option value="Anniversary">Anniversary</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">Status</label>
+                <select
+                  value={newCustomer.status}
+                  onChange={(e) => setNewCustomer({...newCustomer, status: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <h4 className="text-md font-medium mb-3 text-gray-800">Equipment Requirements</h4>
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Double Tents</label>
+                  <Input
+                    type="number"
+                    value={newCustomer.double_tent}
+                    onChange={(e) => setNewCustomer({...newCustomer, double_tent: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Single Tents</label>
+                  <Input
+                    type="number"
+                    value={newCustomer.single_tent}
+                    onChange={(e) => setNewCustomer({...newCustomer, single_tent: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Round Tables</label>
+                  <Input
+                    type="number"
+                    value={newCustomer.round_table}
+                    onChange={(e) => setNewCustomer({...newCustomer, round_table: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Chavari Seats</label>
+                  <Input
+                    type="number"
+                    value={newCustomer.chavari_seats}
+                    onChange={(e) => setNewCustomer({...newCustomer, chavari_seats: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <h4 className="text-md font-medium mb-3 text-gray-800">Financial Details</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Total Amount (KSH)</label>
+                  <Input
+                    type="number"
+                    value={newCustomer.total_ksh}
+                    onChange={(e) => setNewCustomer({...newCustomer, total_ksh: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Deposit Paid (KSH)</label>
+                  <Input
+                    type="number"
+                    value={newCustomer.deposit_paid}
+                    onChange={(e) => setNewCustomer({...newCustomer, deposit_paid: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Balance Due: </span>
+                  <span className={`font-semibold ${(newCustomer.total_ksh - newCustomer.deposit_paid) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    KSH {(newCustomer.total_ksh - newCustomer.deposit_paid).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddDialog(false)}
+                disabled={saving}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveCustomer}
+                disabled={saving || !newCustomer.customer_name.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {saving ? 'Saving...' : 'Add Customer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Summary Stats */}
       <div className="grid grid-cols-4 gap-4">
         <Card>
@@ -510,7 +724,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {allocations.map((allocation) => (
-                  <tr key={allocation.id} className="hover:bg-gray-50">
+                  <tr key={allocation.id} className="hover:bg-blue-50">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
