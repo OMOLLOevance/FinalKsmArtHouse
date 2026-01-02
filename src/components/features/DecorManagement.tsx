@@ -185,9 +185,6 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           <h2 className="text-3xl font-bold tracking-tight">Decor Management</h2>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
-            Print Inventory
-          </Button>
           <Button onClick={() => setShowAddDialog(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" /> Add Item
           </Button>
@@ -233,139 +230,143 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex space-x-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              Category: {selectedCategory === 'all' ? 'All' : selectedCategory.replace('_', ' ')}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setSelectedCategory('all')}>
-              All Categories
-            </DropdownMenuItem>
-            {categories.map(category => (
-              <DropdownMenuItem key={category} onClick={() => setSelectedCategory(category)}>
-                {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+      {/* Filters and Search */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex space-x-4 w-full md:w-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Category: {selectedCategory === 'all' ? 'All' : selectedCategory.replace('_', ' ')}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setSelectedCategory('all')}>
+                All Categories
               </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <Input
-          placeholder="Search items..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm h-9"
-        />
+              {categories.map(category => (
+                <DropdownMenuItem key={category} onClick={() => setSelectedCategory(category)}>
+                  {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Input
+            placeholder="Search items..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm h-9"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground italic">
+          Showing {filteredItems.length} items
+        </p>
       </div>
 
-      {/* Inventory Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">All Items Inventory</CardTitle>
-          <CardDescription className="text-xs text-muted-foreground">Manage your decor items and availability</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="border p-1 text-left font-semibold uppercase tracking-wider">Item Name</th>
-                  <th className="border p-1 text-left font-semibold uppercase tracking-wider w-32">Category</th>
-                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-20">In Store</th>
-                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-20">Hired</th>
-                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-20">Damaged</th>
-                  <th className="border p-1 text-right font-semibold uppercase tracking-wider w-24">Price</th>
-                  <th className="border p-1 text-center font-semibold uppercase tracking-wider w-48">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/30">
-                    <td className="border p-0">
-                      {renderEditableCell(item, 'item_name', 'font-medium')}
-                    </td>
-                    <td className="border p-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground uppercase tracking-tighter">
-                        {item.category.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="border p-0">
-                      {renderEditableCell(item, 'in_store', 'text-center')}
-                    </td>
-                    <td className="border p-0">
-                      {renderEditableCell(item, 'hired', 'text-center')}
-                    </td>
-                    <td className="border p-0">
-                      {renderEditableCell(item, 'damaged', 'text-center')}
-                    </td>
-                    <td className="border p-0">
-                      {renderEditableCell(item, 'price', 'text-right font-medium')}
-                    </td>
-                    <td className="border p-1">
-                      <div className="flex items-center justify-center space-x-1">
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => handleAction(item.id, 'hire')}
-                          disabled={item.in_store === 0 || actionMutation.isPending}
-                          className="hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
-                          Hire
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => handleAction(item.id, 'return')}
-                          disabled={item.hired === 0 || actionMutation.isPending}
-                          className="hover:bg-secondary hover:text-secondary-foreground transition-colors"
-                        >
-                          Return
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => handleAction(item.id, 'damage')}
-                          disabled={item.in_store === 0 || actionMutation.isPending}
-                          className="hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                        >
-                          Damage
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => handleAction(item.id, 'repair')}
-                          disabled={item.damaged === 0 || actionMutation.isPending}
-                          className="hover:bg-green-600 hover:text-white transition-colors"
-                        >
-                          Repair
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          onClick={() => handleItemClick(item)}
-                          title="Assign to Customer"
-                        >
-                          <Users className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {filteredItems.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                      No items found matching your criteria.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Inventory Form List */}
+      <div className="space-y-4">
+        {filteredItems.map((item) => (
+          <Card key={item.id} className="overflow-hidden border-l-4 border-l-primary/40 hover:shadow-md transition-shadow">
+            <div className="p-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+                <div>
+                  <h3 className="text-lg font-bold text-primary flex items-center">
+                    <Package className="h-4 w-4 mr-2 opacity-70" />
+                    {item.item_name}
+                  </h3>
+                  <span className="text-[10px] font-bold bg-muted px-2 py-0.5 rounded uppercase text-muted-foreground tracking-wider">
+                    {item.category.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => handleAction(item.id, 'hire')}
+                    disabled={item.in_store === 0 || actionMutation.isPending}
+                    className="h-7 px-3 border-primary/20 hover:bg-primary hover:text-white"
+                  >
+                    Hire
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => handleAction(item.id, 'return')}
+                    disabled={item.hired === 0 || actionMutation.isPending}
+                    className="h-7 px-3 border-secondary/20 hover:bg-secondary hover:text-white"
+                  >
+                    Return
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => handleAction(item.id, 'damage')}
+                    disabled={item.in_store === 0 || actionMutation.isPending}
+                    className="h-7 px-3 border-destructive/20 hover:bg-destructive hover:text-white"
+                  >
+                    Damage
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => handleAction(item.id, 'repair')}
+                    disabled={item.damaged === 0 || actionMutation.isPending}
+                    className="h-7 px-3 border-green-200 hover:bg-green-600 hover:text-white"
+                  >
+                    Repair
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={() => handleItemClick(item)}
+                    className="h-7 w-7 p-0"
+                    title="Assign to Customer"
+                  >
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-muted/10 p-3 rounded-lg border">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">In Store</label>
+                  <div className="bg-white rounded border">
+                    {renderEditableCell(item, 'in_store', 'text-center font-bold text-lg')}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Hired</label>
+                  <div className="bg-white rounded border">
+                    {renderEditableCell(item, 'hired', 'text-center font-bold text-lg text-secondary')}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Damaged</label>
+                  <div className="bg-white rounded border">
+                    {renderEditableCell(item, 'damaged', 'text-center font-bold text-lg text-destructive')}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Price</label>
+                  <div className="bg-white rounded border">
+                    {renderEditableCell(item, 'price', 'text-right font-black text-lg text-green-600')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+
+        {filteredItems.length === 0 && (
+          <Card className="p-12 text-center text-muted-foreground bg-muted/10">
+            <Package className="h-12 w-12 mx-auto mb-4 opacity-20" />
+            <p className="text-lg font-medium">No items found matching your criteria.</p>
+            <Button variant="link" onClick={() => {setSearchTerm(''); setSelectedCategory('all');}}>
+              Clear all filters
+            </Button>
+          </Card>
+        )}
+      </div>
 
       {/* Customer Selection Dialog */}
       <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
