@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Package, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Package, TrendingUp, TrendingDown, AlertTriangle, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/Input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
+import { useCustomersQuery } from '@/hooks/use-customer-api';
+import { useAddItemToCustomerMutation } from '@/hooks/useCustomerRequirements';
 import { 
   useDecorInventoryQuery, 
   useDecorCategoriesQuery, 
@@ -24,10 +26,15 @@ interface DecorManagementProps {
 const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   const { data: items = [], isLoading } = useDecorInventoryQuery();
   const { data: categories = [] } = useDecorCategoriesQuery();
+  const { data: customers = [] } = useCustomersQuery();
   const actionMutation = useDecorActionMutation();
   const addItemMutation = useAddDecorItemMutation();
+  const addToCustomerMutation = useAddItemToCustomerMutation();
   
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<DecorInventoryItem | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [newItem, setNewItem] = useState({
@@ -42,6 +49,27 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     const matchesSearch = item.item_name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const handleItemClick = (item: DecorInventoryItem) => {
+    setSelectedItem(item);
+    setShowCustomerDialog(true);
+  };
+
+  const handleAddToCustomer = () => {
+    if (!selectedItem || !selectedCustomerId) return;
+    
+    addToCustomerMutation.mutate({
+      customerId: selectedCustomerId,
+      decorItemId: selectedItem.id,
+      quantity: 1
+    }, {
+      onSuccess: () => {
+        setShowCustomerDialog(false);
+        setSelectedItem(null);
+        setSelectedCustomerId('');
+      }
+    });
+  };
 
   const handleAction = (id: string, action: 'hire' | 'return' | 'damage' | 'repair') => {
     actionMutation.mutate({ id, action });
@@ -174,7 +202,11 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               <tbody className="divide-y divide-border">
                 {filteredItems.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-6 py-4 text-sm font-medium cursor-pointer hover:text-primary">
+                    <td 
+                      className="px-6 py-4 text-sm font-medium cursor-pointer hover:text-primary hover:bg-primary/5 transition-colors"
+                      onClick={() => handleItemClick(item)}
+                      title="Click to add to customer requirements"
+                    >
                       {item.item_name}
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -234,6 +266,67 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Customer Selection Dialog */}
+      <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Item to Customer Requirements</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Selected Item: <span className="font-medium">{selectedItem?.item_name}</span>
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Select Customer:</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Users className="h-4 w-4 mr-2" />
+                    {selectedCustomerId ? 
+                      customers.find(c => c.id === selectedCustomerId)?.name || 'Select Customer' : 
+                      'Select Customer'
+                    }
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-full">
+                  {customers.map(customer => (
+                    <DropdownMenuItem 
+                      key={customer.id} 
+                      onClick={() => setSelectedCustomerId(customer.id)}
+                    >
+                      <div>
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {customer.eventType} - {customer.eventDate}
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  {customers.length === 0 && (
+                    <DropdownMenuItem disabled>
+                      No customers available
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomerDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddToCustomer}
+              disabled={!selectedCustomerId || addToCustomerMutation.isPending}
+            >
+              {addToCustomerMutation.isPending ? 'Adding...' : 'Add to Requirements'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Item Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

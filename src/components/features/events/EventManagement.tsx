@@ -14,6 +14,7 @@ const QuotationManager = lazy(() => import('./QuotationManager'));
 const EventCategoryManager = lazy(() => import('./EventCategoryManager'));
 const EventPaymentForm = lazy(() => import('./EventPaymentForm'));
 const DecorManagement = lazy(() => import('../DecorManagement'));
+const CustomerRequirements = lazy(() => import('../CustomerRequirements'));
 
 interface EventManagementProps {
   onBack?: () => void;
@@ -56,11 +57,19 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
       description: 'Manage client details and history' 
     },
     { 
-      id: 'quotation', 
-      title: 'Quotation', 
+      id: 'requirements', 
+      title: 'Requirements', 
       icon: FileText, 
       color: 'text-indigo-600 dark:text-indigo-400', 
       bg: 'bg-indigo-100 dark:bg-indigo-900/20',
+      description: 'View customer decor requirements' 
+    },
+    { 
+      id: 'quotation', 
+      title: 'Quotation', 
+      icon: FileText, 
+      color: 'text-teal-600 dark:text-teal-400', 
+      bg: 'bg-teal-100 dark:bg-teal-900/20',
       description: 'Create and manage price quotations' 
     },
     { 
@@ -87,6 +96,8 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
         return <CateringManager onBack={() => setActiveModule(null)} />;
       case 'customers':
         return <CustomerManager onBack={() => setActiveModule(null)} />;
+      case 'requirements':
+        return <CustomerRequirements onBack={() => setActiveModule(null)} />;
       case 'quotation':
         return <QuotationManager onBack={() => setActiveModule(null)} />;
       case 'payments':
