@@ -10,6 +10,7 @@ import { Select, StatusBadge } from '@/components/ui/Select';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency } from '@/utils/formatters';
 
 interface MonthlyAllocation {
   id: string;
@@ -444,8 +445,8 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-semibold">Monthly Customer Allocation - {monthNames[month]} {year}</h3>
-          <p className="text-sm text-gray-600">{allocations.length} allocations found</p>
+          <h3 className="text-xl font-bold tracking-tight text-primary">Monthly Customer Allocation</h3>
+          <p className="text-xs text-muted-foreground">{monthNames[month]} {year} • {allocations.length} allocations found</p>
         </div>
         <div className="flex items-center space-x-2">
           {selectedRows.size > 0 && (
@@ -458,354 +459,177 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-          <Button onClick={handleAddCustomer} disabled={saving}>
+          <Button onClick={handleAddCustomer} disabled={saving} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
         </div>
       </div>
 
-      {/* Add Customer Dialog */}
-      {showAddDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add New Customer</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Customer Name *</label>
-                <Input
-                  value={newCustomer.customer_name}
-                  onChange={(e) => setNewCustomer({...newCustomer, customer_name: e.target.value})}
-                  placeholder="Enter customer name"
-                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Event Date</label>
-                <Input
-                  type="date"
-                  value={newCustomer.date}
-                  onChange={(e) => setNewCustomer({...newCustomer, date: e.target.value})}
-                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Location</label>
-                <Input
-                  value={newCustomer.location}
-                  onChange={(e) => setNewCustomer({...newCustomer, location: e.target.value})}
-                  placeholder="Event location"
-                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Phone Number</label>
-                <Input
-                  value={newCustomer.phone_number}
-                  onChange={(e) => setNewCustomer({...newCustomer, phone_number: e.target.value})}
-                  placeholder="Phone number"
-                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Event Type</label>
-                <select
-                  value={newCustomer.event_type}
-                  onChange={(e) => setNewCustomer({...newCustomer, event_type: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="Wedding">Wedding</option>
-                  <option value="Corporate">Corporate</option>
-                  <option value="Birthday">Birthday</option>
-                  <option value="Anniversary">Anniversary</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Status</label>
-                <select
-                  value={newCustomer.status}
-                  onChange={(e) => setNewCustomer({...newCustomer, status: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <h4 className="text-md font-medium mb-3 text-gray-800">Equipment Requirements</h4>
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Double Tents</label>
-                  <Input
-                    type="number"
-                    value={newCustomer.double_tent}
-                    onChange={(e) => setNewCustomer({...newCustomer, double_tent: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Single Tents</label>
-                  <Input
-                    type="number"
-                    value={newCustomer.single_tent}
-                    onChange={(e) => setNewCustomer({...newCustomer, single_tent: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Round Tables</label>
-                  <Input
-                    type="number"
-                    value={newCustomer.round_table}
-                    onChange={(e) => setNewCustomer({...newCustomer, round_table: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Chavari Seats</label>
-                  <Input
-                    type="number"
-                    value={newCustomer.chavari_seats}
-                    onChange={(e) => setNewCustomer({...newCustomer, chavari_seats: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <h4 className="text-md font-medium mb-3 text-gray-800">Financial Details</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Total Amount (KSH)</label>
-                  <Input
-                    type="number"
-                    value={newCustomer.total_ksh}
-                    onChange={(e) => setNewCustomer({...newCustomer, total_ksh: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Deposit Paid (KSH)</label>
-                  <Input
-                    type="number"
-                    value={newCustomer.deposit_paid}
-                    onChange={(e) => setNewCustomer({...newCustomer, deposit_paid: parseInt(e.target.value) || 0})}
-                    placeholder="0"
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Balance Due: </span>
-                  <span className={`font-semibold ${(newCustomer.total_ksh - newCustomer.deposit_paid) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    KSH {(newCustomer.total_ksh - newCustomer.deposit_paid).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddDialog(false)}
-                disabled={saving}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSaveCustomer}
-                disabled={saving || !newCustomer.customer_name.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {saving ? 'Saving...' : 'Add Customer'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Summary Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-muted/20">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-muted/20 border-none shadow-none">
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold">{allocations.length}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Total Events</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Events</div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-muted/20">
+        <Card className="bg-muted/20 border-none shadow-none">
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-green-600">KSH {totalRevenue.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Total Revenue</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Revenue</div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-muted/20">
+        <Card className="bg-muted/20 border-none shadow-none">
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-blue-600">KSH {totalDeposits.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Deposits Paid</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Deposits Paid</div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-muted/20">
+        <Card className="bg-muted/20 border-none shadow-none">
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-red-600">KSH {totalBalance.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Balance Due</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Balance Due</div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Allocation Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="border p-1 w-8">
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.size === allocations.length && allocations.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedRows(new Set(allocations.map(a => a.id)));
-                        } else {
-                          setSelectedRows(new Set());
-                        }
-                      }}
-                      className="rounded"
-                    />
-                  </th>
-                  <th className="border p-1 text-left font-medium">Date</th>
-                  <th className="border p-1 text-left font-medium">Customer</th>
-                  <th className="border p-1 text-left font-medium">Location</th>
-                  <th className="border p-1 text-left font-medium">Phone</th>
-                  <th className="border p-1 text-center font-medium">Status</th>
-                  <th className="border p-1 text-center font-medium">Tents</th>
-                  <th className="border p-1 text-center font-medium">Tables</th>
-                  <th className="border p-1 text-center font-medium">Seats</th>
-                  <th className="border p-1 text-right font-medium">Total KSH</th>
-                  <th className="border p-1 text-right font-medium">Deposit</th>
-                  <th className="border p-1 text-right font-medium">Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allocations.map((allocation) => (
-                  <tr key={allocation.id}>
-                    <td className="border p-1 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.has(allocation.id)}
-                        onChange={(e) => {
-                          const newSelected = new Set(selectedRows);
-                          if (e.target.checked) {
-                            newSelected.add(allocation.id);
-                          } else {
-                            newSelected.delete(allocation.id);
-                          }
-                          setSelectedRows(newSelected);
-                        }}
-                        className="rounded"
-                      />
-                    </td>
-                    <td className="border p-1">
-                      {renderEditableCell(allocation, 'date')}
-                    </td>
-                    <td className="border p-1">
-                      {renderEditableCell(allocation, 'customer_name', 'font-medium')}
-                    </td>
-                    <td className="border p-1">
-                      {renderEditableCell(allocation, 'location')}
-                    </td>
-                    <td className="border p-1">
-                      {renderEditableCell(allocation, 'phone_number')}
-                    </td>
-                    <td className="border p-1 text-center">
-                      <Select
-                        value={allocation.status}
-                        onValueChange={(value) => handleStatusChange(allocation.id, value)}
-                        className="w-28 text-xs h-7"
-                        options={[
-                          { value: 'pending', label: 'Pending' },
-                          { value: 'confirmed', label: 'Confirmed' },
-                          { value: 'completed', label: 'Completed' },
-                          { value: 'cancelled', label: 'Cancelled' }
-                        ]}
-                      />
-                    </td>
-                    <td className="border p-1 text-center">
-                      <span className="font-medium">{allocation.tent_total}</span>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <span className="font-medium">{allocation.table_total}</span>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <span className="font-medium">{allocation.seat_total}</span>
-                    </td>
-                    <td className="border p-1 text-right">
-                      {renderEditableCell(allocation, 'total_ksh', 'text-right font-medium')}
-                    </td>
-                    <td className="border p-1 text-right">
-                      {renderEditableCell(allocation, 'deposit_paid', 'text-right')}
-                    </td>
-                    <td className="border p-1 text-right">
-                      <span className={`font-medium ${allocation.balance_due > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {allocation.balance_due.toLocaleString()}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Allocation Form List */}
+      <div className="space-y-4">
+        {allocations.map((allocation) => (
+          <Card key={allocation.id} className="overflow-hidden border-l-4 border-l-primary/40 hover:shadow-md transition-all">
+            <div className="p-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.has(allocation.id)}
+                    onChange={(e) => {
+                      const newSelected = new Set(selectedRows);
+                      if (e.target.checked) {
+                        newSelected.add(allocation.id);
+                      } else {
+                        newSelected.delete(allocation.id);
+                      }
+                      setSelectedRows(newSelected);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <h4 className="font-bold text-lg text-primary">{allocation.customer_name}</h4>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{allocation.event_type || 'General Event'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Select
+                    value={allocation.status}
+                    onValueChange={(value) => handleStatusChange(allocation.id, value)}
+                    className="w-32 h-8 text-xs font-bold"
+                    options={[
+                      { value: 'pending', label: 'Pending' },
+                      { value: 'confirmed', label: 'Confirmed' },
+                      { value: 'completed', label: 'Completed' },
+                      { value: 'cancelled', label: 'Cancelled' }
+                    ]}
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="xs" 
+                    className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                    onClick={() => {
+                      setSelectedRows(new Set([allocation.id]));
+                      handleDeleteSelected();
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
-          
-          {allocations.length === 0 && (
-            <div className="text-center py-12">
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No allocations for {monthNames[month]} {year}</h3>
-              <p className="text-gray-600 mb-4">Get started by adding your first customer allocation.</p>
-              <Button onClick={handleAddCustomer}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Customer
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Event Info */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest ml-1">Event Details</label>
+                  <div className="bg-muted/10 rounded-lg border p-2 space-y-2">
+                    <div className="flex items-center text-xs">
+                      <Calendar className="h-3 w-3 mr-2 text-muted-foreground" />
+                      <div className="flex-1">{renderEditableCell(allocation, 'date', 'font-medium')}</div>
+                    </div>
+                    <div className="flex items-center text-xs">
+                      <FileText className="h-3 w-3 mr-2 text-muted-foreground" />
+                      <div className="flex-1">{renderEditableCell(allocation, 'location', 'italic')}</div>
+                    </div>
+                    <div className="flex items-center text-xs">
+                      <Check className="h-3 w-3 mr-2 text-muted-foreground" />
+                      <div className="flex-1">{renderEditableCell(allocation, 'phone_number')}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Equipment Summary */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest ml-1">Equipment Totals</label>
+                  <div className="bg-muted/10 rounded-lg border p-2 grid grid-cols-3 gap-2">
+                    <div className="text-center p-1 bg-white rounded border">
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Tents</p>
+                      <p className="text-sm font-black text-primary">{allocation.tent_total}</p>
+                    </div>
+                    <div className="text-center p-1 bg-white rounded border">
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Tables</p>
+                      <p className="text-sm font-black text-primary">{allocation.table_total}</p>
+                    </div>
+                    <div className="text-center p-1 bg-white rounded border">
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Seats</p>
+                      <p className="text-sm font-black text-primary">{allocation.seat_total}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Details */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest ml-1">Financial Status</label>
+                  <div className="bg-muted/10 rounded-lg border p-2 space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">Total:</span>
+                      <div className="w-24 text-right font-black">{renderEditableCell(allocation, 'total_ksh', 'text-right')}</div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs border-t pt-1">
+                      <span className="text-muted-foreground">Paid:</span>
+                      <div className="w-24 text-right font-bold text-blue-600">{renderEditableCell(allocation, 'deposit_paid', 'text-right')}</div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs border-t pt-1">
+                      <span className="font-bold text-primary">Balance:</span>
+                      <span className={`font-black ${allocation.balance_due > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {formatCurrency(allocation.balance_due)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </Card>
+        ))}
+
+        {allocations.length === 0 && (
+          <div className="text-center py-16 bg-muted/10 rounded-xl border-2 border-dashed">
+            <AlertCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-muted-foreground mb-2">No allocations for {monthNames[month]} {year}</h3>
+            <Button onClick={handleAddCustomer} variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add First Allocation
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

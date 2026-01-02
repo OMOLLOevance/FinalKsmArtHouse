@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Printer, Calendar, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { Plus, Printer, Calendar, ChevronLeft, ChevronRight, Save, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -343,109 +343,141 @@ const AdvancedCustomerManagement: React.FC = () => {
         onAddCustomer={() => {}} 
       />
 
-      {/* Decor Items Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Decor & Lighting Items</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {filledDecorRows} items {hasUnsavedChanges && '(unsaved changes)'}
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                onClick={handleSaveDecorItems} 
-                disabled={saveDecorMutation.isPending || !hasUnsavedChanges}
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saveDecorMutation.isPending ? 'Saving...' : 'Save'}
-              </Button>
-              <Button onClick={handleAddDecorItem} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Decor
-              </Button>
-              <Button onClick={handleAddLightingItem} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Lighting
-              </Button>
-              <Button variant="outline" size="sm">
-                <Printer className="h-4 w-4 mr-2" />
-                Print
-              </Button>
-            </div>
+      {/* Decor Items Form Section */}
+      <Card className="border-primary/10 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-6">
+          <div>
+            <CardTitle className="text-xl font-bold text-primary flex items-center">
+              <Sparkles className="h-5 w-5 mr-2 text-primary/60" />
+              Decor & Lighting Items
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {filledDecorRows} customers configured {hasUnsavedChanges && '(unsaved changes)'}
+            </p>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={handleSaveDecorItems} 
+              disabled={saveDecorMutation.isPending || !hasUnsavedChanges}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saveDecorMutation.isPending ? 'Saving...' : 'Save All'}
+            </Button>
+            <Button onClick={handleAddDecorItem} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Decor
+            </Button>
+            <Button onClick={handleAddLightingItem} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lighting
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="border p-1 w-8">#</th>
-                  <th className="border p-1 w-32">CUSTOMER NAME</th>
-                  <th className="border p-1 w-16">WALKWAY STANDS</th>
-                  <th className="border p-1 w-16">ARC</th>
-                  <th className="border p-1 w-16">AISLE STANDS</th>
-                  <th className="border p-1 w-16">PHOTOBOOTH</th>
-                  <th className="border p-1 w-16">LECTURN</th>
-                  <th className="border p-1 w-16">STAGE BOARDS</th>
-                  <th className="border p-1 w-16">BACKDROP BOARDS</th>
-                  <th className="border p-1 w-16">DANCE FLOOR</th>
-                  <th className="border p-1 w-16">WALKWAY BOARDS</th>
-                  <th className="border p-1 w-16">WHITE STICKER</th>
-                  <th className="border p-1 w-16">CENTERPIECES</th>
-                  <th className="border p-1 w-20">GLASS CHARGER PLATES</th>
-                  <th className="border p-1 w-20">MELAMINE CHARGER PLATES</th>
-                  <th className="border p-1 w-16">AFRICAN MATS</th>
-                  <th className="border p-1 w-20">GOLD NAPKIN HOLDERS</th>
-                  <th className="border p-1 w-20">SILVER NAPKIN HOLDERS</th>
-                  <th className="border p-1 w-16">ROOF TOP DECOR</th>
-                  <th className="border p-1 w-16">PARCAN LIGHTS</th>
-                  <th className="border p-1 w-16">REVOLVING HEADS</th>
-                  <th className="border p-1 w-16">FAIRY LIGHTS</th>
-                  <th className="border p-1 w-16">SNAKE LIGHTS</th>
-                  <th className="border p-1 w-16">NEON LIGHTS</th>
-                  <th className="border p-1 w-20">SMALL CHANDELIERS</th>
-                  <th className="border p-1 w-20">LARGE CHANDELIERS</th>
-                  <th className="border p-1 w-20">AFRICAN LAMPSHADES</th>
-                </tr>
-              </thead>
-              <tbody>
-                {decorItems.map((row, index) => (
-                  <tr key={row.id}>
-                    <td className="border p-1 text-center">{row.row_number}</td>
-                    <td className="border p-1">{renderEditableCell(row.customer_name, index, 'decor_customer_name', 'Click to add name')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.walkway_stands, index, 'decor_walkway_stands')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.arc, index, 'decor_arc')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.aisle_stands, index, 'decor_aisle_stands')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.photobooth, index, 'decor_photobooth')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.lecturn, index, 'decor_lecturn')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.stage_boards, index, 'decor_stage_boards')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.backdrop_boards, index, 'decor_backdrop_boards')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.dance_floor, index, 'decor_dance_floor')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.walkway_boards, index, 'decor_walkway_boards')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.white_sticker, index, 'decor_white_sticker')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.centerpieces, index, 'decor_centerpieces')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.glass_charger_plates, index, 'decor_glass_charger_plates')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.melamine_charger_plates, index, 'decor_melamine_charger_plates')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.african_mats, index, 'decor_african_mats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.gold_napkin_holders, index, 'decor_gold_napkin_holders')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.silver_napkin_holders, index, 'decor_silver_napkin_holders')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.roof_top_decor, index, 'decor_roof_top_decor')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.parcan_lights, index, 'decor_parcan_lights')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.revolving_heads, index, 'decor_revolving_heads')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.fairy_lights, index, 'decor_fairy_lights')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.snake_lights, index, 'decor_snake_lights')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.neon_lights, index, 'decor_neon_lights')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.small_chandeliers, index, 'decor_small_chandeliers')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.large_chandeliers, index, 'decor_large_chandeliers')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.african_lampshades, index, 'decor_african_lampshades')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        
+        <CardContent className="space-y-6">
+          {decorItems.map((item, index) => (
+            <Card key={item.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300">
+              <div className="bg-muted/30 px-4 py-2 border-b flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-full">#{item.row_number}</span>
+                  <div className="min-w-[200px]">
+                    {renderEditableCell(item.customer_name, index, 'decor_customer_name', 'Enter Customer Name')}
+                  </div>
+                </div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Custom Configuration
+                </div>
+              </div>
+              
+              <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Group 1: Stands & Boards */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black uppercase text-primary/70 tracking-widest border-b pb-1">Stands & Boards</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Walkway', field: 'walkway_stands' },
+                      { label: 'Arc', field: 'arc' },
+                      { label: 'Aisle', field: 'aisle_stands' },
+                      { label: 'Photobooth', field: 'photobooth' },
+                      { label: 'Lecturn', field: 'lecturn' },
+                      { label: 'Stage', field: 'stage_boards' },
+                      { label: 'Backdrop', field: 'backdrop_boards' },
+                      { label: 'Walkway Bd', field: 'walkway_boards' },
+                      { label: 'Dance Floor', field: 'dance_floor' },
+                    ].map(group => (
+                      <div key={group.field} className="space-y-0.5">
+                        <label className="text-[9px] font-bold text-muted-foreground uppercase truncate block">{group.label}</label>
+                        <div className="bg-white rounded border">
+                          {renderEditableCell((item as any)[group.field], index, `decor_${group.field}`)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Group 2: Table & Decor */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black uppercase text-primary/70 tracking-widest border-b pb-1">Table & Decor</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'White Sticker', field: 'white_sticker' },
+                      { label: 'Centerpiece', field: 'centerpieces' },
+                      { label: 'Glass Plate', field: 'glass_charger_plates' },
+                      { label: 'Melamine', field: 'melamine_charger_plates' },
+                      { label: 'African Mats', field: 'african_mats' },
+                      { label: 'Gold Napkin', field: 'gold_napkin_holders' },
+                      { label: 'Silver Napkin', field: 'silver_napkin_holders' },
+                      { label: 'Roof Top', field: 'roof_top_decor' },
+                    ].map(group => (group &&
+                      <div key={group.field} className="space-y-0.5">
+                        <label className="text-[9px] font-bold text-muted-foreground uppercase truncate block">{group.label}</label>
+                        <div className="bg-white rounded border">
+                          {renderEditableCell((item as any)[group.field], index, `decor_${group.field}`)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Group 3: Lighting */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black uppercase text-primary/70 tracking-widest border-b pb-1">Lighting</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Parcan', field: 'parcan_lights' },
+                      { label: 'Revolving', field: 'revolving_heads' },
+                      { label: 'Fairy', field: 'fairy_lights' },
+                      { label: 'Snake', field: 'snake_lights' },
+                      { label: 'Neon', field: 'neon_lights' },
+                      { label: 'Small Chan', field: 'small_chandeliers' },
+                      { label: 'Large Chan', field: 'large_chandeliers' },
+                      { label: 'African Lamp', field: 'african_lampshades' },
+                    ].map(group => (
+                      <div key={group.field} className="space-y-0.5">
+                        <label className="text-[9px] font-bold text-muted-foreground uppercase truncate block">{group.label}</label>
+                        <div className="bg-white rounded border">
+                          {renderEditableCell((item as any)[group.field], index, `decor_${group.field}`)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {decorItems.length === 0 && (
+            <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/5">
+              <Sparkles className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+              <p className="text-sm text-muted-foreground italic">No decor configurations found for this month.</p>
+              <div className="flex justify-center space-x-2 mt-4">
+                <Button onClick={handleAddDecorItem} variant="outline" size="sm">Add Decor</Button>
+                <Button onClick={handleAddLightingItem} variant="outline" size="sm">Add Lighting</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
