@@ -188,7 +188,7 @@ const CustomerManagement: React.FC = () => {
           <p className="text-muted-foreground">Manage event customers and allocations</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={syncData}>
+          <Button variant="outline" onClick={() => syncData()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             🔄 Update All Devices
           </Button>
