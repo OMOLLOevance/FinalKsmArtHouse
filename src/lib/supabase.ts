@@ -5,13 +5,16 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   if (typeof window !== 'undefined') {
-    console.error('CRITICAL: Supabase environment variables are missing. Authentication and database features will not work.');
+    console.error('CRITICAL ERROR: Supabase environment variables are missing!');
+    console.error('Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your .env file.');
   }
 }
 
+// Create the client with empty strings if env vars are missing to prevent crash during build,
+// but features will fail gracefully with clear errors in console.
 export const supabase = createClient(
-  supabaseUrl || 'https://mqnfdmdqfysqxxamgvwc.supabase.co', 
-  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xbmZkbWRxZnlzcXh4YW1ndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwODY1MDcsImV4cCI6MjA4MjY2MjUwN30.sMqYbNbF8371DgcSjXMzwfI5vqX3tdwCzqfBIfaaH3w', 
+  supabaseUrl || '', 
+  supabaseAnonKey || '', 
   {
   auth: {
     autoRefreshToken: true,

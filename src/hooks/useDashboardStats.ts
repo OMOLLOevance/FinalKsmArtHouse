@@ -27,6 +27,13 @@ interface DashboardStats {
   };
 }
 
+interface MinimalCustomer { id: string; }
+interface MinimalGymMember { status: string; }
+interface MinimalGymFinance { amount: number; transaction_type: string; }
+interface MinimalSaunaBooking { status: string; amount: number; }
+interface MinimalRestaurantSale { total_amount: number; }
+interface MinimalEventItem { id: string; }
+
 export const useDashboardStats = () => {
   const { userId, isAuthenticated } = useAuth();
 
@@ -36,12 +43,12 @@ export const useDashboardStats = () => {
     queryFn: async () => {
       try {
         const [customersRes, gymMembersRes, gymFinancesRes, saunaBookingsRes, restaurantRes, eventItemsRes] = await Promise.all([
-          apiClient.get<{data: any[]}>(`/api/customers?userId=${userId}&fields=id`).catch(() => ({ data: [] })),
-          apiClient.get<{data: any[]}>(`/api/gym?userId=${userId}&fields=status`).catch(() => ({ data: [] })),
-          apiClient.get<{data: any[]}>(`/api/gym/finances?userId=${userId}&fields=amount,transaction_type`).catch(() => ({ data: [] })),
-          apiClient.get<{data: any[]}>(`/api/sauna?userId=${userId}&fields=status,amount`).catch(() => ({ data: [] })),
-          apiClient.get<{data: any[]}>(`/api/restaurant?userId=${userId}&fields=total_amount`).catch(() => ({ data: [] })),
-          apiClient.get<{data: any[]}>(`/api/event-items?userId=${userId}&fields=id`).catch(() => ({ data: [] }))
+          apiClient.get<{data: MinimalCustomer[]}>(`/api/customers?userId=${userId}&fields=id`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymMember[]}>(`/api/gym?userId=${userId}&fields=status`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymFinance[]}>(`/api/gym/finances?userId=${userId}&fields=amount,transaction_type`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalSaunaBooking[]}>(`/api/sauna?userId=${userId}&fields=status,amount`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalRestaurantSale[]}>(`/api/restaurant?userId=${userId}&fields=total_amount`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalEventItem[]}>(`/api/event-items?userId=${userId}&fields=id`).catch(() => ({ data: [] }))
         ]);
 
         const customers = customersRes?.data || [];
@@ -53,20 +60,20 @@ export const useDashboardStats = () => {
 
         // Calculate statistics
         const totalCustomers = customers.length;
-        const activeGymMembers = gymMembers.filter((m: any) => m.status === 'active').length;
-        const activeSaunaBookings = saunaBookings.filter((b: any) => b.status === 'booked').length;
+        const activeGymMembers = gymMembers.filter(m => m.status === 'active').length;
+        const activeSaunaBookings = saunaBookings.filter(b => b.status === 'booked').length;
         const totalRestaurantSales = restaurantSales.length;
 
         // Calculate revenue
         const gymRevenue = gymFinances
-          .filter((f: any) => f.transaction_type === 'income' || f.transaction_type === 'membership')
-          .reduce((sum: number, f: any) => sum + Number(f.amount || 0), 0);
+          .filter(f => f.transaction_type === 'income' || f.transaction_type === 'membership')
+          .reduce((sum, f) => sum + Number(f.amount || 0), 0);
         
         const saunaRevenue = saunaBookings
-          .filter((b: any) => b.status === 'completed')
-          .reduce((sum: number, b: any) => sum + Number(b.amount || 0), 0);
+          .filter(b => b.status === 'completed')
+          .reduce((sum, b) => sum + Number(b.amount || 0), 0);
         
-        const restaurantRevenue = restaurantSales.reduce((sum: number, sale: any) => sum + Number(sale.total_amount || 0), 0);
+        const restaurantRevenue = restaurantSales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0);
         
         const totalRevenue = gymRevenue + saunaRevenue + restaurantRevenue;
 

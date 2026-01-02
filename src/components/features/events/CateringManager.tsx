@@ -32,9 +32,29 @@ const DEFAULT_STRUCTURE = [
   { name: 'UNIFORMS', key: 'uniforms', rows: Array.from({length: 9}, (_, i) => `uniforms_${i+1}`) },
 ];
 
+interface CateringItem {
+  id: string;
+  name: string;
+  category: string;
+  min_order: number;
+  price_per_plate: number;
+  description: string;
+  available: boolean;
+}
+
+interface InventoryEntry {
+  particular: string;
+  good: string;
+  repair: string;
+}
+
+interface InventoryData {
+  [key: string]: InventoryEntry;
+}
+
 const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
   const { items, loading, addItem, updateItem, deleteItem, refetch: fetchItems } = useCateringItems();
-  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editingItem, setEditingItem] = useState<CateringItem | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isSavingInventory, setIsSavingInventory] = useState(false);
 
@@ -55,12 +75,12 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
     serviceStatus: 'not-served' as 'served' | 'not-served',
   });
 
-  const [inventoryData, setInventoryData] = useState({});
+  const [inventoryData, setInventoryData] = useState<InventoryData>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedCategory, setHighlightedCategory] = useState('');
 
   const parseDescription = (desc: string = '') => {
-    const data: any = { budget: 0, paid: 0, method: 'cash', status: 'deposit', location: '-', notes: '' };
+    const data = { budget: 0, paid: 0, method: 'cash', status: 'deposit', location: '-', notes: '' };
     try {
       const budgetMatch = desc.match(/Budget: (\d+)/);
       const paidMatch = desc.match(/Paid: (\d+)/);
@@ -69,17 +89,17 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       
       if (budgetMatch) data.budget = Number(budgetMatch[1]);
       if (paidMatch) data.paid = Number(paidMatch[1]);
-      if (methodMatch) data.method = methodMatch[1];
+      if (methodMatch) data.method = methodMatch[1] as any;
       if (locMatch) data.location = locMatch[1];
       data.notes = desc.split(', ').pop() || '';
     } catch (e) {}
     return data;
   };
 
-  const handleInventoryChange = (key: string, field: string, value: string) => {
+  const handleInventoryChange = (key: string, field: keyof InventoryEntry, value: string) => {
     setInventoryData(prev => ({
       ...prev,
-      [key]: { ...(prev as any)[key], [field]: value }
+      [key]: { ...prev[key], [field]: value }
     }));
   };
 

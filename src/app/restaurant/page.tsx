@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 const RestaurantManagement = dynamic(() => import('@/components/features/RestaurantManagement'), {
   loading: () => <PageLoader text="Loading Restaurant..." />,
@@ -9,5 +10,9 @@ const RestaurantManagement = dynamic(() => import('@/components/features/Restaur
 });
 
 export default function RestaurantPage() {
-  return <RestaurantManagement />;
+  return (
+    <ErrorBoundary>
+      <RestaurantManagement />
+    </ErrorBoundary>
+  );
 }

@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 const GymManagement = dynamic(() => import('@/components/features/GymManagement'), {
   loading: () => <PageLoader text="Loading Gym Management..." />,
@@ -9,5 +10,9 @@ const GymManagement = dynamic(() => import('@/components/features/GymManagement'
 });
 
 export default function GymPage() {
-  return <GymManagement />;
+  return (
+    <ErrorBoundary>
+      <GymManagement />
+    </ErrorBoundary>
+  );
 }

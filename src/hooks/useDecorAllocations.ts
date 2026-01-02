@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -40,66 +40,47 @@ export interface DecorAllocation {
 }
 
 export const useDecorAllocationsQuery = (month: number, year: number) => {
-  const { user } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['decor-allocations', month, year, user?.id],
+    queryKey: ['decor-allocations', month, year, userId],
     queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const { data, error } = await supabase
-        .from('decor_allocations')
-        .select('*')
-        .eq('month', month + 1)
-        .eq('year', year)
-        .order('row_number', { ascending: true });
-      
-      if (error) throw error;
-      return data as DecorAllocation[];
+      const response = await apiClient.get<{ data: DecorAllocation[] }>(
+        `/api/decor-allocations?userId=${userId}&month=${month}&year=${year}`
+      );
+      return response.data;
     },
-    enabled: !!user,
+    enabled: !!userId && isAuthenticated,
   });
 };
 
 export const useUpsertDecorAllocationMutation = () => {
-  const { user } = useAuth();
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (allocation: Omit<DecorAllocation, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { id?: string }) => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const dataToSave = {
+    mutationFn: async (allocation: Partial<DecorAllocation>) => {
+      const response = await apiClient.post<{ data: DecorAllocation }>('/api/decor-allocations', {
         ...allocation,
-        user_id: user.id,
-        updated_at: new Date().toISOString()
-      };
-
-      const { data, error } = await supabase
-        .from('decor_allocations')
-        .upsert(dataToSave, { 
-          onConflict: 'month, year, row_number, user_id' 
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as DecorAllocation;
+        user_id: userId
+      });
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ 
         queryKey: ['decor-allocations', data.month - 1, data.year] 
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error upserting decor allocation:', error);
-      toast.error(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Failed to save: ${error.message || 'Unknown error'}`);
     },
   });
 };
 
+// Legacy support if needed, but recommended to use useUpsertDecorAllocationMutation
 export const useSaveDecorAllocationsMutation = () => {
-  const { user } = useAuth();
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -108,48 +89,26 @@ export const useSaveDecorAllocationsMutation = () => {
       month, 
       year 
     }: { 
-      allocations: Omit<DecorAllocation, 'id' | 'created_at' | 'updated_at' | 'user_id'>[], 
+      allocations: Partial<DecorAllocation>[], 
       month: number, 
       year: number 
     }) => {
-      if (!user) throw new Error('User not authenticated');
-      
-      // Delete existing allocations for this month/year
-      await supabase
-        .from('decor_allocations')
-        .delete()
-        .eq('month', month + 1)
-        .eq('year', year);
-      
-      // Insert new allocations (only non-empty rows)
-      const nonEmptyAllocations = allocations
-        .filter(allocation => allocation.customer_name.trim() !== '')
-        .map(allocation => ({
-          ...allocation,
+      // For batch saves, we'll process them sequentially or update API to handle arrays
+      const results = await Promise.all(
+        allocations.map(a => apiClient.post<{ data: DecorAllocation }>('/api/decor-allocations', {
+          ...a,
           month: month + 1,
           year,
-          user_id: user.id
-        }));
-      
-      if (nonEmptyAllocations.length > 0) {
-        const { error } = await supabase
-          .from('decor_allocations')
-          .insert(nonEmptyAllocations);
-        
-        if (error) throw error;
-      }
-      
-      return nonEmptyAllocations;
+          user_id: userId
+        }))
+      );
+      return results.map(r => r.data);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 
         queryKey: ['decor-allocations', variables.month, variables.year] 
       });
-      toast.success(`Saved ${data.length} decor allocations to database`);
-    },
-    onError: (error) => {
-      console.error('Error saving decor allocations:', error);
-      toast.error(`Failed to save decor allocations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.success('Decor allocations updated');
     },
   });
 };

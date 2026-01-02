@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 const SaunaManagement = dynamic(() => import('@/components/features/SaunaManagement'), {
   loading: () => <PageLoader text="Loading Sauna & Spa..." />,
@@ -9,5 +10,9 @@ const SaunaManagement = dynamic(() => import('@/components/features/SaunaManagem
 });
 
 export default function SaunaPage() {
-  return <SaunaManagement />;
+  return (
+    <ErrorBoundary>
+      <SaunaManagement />
+    </ErrorBoundary>
+  );
 }

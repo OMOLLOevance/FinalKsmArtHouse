@@ -118,7 +118,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
         className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className}`}
         onClick={() => handleCellEdit(item.id, field, value)}
       >
-        {value || <span className="text-gray-400 italic">0</span>}
+        {value || <span className="text-muted-foreground/50 italic">0</span>}
       </div>
     );
   };

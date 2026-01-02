@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { logger } from '@/lib/logger';
 
 export interface DecorInventoryItem {
   id: string;
@@ -22,47 +21,24 @@ export const useDecorInventoryQuery = () => {
   return useQuery({
     queryKey: ['decor-inventory', userId],
     queryFn: async (): Promise<DecorInventoryItem[]> => {
-      const { data, error } = await supabase
-        .from('decor_inventory')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('item_name', { ascending: true });
-
-      if (error) {
-        logger.error('Decor inventory fetch error:', error);
-        throw error;
-      }
-
-      return data || [];
+      const response = await apiClient.get<{ data: DecorInventoryItem[] }>(`/api/decor-inventory?userId=${userId}`);
+      return response.data;
     },
     enabled: isAuthenticated,
-    retry: 3,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
   });
 };
 
 export const useDecorCategoriesQuery = () => {
-  const { isAuthenticated } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['decor-categories'],
+    queryKey: ['decor-categories', userId],
     queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase
-        .from('decor_inventory')
-        .select('category');
-
-      if (error) {
-        logger.error('Decor categories fetch error:', error);
-        throw error;
-      }
-
-      const categories = [...new Set(data?.map(item => item.category) || [])];
+      const response = await apiClient.get<{ data: DecorInventoryItem[] }>(`/api/decor-inventory?userId=${userId}`);
+      const categories = [...new Set(response.data.map(item => item.category))];
       return categories;
     },
     enabled: isAuthenticated,
-    retry: 3,
-    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -71,22 +47,12 @@ export const useUpdateDecorInventoryMutation = () => {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<DecorInventoryItem> }) => {
-      const { data, error } = await supabase
-        .from('decor_inventory')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const response = await apiClient.put<{ data: DecorInventoryItem }>('/api/decor-inventory', { id, ...updates });
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['decor-inventory'] });
       toast.success('Inventory updated successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update inventory: ${error.message}`);
     },
   });
 };
@@ -96,52 +62,15 @@ export const useDecorActionMutation = () => {
   
   return useMutation({
     mutationFn: async ({ id, action }: { id: string; action: 'hire' | 'return' | 'damage' | 'repair' }) => {
-      // First get current values
-      const { data: current, error: fetchError } = await supabase
-        .from('decor_inventory')
-        .select('in_store, hired, damaged')
-        .eq('id', id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      let updates: Partial<DecorInventoryItem> = {};
-
-      switch (action) {
-        case 'hire':
-          if (current.in_store <= 0) throw new Error('No items available to hire');
-          updates = { in_store: current.in_store - 1, hired: current.hired + 1 };
-          break;
-        case 'return':
-          if (current.hired <= 0) throw new Error('No items to return');
-          updates = { hired: current.hired - 1, in_store: current.in_store + 1 };
-          break;
-        case 'damage':
-          if (current.in_store <= 0) throw new Error('No items available to damage');
-          updates = { in_store: current.in_store - 1, damaged: current.damaged + 1 };
-          break;
-        case 'repair':
-          if (current.damaged <= 0) throw new Error('No damaged items to repair');
-          updates = { damaged: current.damaged - 1, in_store: current.in_store + 1 };
-          break;
-      }
-
-      const { data, error } = await supabase
-        .from('decor_inventory')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const response = await apiClient.post<{ data: DecorInventoryItem }>('/api/decor-inventory', { id, action });
+      return response.data;
     },
     onSuccess: (_, { action }) => {
       queryClient.invalidateQueries({ queryKey: ['decor-inventory'] });
       toast.success(`Item ${action}d successfully`);
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: any) => {
+      toast.error(error.message || 'Action failed');
     },
   });
 };
@@ -152,25 +81,16 @@ export const useAddDecorItemMutation = () => {
   
   return useMutation({
     mutationFn: async (itemData: { category: string; item_name: string; in_store: number; price: number }) => {
-      const { data, error } = await supabase
-        .from('decor_inventory')
-        .insert({
-          user_id: userId,
-          ...itemData,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const response = await apiClient.post<{ data: DecorInventoryItem }>('/api/decor-inventory', {
+        ...itemData,
+        user_id: userId
+      });
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['decor-inventory'] });
       queryClient.invalidateQueries({ queryKey: ['decor-categories'] });
       toast.success('Item added successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to add item: ${error.message}`);
     },
   });
 };
