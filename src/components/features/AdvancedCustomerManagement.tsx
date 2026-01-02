@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useCustomers } from '@/hooks/useCustomers';
+import MonthlyAllocations from './MonthlyAllocations';
 
 interface MonthlyAllocation {
   id: string;
@@ -311,98 +312,7 @@ const AdvancedCustomerManagement: React.FC = () => {
           <p className="text-sm text-muted-foreground">{filledRows} of 25 rows filled</p>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="border p-1 w-8">#</th>
-                  <th className="border p-1 w-24">DATE</th>
-                  <th className="border p-1 w-24">LOCATION</th>
-                  <th className="border p-1 w-24">NAME</th>
-                  <th className="border p-1 w-24">PHONE NUMBER</th>
-                  <th className="border p-1 w-16">DOUBLE TENT</th>
-                  <th className="border p-1 w-16">SINGLE TENT</th>
-                  <th className="border p-1 w-16">GAZEBO TENT</th>
-                  <th className="border p-1 w-16">MILUXE TENT</th>
-                  <th className="border p-1 w-16">A-FRAME TENT</th>
-                  <th className="border p-1 w-16">B-LINE TENT</th>
-                  <th className="border p-1 w-16">PERGOLA TENT</th>
-                  <th className="border p-1 w-16">ROUND TABLE</th>
-                  <th className="border p-1 w-16">LONG TABLE</th>
-                  <th className="border p-1 w-16">BRIDAL TABLE</th>
-                  <th className="border p-1 w-16">CHAVARI SEATS</th>
-                  <th className="border p-1 w-16">LUXE SEATS</th>
-                  <th className="border p-1 w-16">CHAMELEON SEATS</th>
-                  <th className="border p-1 w-16">DIOR SEATS</th>
-                  <th className="border p-1 w-16">HIGH BACK SEAT</th>
-                  <th className="border p-1 w-16">PLASTIC SEATS</th>
-                  <th className="border p-1 w-16">BANQUET SEATS</th>
-                  <th className="border p-1 w-16">CROSS BAR SEATS</th>
-                  <th className="border p-1 w-20">TOTAL (KSH)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthlyAllocations.map((row, index) => (
-                  <tr key={row.id}>
-                    <td className="border p-1 text-center">{row.row_number}</td>
-                    <td className="border p-1">{renderEditableCell(row.date, index, 'allocation_date', 'Click for date')}</td>
-                    <td className="border p-1">{renderEditableCell(row.location, index, 'allocation_location', '+ Add Location')}</td>
-                    <td className="border p-1">{renderEditableCell(row.customer_name, index, 'allocation_customer_name', '+ Add Name')}</td>
-                    <td className="border p-1">{renderEditableCell(row.phone_number, index, 'allocation_phone_number', '+ Add Phone')}</td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.double_tent, index, 'allocation_double_tent')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">📏 + Size</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.single_tent, index, 'allocation_single_tent')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">📏 + Size</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.gazebo_tent, index, 'allocation_gazebo_tent')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">📏 + Size</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.miluxe_tent, index, 'allocation_miluxe_tent')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">📏 + Size</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.a_frame_tent, index, 'allocation_a_frame_tent')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">📏 + Size</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.b_line_tent, index, 'allocation_b_line_tent')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">📏 + Size</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.pergola_tent, index, 'allocation_pergola_tent')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">📏 + Size</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.round_table, index, 'allocation_round_table')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">L/S</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.long_table, index, 'allocation_long_table')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">L/S</Button>
-                    </td>
-                    <td className="border p-1 text-center">
-                      <div>{renderEditableCell(row.bridal_table, index, 'allocation_bridal_table')}</div>
-                      <Button variant="ghost" size="sm" className="text-xs h-4 p-0">L/S</Button>
-                    </td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.chavari_seats, index, 'allocation_chavari_seats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.luxe_seats, index, 'allocation_luxe_seats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.chameleon_seats, index, 'allocation_chameleon_seats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.dior_seats, index, 'allocation_dior_seats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.high_back_seat, index, 'allocation_high_back_seat')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.plastic_seats, index, 'allocation_plastic_seats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.banquet_seats, index, 'allocation_banquet_seats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.cross_bar_seats, index, 'allocation_cross_bar_seats')}</td>
-                    <td className="border p-1 text-center">{renderEditableCell(row.total_ksh, index, 'allocation_total_ksh')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <MonthlyAllocations />
         </CardContent>
       </Card>
 
