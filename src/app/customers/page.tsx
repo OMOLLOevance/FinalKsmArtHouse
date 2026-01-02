@@ -3,11 +3,11 @@
 import dynamic from 'next/dynamic';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
 
-const CustomerManagement = dynamic(() => import('@/components/features/CustomerManagement'), {
-  loading: () => <PageLoader text="Loading Customer Management..." />,
+const AdvancedCustomerManagement = dynamic(() => import('@/components/features/AdvancedCustomerManagement'), {
+  loading: () => <PageLoader text="Loading Advanced Customer Management..." />,
   ssr: false,
 });
 
 export default function CustomersPage() {
-  return <CustomerManagement />;
+  return <AdvancedCustomerManagement />;
 }
