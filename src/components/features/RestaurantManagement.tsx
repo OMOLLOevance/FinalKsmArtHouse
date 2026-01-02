@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Save, Printer, Database, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Printer, Database, ChevronDown, ChevronUp, Calendar, Utensils } from 'lucide-react';
 import ItemServingsManager from './ItemServingsManager';
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
@@ -179,59 +179,68 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily Inventory</CardTitle>
-          <CardDescription>{selectedDate}</CardDescription>
+      <Card className="border-primary/10 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-6">
+          <div>
+            <CardTitle className="text-xl font-bold">Daily Inventory</CardTitle>
+            <CardDescription className="text-xs">{selectedDate}</CardDescription>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total Expenses</p>
+            <p className="text-xl font-black text-success">{formatCurrency(totalCost)}</p>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase w-1/3">Item</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase w-1/3">Qty</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase w-1/3">Price</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {inventory.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-2 text-sm">{item.item}</td>
-                    <td className="px-4 py-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {inventory.map((item, index) => (
+              <Card key={index} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300">
+                <div className="p-3 space-y-3">
+                  <div className="flex items-center space-x-2 border-b pb-2">
+                    <Utensils className="h-3.5 w-3.5 text-primary opacity-70" />
+                    <h4 className="text-sm font-bold truncate">{item.item}</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Qty</label>
                       <Input
                         value={item.quantity}
                         onChange={(e) => handleChange(index, 'quantity', e.target.value)}
-                        className="h-8"
+                        className="h-8 text-xs font-bold bg-background"
+                        placeholder="0"
                       />
-                    </td>
-                    <td className="px-4 py-2">
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Price (KSH)</label>
                       <Input
                         type="number"
                         value={item.price}
                         onChange={(e) => handleChange(index, 'price', e.target.value)}
-                        className="h-8"
+                        className="h-8 text-xs font-bold text-success bg-background"
+                        placeholder="0"
                       />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-6 flex justify-between items-center border-t pt-4">
-            <span className="text-xl font-bold">Total:</span>
-            <span className="text-2xl font-bold text-success">{formatCurrency(totalCost)}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
 
+          <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-muted/20 p-4 rounded-xl border border-primary/10 gap-4">
+            <div className="text-center sm:text-left">
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest block">Accumulated Cost</span>
+              <span className="text-3xl font-black text-primary">{formatCurrency(totalCost)}</span>
+            </div>
+            <div className="flex gap-3 w-full sm:w-auto">
+              <Button onClick={handleSave} className="flex-1 sm:flex-none h-11 px-8 font-bold">
+                <Save className="h-4 w-4 mr-2" /> Save Local
+              </Button>
+              <Button onClick={() => window.print()} variant="outline" className="flex-1 sm:flex-none h-11 px-8 font-bold">
+                <Printer className="h-4 w-4 mr-2" /> Print
+              </Button>
+            </div>
+          </div>
         </CardContent>
-        <CardFooter className="flex gap-4 print:hidden">
-          <Button onClick={handleSave} className="flex-1">
-            <Save className="h-4 w-4 mr-2" /> Save Local
-          </Button>
-          <Button onClick={() => window.print()} variant="outline" className="flex-1">
-            <Printer className="h-4 w-4 mr-2" /> Print
-          </Button>
-        </CardFooter>
       </Card>
 
       <ItemServingsManager />

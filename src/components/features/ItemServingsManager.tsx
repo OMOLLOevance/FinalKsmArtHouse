@@ -78,42 +78,42 @@ const ItemServingsManager: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto border rounded-xl">
-          <table className="min-w-full divide-y divide-border">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Food Item</th>
-                <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Portion / KG</th>
-                <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Required Qty</th>
-                <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider">Estimated Cost</th>
-              </tr>
-            </thead>
-            <tbody className="bg-card divide-y divide-border">
-              {calculations.map((item, idx) => (
-                <tr key={idx} className="hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium flex items-center">
-                    <UtensilsCrossed className="h-3 w-3 mr-2 text-muted-foreground opacity-50" />
-                    {item.name}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center text-muted-foreground">
-                    {item.servingPerKg} pax
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center font-bold text-primary">
-                    {item.requiredKg} KG
-                  </td>
-                  <td className="px-4 py-3 text-sm text-right font-mono">
-                    {formatCurrency(item.totalCost)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="bg-primary/5 font-bold">
-                <td colSpan={3} className="px-4 py-4 text-right text-sm uppercase">Total Estimated Food Cost:</td>
-                <td className="px-4 py-4 text-right text-lg text-primary">{formatCurrency(grandTotal)}</td>
-              </tr>
-            </tfoot>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {calculations.map((item, idx) => (
+            <Card key={idx} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300">
+              <div className="p-4 space-y-4">
+                <div className="flex items-center space-x-2 border-b pb-2">
+                  <UtensilsCrossed className="h-4 w-4 text-primary opacity-70" />
+                  <h4 className="font-bold text-lg">{item.name}</h4>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 bg-muted/10 p-3 rounded-lg border">
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Portion / KG</label>
+                    <p className="text-sm font-bold text-muted-foreground">{item.servingPerKg} pax</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Required Qty</label>
+                    <p className="text-sm font-black text-primary">{item.requiredKg} KG</p>
+                  </div>
+                  <div className="space-y-0.5 col-span-2 border-t pt-2 mt-1">
+                    <label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Estimated Cost</label>
+                    <p className="text-lg font-black text-success">{formatCurrency(item.totalCost)}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-primary/5 p-6 rounded-2xl border border-primary/20 gap-4">
+          <div className="text-center sm:text-left">
+            <span className="text-xs font-black text-primary uppercase tracking-[0.2em] block mb-1">Grand Total Estimate</span>
+            <span className="text-4xl font-black text-primary tracking-tighter">{formatCurrency(grandTotal)}</span>
+          </div>
+          <div className="bg-primary/10 px-4 py-2 rounded-full border border-primary/20">
+            <p className="text-[10px] font-bold text-primary uppercase tracking-widest text-center">Auto-Calculated based on guest count</p>
+          </div>
         </div>
 
         <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-lg text-xs text-muted-foreground">
