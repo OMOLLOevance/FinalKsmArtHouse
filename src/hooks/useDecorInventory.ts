@@ -25,7 +25,6 @@ export const useDecorInventoryQuery = () => {
       const { data, error } = await supabase
         .from('decor_inventory')
         .select('*')
-        .eq('user_id', userId)
         .order('category', { ascending: true })
         .order('item_name', { ascending: true });
 
@@ -36,7 +35,7 @@ export const useDecorInventoryQuery = () => {
 
       return data || [];
     },
-    enabled: !!userId && isAuthenticated,
+    enabled: isAuthenticated,
     retry: 3,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -44,15 +43,14 @@ export const useDecorInventoryQuery = () => {
 };
 
 export const useDecorCategoriesQuery = () => {
-  const { userId, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['decor-categories', userId],
+    queryKey: ['decor-categories'],
     queryFn: async (): Promise<string[]> => {
       const { data, error } = await supabase
         .from('decor_inventory')
-        .select('category')
-        .eq('user_id', userId);
+        .select('category');
 
       if (error) {
         logger.error('Decor categories fetch error:', error);
@@ -62,7 +60,7 @@ export const useDecorCategoriesQuery = () => {
       const categories = [...new Set(data?.map(item => item.category) || [])];
       return categories;
     },
-    enabled: !!userId && isAuthenticated,
+    enabled: isAuthenticated,
     retry: 3,
     staleTime: 5 * 60 * 1000,
   });
