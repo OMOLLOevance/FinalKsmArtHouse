@@ -109,37 +109,6 @@ const AdvancedCustomerManagement: React.FC = () => {
   const { data: savedDecorAllocations = [], isLoading } = useDecorAllocationsQuery(currentMonth, currentYear);
   const saveDecorMutation = useSaveDecorAllocationsMutation();
   
-  // Initialize 25 empty rows for monthly allocations
-  const [monthlyAllocations, setMonthlyAllocations] = useState<MonthlyAllocation[]>(
-    Array.from({ length: 25 }, (_, i) => ({
-      id: `row-${i + 1}`,
-      row_number: i + 1,
-      date: '',
-      location: '',
-      customer_name: '',
-      phone_number: '',
-      double_tent: 0,
-      single_tent: 0,
-      gazebo_tent: 0,
-      miluxe_tent: 0,
-      a_frame_tent: 0,
-      b_line_tent: 0,
-      pergola_tent: 0,
-      round_table: 0,
-      long_table: 0,
-      bridal_table: 0,
-      chavari_seats: 0,
-      luxe_seats: 0,
-      chameleon_seats: 0,
-      dior_seats: 0,
-      high_back_seat: 0,
-      plastic_seats: 0,
-      banquet_seats: 0,
-      cross_bar_seats: 0,
-      total_ksh: 0
-    }))
-  );
-  
   // Initialize decorItems as empty array
   const [decorItems, setDecorItems] = useState<DecorItem[]>([]);
 
@@ -214,12 +183,7 @@ const AdvancedCustomerManagement: React.FC = () => {
     
     const { row, field } = editingCell;
     
-    if (field.includes('allocation_')) {
-      const actualField = field.replace('allocation_', '');
-      setMonthlyAllocations(prev => prev.map((item, index) => 
-        index === row ? { ...item, [actualField]: isNaN(Number(editValue)) ? editValue : Number(editValue) } : item
-      ));
-    } else if (field.includes('decor_')) {
+    if (field.includes('decor_')) {
       const actualField = field.replace('decor_', '');
       setDecorItems(prev => prev.map((item, index) => 
         index === row ? { ...item, [actualField]: isNaN(Number(editValue)) ? editValue : Number(editValue) } : item
@@ -303,21 +267,6 @@ const AdvancedCustomerManagement: React.FC = () => {
   };
 
   const filledDecorRows = decorItems.filter(row => row.customer_name.trim() !== '').length;
-  const filledRows = monthlyAllocations.filter(row => row.customer_name.trim() !== '').length;
-  const servedCount = monthlyAllocations.filter(row => row.customer_name.trim() !== '' && row.total_ksh > 0).length;
-  const pendingCount = monthlyAllocations.filter(row => row.customer_name.trim() !== '' && row.total_ksh === 0).length;
-
-  const addCustomer = () => {
-    const nextEmptyRow = monthlyAllocations.findIndex(row => row.customer_name.trim() === '');
-    if (nextEmptyRow !== -1) {
-      const customerNameField = document.querySelector(`[data-row="${nextEmptyRow}"][data-field="customer_name"]`) as HTMLElement;
-      if (customerNameField) {
-        customerNameField.click();
-      } else {
-        handleCellClick(nextEmptyRow, 'customer_name', '');
-      }
-    }
-  };
 
   const renderEditableCell = (value: any, row: number, field: string, placeholder?: string) => {
     const isEditing = editingCell?.row === row && editingCell?.field === field;
@@ -358,10 +307,6 @@ const AdvancedCustomerManagement: React.FC = () => {
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
-          <Button onClick={addCustomer}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Customer
-          </Button>
         </div>
       </div>
 
@@ -386,34 +331,6 @@ const AdvancedCustomerManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{filledRows}/25</div>
-              <div className="text-sm text-muted-foreground">Customers This Month</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{servedCount}</div>
-              <div className="text-sm text-muted-foreground">Served</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{pendingCount}</div>
-              <div className="text-sm text-muted-foreground">Pending</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="text-center">
         <Button 
           onClick={handleSaveDecorItems} 
@@ -432,19 +349,11 @@ const AdvancedCustomerManagement: React.FC = () => {
       </div>
 
       {/* Monthly Allocation Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Monthly Customer Allocation Table</CardTitle>
-          <p className="text-sm text-muted-foreground">{filledRows} of 25 rows filled</p>
-        </CardHeader>
-        <CardContent>
-          <MonthlyAllocationTable 
-            month={currentMonth} 
-            year={currentYear} 
-            onAddCustomer={addCustomer}
-          />
-        </CardContent>
-      </Card>
+      <MonthlyAllocationTable 
+        month={currentMonth} 
+        year={currentYear} 
+        onAddCustomer={() => {}} 
+      />
 
       {/* Decor Items Table */}
       <Card>
