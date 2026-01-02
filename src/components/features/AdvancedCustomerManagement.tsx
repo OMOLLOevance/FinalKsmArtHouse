@@ -75,6 +75,7 @@ const AdvancedCustomerManagement: React.FC = () => {
   const [editValue, setEditValue] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showDecorForm, setShowDecorForm] = useState(false);
+  const [showLightingForm, setShowLightingForm] = useState(false);
   const [newDecorAllocation, setNewDecorAllocation] = useState({
     customer_name: '',
     walkway_stands: 0,
@@ -302,6 +303,10 @@ const AdvancedCustomerManagement: React.FC = () => {
     setShowDecorForm(true);
   };
 
+  const handleAddLightingItem = () => {
+    setShowLightingForm(true);
+  };
+
   const handleSaveDecorForm = () => {
     if (!newDecorAllocation.customer_name.trim()) return;
     
@@ -418,7 +423,11 @@ const AdvancedCustomerManagement: React.FC = () => {
           </Button>
           <Button onClick={handleAddDecorItem}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Decor Item
+            Add Decor
+          </Button>
+          <Button onClick={handleAddLightingItem}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Lighting
           </Button>
         </div>
       </div>
@@ -525,7 +534,11 @@ const AdvancedCustomerManagement: React.FC = () => {
               </Button>
               <Button onClick={handleAddDecorItem} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Item
+                Add Decor
+              </Button>
+              <Button onClick={handleAddLightingItem} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Lighting
               </Button>
               <Button variant="outline" size="sm">
                 <Printer className="h-4 w-4 mr-2" />
@@ -610,7 +623,7 @@ const AdvancedCustomerManagement: React.FC = () => {
       {showDecorForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add Decor & Lighting Items</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add Decor Items</h3>
             
             <div className="mb-6">
               <label className="block text-sm font-medium mb-1 text-gray-700">Customer Name *</label>
@@ -624,7 +637,7 @@ const AdvancedCustomerManagement: React.FC = () => {
             
             <div className="mb-6">
               <h4 className="text-md font-medium mb-3 text-gray-800">Decor Items</h4>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">Walkway Stands</label>
                   <Input
@@ -644,101 +657,11 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Aisle Stands</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.aisle_stands}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, aisle_stands: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Photobooth</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.photobooth}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, photobooth: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Lecturn</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.lecturn}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, lecturn: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Stage Boards</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.stage_boards}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, stage_boards: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Backdrop Boards</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.backdrop_boards}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, backdrop_boards: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Dance Floor</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.dance_floor}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, dance_floor: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Walkway Boards</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.walkway_boards}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, walkway_boards: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">White Sticker</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.white_sticker}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, white_sticker: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">Centerpieces</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.centerpieces}
                     onChange={(e) => setNewDecorAllocation({...newDecorAllocation, centerpieces: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Glass Charger Plates</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.glass_charger_plates}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, glass_charger_plates: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Melamine Charger Plates</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.melamine_charger_plates}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, melamine_charger_plates: parseInt(e.target.value) || 0})}
                     className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -752,38 +675,65 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Gold Napkin Holders</label>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Dance Floor</label>
                   <Input
                     type="number"
-                    value={newDecorAllocation.gold_napkin_holders}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, gold_napkin_holders: parseInt(e.target.value) || 0})}
+                    value={newDecorAllocation.dance_floor}
+                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, dance_floor: parseInt(e.target.value) || 0})}
                     className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Silver Napkin Holders</label>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Stage Boards</label>
                   <Input
                     type="number"
-                    value={newDecorAllocation.silver_napkin_holders}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, silver_napkin_holders: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Roof Top Decor</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.roof_top_decor}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, roof_top_decor: parseInt(e.target.value) || 0})}
+                    value={newDecorAllocation.stage_boards}
+                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, stage_boards: parseInt(e.target.value) || 0})}
                     className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
             </div>
             
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDecorForm(false)}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveDecorForm}
+                disabled={!newDecorAllocation.customer_name.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Add Decor Items
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lighting Form Dialog */}
+      {showLightingForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Add Lighting Items</h3>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-1 text-gray-700">Customer Name *</label>
+              <Input
+                value={newDecorAllocation.customer_name}
+                onChange={(e) => setNewDecorAllocation({...newDecorAllocation, customer_name: e.target.value})}
+                placeholder="Enter customer name"
+                className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+            
             <div className="mb-6">
               <h4 className="text-md font-medium mb-3 text-gray-800">Lighting Items</h4>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">Parcan Lights</label>
                   <Input
@@ -794,38 +744,11 @@ const AdvancedCustomerManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Revolving Heads</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.revolving_heads}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, revolving_heads: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">Fairy Lights</label>
                   <Input
                     type="number"
                     value={newDecorAllocation.fairy_lights}
                     onChange={(e) => setNewDecorAllocation({...newDecorAllocation, fairy_lights: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Snake Lights</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.snake_lights}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, snake_lights: parseInt(e.target.value) || 0})}
-                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Neon Lights</label>
-                  <Input
-                    type="number"
-                    value={newDecorAllocation.neon_lights}
-                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, neon_lights: parseInt(e.target.value) || 0})}
                     className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -856,13 +779,22 @@ const AdvancedCustomerManagement: React.FC = () => {
                     className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">Neon Lights</label>
+                  <Input
+                    type="number"
+                    value={newDecorAllocation.neon_lights}
+                    onChange={(e) => setNewDecorAllocation({...newDecorAllocation, neon_lights: parseInt(e.target.value) || 0})}
+                    className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
             
             <div className="flex justify-end space-x-3">
               <Button
                 variant="outline"
-                onClick={() => setShowDecorForm(false)}
+                onClick={() => setShowLightingForm(false)}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
@@ -872,7 +804,7 @@ const AdvancedCustomerManagement: React.FC = () => {
                 disabled={!newDecorAllocation.customer_name.trim()}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Add Decor Items
+                Add Lighting Items
               </Button>
             </div>
           </div>
