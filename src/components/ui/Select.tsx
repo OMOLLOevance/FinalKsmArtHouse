@@ -62,24 +62,25 @@ const Select: React.FC<SelectProps> = ({
         disabled={disabled}
         className={`
           w-full flex items-center justify-between px-3 py-2 text-sm
-          border border-gray-300 rounded-md bg-white
-          hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
-          disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50
-          ${isOpen ? 'border-orange-500 ring-2 ring-orange-500' : ''}
+          border border-input rounded-md bg-background
+          hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
+          disabled:bg-muted disabled:cursor-not-allowed disabled:opacity-50
+          ${isOpen ? 'border-primary ring-2 ring-primary' : ''}
+          ${className}
         `}
       >
-        <span className={`truncate ${!selectedValue ? 'text-gray-500' : 'text-gray-900'}`}>
+        <span className={`truncate ${!selectedValue ? 'text-muted-foreground' : 'text-foreground'}`}>
           {displayValue}
         </span>
         <ChevronDown 
-          className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
             isOpen ? 'transform rotate-180' : ''
           }`} 
         />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
           {options.map((option) => (
             <button
               key={option.value}
@@ -88,14 +89,14 @@ const Select: React.FC<SelectProps> = ({
               disabled={option.disabled}
               className={`
                 w-full px-3 py-2 text-sm text-left flex items-center justify-between
-                hover:bg-gray-100 focus:outline-none focus:bg-gray-100
+                hover:bg-muted focus:outline-none focus:bg-muted
                 disabled:opacity-50 disabled:cursor-not-allowed
-                ${selectedValue === option.value ? 'bg-orange-50 text-orange-900' : 'text-gray-900'}
+                ${selectedValue === option.value ? 'bg-primary/10 text-primary font-bold' : 'text-popover-foreground'}
               `}
             >
               <span className="truncate">{option.label}</span>
               {selectedValue === option.value && (
-                <Check className="h-4 w-4 text-orange-600" />
+                <Check className="h-4 w-4 text-primary" />
               )}
             </button>
           ))}

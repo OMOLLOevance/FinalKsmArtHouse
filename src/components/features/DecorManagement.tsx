@@ -330,25 +330,25 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-muted/10 p-3 rounded-lg border">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">In Store</label>
-                  <div className="bg-white rounded border">
+                  <div className="bg-background rounded border">
                     {renderEditableCell(item, 'in_store', 'text-center font-bold text-lg')}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Hired</label>
-                  <div className="bg-white rounded border">
+                  <div className="bg-background rounded border">
                     {renderEditableCell(item, 'hired', 'text-center font-bold text-lg text-secondary')}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Damaged</label>
-                  <div className="bg-white rounded border">
+                  <div className="bg-background rounded border">
                     {renderEditableCell(item, 'damaged', 'text-center font-bold text-lg text-destructive')}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Price</label>
-                  <div className="bg-white rounded border">
+                  <div className="bg-background rounded border">
                     {renderEditableCell(item, 'price', 'text-right font-black text-lg text-green-600')}
                   </div>
                 </div>

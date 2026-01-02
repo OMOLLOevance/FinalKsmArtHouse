@@ -35,7 +35,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, trend, ic
     transition={{ duration: 0.5 }}
     whileHover={{ y: -4 }}
   >
-    <Card className="p-6 hover-lift glass-panel border-0 bg-gradient-to-br from-white/80 to-white/40 dark:from-gray-900/80 dark:to-gray-800/40">
+    <Card className="p-6 hover-lift glass-panel border border-border/50 bg-card/80 dark:bg-card/40 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="p-2 rounded-lg bg-primary/10">
           {icon}
@@ -185,7 +185,7 @@ const InvestorDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="p-8 glass-panel border-0 bg-gradient-to-br from-white/90 to-white/60 dark:from-gray-900/90 dark:to-gray-800/60">
+          <Card className="p-8 glass-panel border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-md">
             <div className="space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="text-3xl font-serif font-bold text-gradient">
@@ -205,7 +205,7 @@ const InvestorDashboard: React.FC = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 + index * 0.1 }}
-                    className="flex items-center space-x-4 p-4 rounded-lg bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 transition-colors"
+                    className="flex items-center space-x-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-primary/20"
                   >
                     <div className="p-3 rounded-full bg-primary/10">
                       {unit.icon}

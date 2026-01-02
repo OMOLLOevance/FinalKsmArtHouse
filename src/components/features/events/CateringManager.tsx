@@ -230,7 +230,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
                         type="text"
                         value={(inventoryData as any)[rowKey]?.good || ''}
                         onChange={(e) => handleInventoryChange(rowKey, 'good', e.target.value)}
-                        className="h-8 text-xs text-center font-bold"
+                        className="h-8 text-xs text-center font-bold bg-background"
                         placeholder="0"
                       />
                     </div>
@@ -240,7 +240,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
                         type="text"
                         value={(inventoryData as any)[rowKey]?.repair || ''}
                         onChange={(e) => handleInventoryChange(rowKey, 'repair', e.target.value)}
-                        className="h-8 text-xs text-center font-bold text-destructive"
+                        className="h-8 text-xs text-center font-bold text-destructive bg-background"
                         placeholder="0"
                       />
                     </div>

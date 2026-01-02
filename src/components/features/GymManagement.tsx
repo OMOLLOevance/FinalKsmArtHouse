@@ -344,7 +344,7 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
 
       <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-end">
         <div className="flex-1">
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-muted-foreground mb-2">
             Select Month
           </label>
           <input
