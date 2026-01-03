@@ -124,32 +124,38 @@ const InvestorDashboard: React.FC = () => {
     }
   ];
 
+  const getShare = (unitRevenue: number) => {
+    if (!stats.totalRevenue || stats.totalRevenue === 0) return '0% of total';
+    const percentage = (unitRevenue / stats.totalRevenue) * 100;
+    return `${percentage.toFixed(1)}% of total`;
+  };
+
   const businessUnits = [
     {
       name: 'Event Management',
       revenue: formatCurrency(stats.revenueByUnit?.events || 0),
-      share: '45.2% of total',
+      share: getShare(stats.revenueByUnit?.events || 0),
       icon: <Sparkles className="h-8 w-8 text-primary" />,
       description: 'Premium planning & execution'
     },
     {
       name: 'Restaurant Operations',
       revenue: formatCurrency(stats.revenueByUnit?.restaurant || 0),
-      share: '28.4% of total',
+      share: getShare(stats.revenueByUnit?.restaurant || 0),
       icon: <Building2 className="h-8 w-8 text-primary" />,
       description: 'Fine dining & catering services'
     },
     {
       name: 'Gym & Fitness',
       revenue: formatCurrency(stats.revenueByUnit?.gym || 0),
-      share: '15.1% of total',
+      share: getShare(stats.revenueByUnit?.gym || 0),
       icon: <BarChart3 className="h-8 w-8 text-primary" />,
       description: 'Premium fitness memberships'
     },
     {
       name: 'Sauna & Spa',
       revenue: formatCurrency(stats.revenueByUnit?.sauna || 0),
-      share: '11.3% of total',
+      share: getShare(stats.revenueByUnit?.sauna || 0),
       icon: <Flame className="h-8 w-8 text-primary" />,
       description: 'Luxury wellness experiences'
     }

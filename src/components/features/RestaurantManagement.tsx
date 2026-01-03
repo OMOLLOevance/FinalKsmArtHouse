@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt, Trash2, Edit2, Check } from 'lucide-react';
 import ItemServingsManager from './ItemServingsManager';
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
 import { InventoryItem } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -17,6 +17,13 @@ import { SkeletonCard } from '@/components/ui/LoadingSpinner';
 
 interface RestaurantManagementProps {
   onBack?: () => void;
+}
+
+interface LedgerEntry {
+  id: string;
+  item: string;
+  quantity: string;
+  price: string;
 }
 
 const defaultItems = [
@@ -36,64 +43,61 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   });
   
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newItemName, setNewItemName] = useState('');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [recordedItems, setRecordedItems] = useState<Set<number>>(new Set());
+  const [editingLedgerId, setEditingLedgerId] = useState<string | null>(null);
   const { showSuccess } = useToast();
 
   const { loading } = useRestaurantInventory(selectedMonth);
 
-  // Load Inventory from LocalStorage
+  // Load Inventory & Ledger from LocalStorage
   useEffect(() => {
-    const loadInventory = () => {
+    const loadData = () => {
       try {
-        const stored = localStorage.getItem(`restaurant_inventory_${selectedDate}`);
-        if (stored) {
-          const data = JSON.parse(stored);
-          setInventory(data);
-          // Mark items with existing data as recorded
-          const initialRecorded = new Set<number>();
-          data.forEach((item: any, idx: number) => {
-            if (item.quantity && item.price) initialRecorded.add(idx);
-          });
-          setRecordedItems(initialRecorded);
+        const storedInv = localStorage.getItem(`restaurant_inventory_${selectedDate}`);
+        const storedLedger = localStorage.getItem(`restaurant_ledger_${selectedDate}`);
+        
+        if (storedInv) {
+          setInventory(JSON.parse(storedInv));
         } else {
           setInventory(defaultItems.map(item => ({ item, quantity: '', price: '' })));
-          setRecordedItems(new Set());
+        }
+
+        if (storedLedger) {
+          setLedger(JSON.parse(storedLedger));
+        } else {
+          setLedger([]);
         }
       } catch (error) {
-        logger.error('Error loading local inventory:', error);
+        logger.error('Error loading local data:', error);
         setInventory(defaultItems.map(item => ({ item, quantity: '', price: '' })));
+        setLedger([]);
       }
     };
-    loadInventory();
+    loadData();
   }, [selectedDate]);
 
   // Auto-Save Effect
   useEffect(() => {
-    if (inventory.length === 0) return;
+    if (inventory.length === 0 && ledger.length === 0) return;
     
     const timer = setTimeout(() => {
       setIsAutoSaving(true);
       localStorage.setItem(`restaurant_inventory_${selectedDate}`, JSON.stringify(inventory));
+      localStorage.setItem(`restaurant_ledger_${selectedDate}`, JSON.stringify(ledger));
       setTimeout(() => setIsAutoSaving(false), 800);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [inventory, selectedDate]);
+  }, [inventory, ledger, selectedDate]);
 
   const handleChange = useCallback((index: number, field: 'quantity' | 'price', value: string) => {
     setInventory(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
-    });
-    // Remove from recorded if changed
-    setRecordedItems(prev => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
     });
   }, []);
 
@@ -107,12 +111,35 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
     const item = inventory[index];
     if (!item.quantity || !item.price) return;
     
-    setRecordedItems(prev => {
-      const next = new Set(prev);
-      next.add(index);
-      return next;
+    // Add to ledger
+    const newEntry: LedgerEntry = {
+      id: Math.random().toString(36).substr(2, 9),
+      item: item.item,
+      quantity: item.quantity,
+      price: item.price
+    };
+    
+    setLedger(prev => [...prev, newEntry]);
+
+    // Reset card inputs - Professional POS style
+    setInventory(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], quantity: '', price: '' };
+      return updated;
     });
-    showSuccess('Recorded', `${item.item} committed to daily report`);
+
+    showSuccess('Recorded', `${item.item} committed to ledger`);
+  };
+
+  const handleUpdateLedger = (id: string, field: keyof LedgerEntry, value: string) => {
+    setLedger(prev => prev.map(entry => 
+      entry.id === id ? { ...entry, [field]: value } : entry
+    ));
+  };
+
+  const handleRemoveLedgerEntry = (id: string) => {
+    setLedger(prev => prev.filter(entry => entry.id !== id));
+    showSuccess('Deleted', 'Entry removed from ledger');
   };
 
   const handleAddCustomItem = () => {
@@ -121,40 +148,16 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
     
     setInventory(prev => [{ item: name, quantity: '', price: '' }, ...prev]);
     setNewItemName('');
-    showSuccess('Added', `${name} added to today's list`);
+    showSuccess('Added', `${name} added to entry list`);
   };
 
-  const removeItem = (index: number) => {
+  const removeItemFromList = (index: number) => {
     setInventory(prev => prev.filter((_, i) => i !== index));
-    setRecordedItems(prev => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
-    });
   };
 
   const totalCost = useMemo(() => {
-    // Only count recorded items in the total for professional auditing
-    const recordedList = Array.from(recordedItems).map(idx => inventory[idx]).filter(Boolean);
-    return calculateTotalCost(recordedList.map(i => ({ price: i.price, quantity: i.quantity })));
-  }, [inventory, recordedItems]);
-
-  const handleUpdateLedgerItem = (idx: number, field: 'quantity' | 'price', value: string) => {
-    setInventory(prev => {
-      const updated = [...prev];
-      updated[idx] = { ...updated[idx], [field]: value };
-      return updated;
-    });
-  };
-
-  const handleUnrecordItem = (idx: number) => {
-    setRecordedItems(prev => {
-      const next = new Set(prev);
-      next.delete(idx);
-      return next;
-    });
-    showSuccess('Updated', 'Item removed from confirmed ledger');
-  };
+    return calculateTotalCost(ledger.map(i => ({ price: i.price, quantity: i.quantity })));
+  }, [ledger]);
 
   const filteredInventory = useMemo(() => {
     if (!searchTerm) return inventory;
@@ -230,15 +233,15 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
             <div className="text-center md:text-left space-y-2">
               <div className="flex items-center gap-2 justify-center md:justify-start">
                 <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] tracking-widest px-3">AUDITED EXPENDITURE</Badge>
-                <span className="text-[10px] font-black uppercase text-slate-500">{recordedItems.size} Confirmations</span>
+                <span className="text-[10px] font-black uppercase text-slate-500">{ledger.length} Verified Entries</span>
               </div>
               <h3 className="text-6xl font-black tracking-tighter text-primary">{formatCurrency(totalCost)}</h3>
-              <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400">Total Validated Restaurant Outgoings</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400">Total Ledger Validated Restaurant Outgoings</p>
             </div>
             <Button 
               variant="outline" 
               onClick={() => window.print()} 
-              className="h-14 px-10 font-black uppercase tracking-widest text-xs rounded-2xl border-white/10 hover:bg-white hover:text-black transition-all shadow-2xl"
+              className="h-14 px-10 font-black uppercase tracking-widest text-xs rounded-xl border-white/10 hover:bg-white hover:text-black transition-all shadow-2xl"
             >
               <Printer className="h-5 w-5 mr-3" /> Print Official Record
             </Button>
@@ -275,27 +278,20 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 print:hidden">
         {filteredInventory.map((item, index) => {
           const originalIndex = inventory.findIndex(i => i === item);
-          const isRecorded = recordedItems.has(originalIndex);
-          const canRecord = item.quantity && item.price;
+          const hasData = item.quantity && item.price;
           
           return (
             <Card key={`${item.item}-${index}`} className={`overflow-hidden transition-all duration-500 border-none group relative ${
-              isRecorded ? 'ring-2 ring-primary bg-primary/5 shadow-xl' : 'hover:shadow-lg bg-card'
+              hasData ? 'ring-2 ring-primary bg-primary/5 shadow-xl scale-[1.02]' : 'hover:shadow-lg bg-card'
             }`}>
-              {isRecorded && (
-                <div className="absolute top-3 right-3 z-20">
-                  <CheckCircle className="h-5 w-5 text-primary fill-primary/10" />
-                </div>
-              )}
-              
               <div className="p-5 space-y-5">
                 <div className="flex items-center justify-between border-b pb-3 border-primary/5">
                   <div className="flex items-center space-x-2 min-w-0">
-                    <Utensils className={`h-4 w-4 transition-colors ${isRecorded ? 'text-primary' : 'text-muted-foreground opacity-40'}`} />
-                    <h4 className={`text-sm font-black truncate uppercase tracking-tight ${isRecorded ? 'text-primary' : 'text-foreground'}`}>{item.item}</h4>
+                    <Utensils className={`h-4 w-4 transition-colors ${hasData ? 'text-primary' : 'text-muted-foreground opacity-40'}`} />
+                    <h4 className={`text-sm font-black truncate uppercase tracking-tight text-foreground`}>{item.item}</h4>
                   </div>
                   {!defaultItems.includes(item.item) && (
-                    <Button variant="ghost" size="icon" onClick={() => removeItem(originalIndex)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                    <Button variant="ghost" size="icon" onClick={() => removeItemFromList(originalIndex)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10">
                       <X className="h-3 w-3" />
                     </Button>
                   )}
@@ -337,23 +333,16 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                 </div>
 
                 <div className="pt-2">
-                  {isRecorded ? (
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[9px] font-black text-primary uppercase">Subtotal</span>
-                      <span className="text-sm font-black text-primary">{formatCurrency(parseFloat(item.quantity) * parseFloat(item.price))}</span>
-                    </div>
-                  ) : (
-                    <Button 
-                      onClick={() => handleRecordItem(originalIndex)}
-                      disabled={!canRecord}
-                      variant={canRecord ? "default" : "outline"}
-                      className={`w-full h-10 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all ${
-                        canRecord ? 'shadow-md shadow-primary/10' : 'opacity-40'
-                      }`}
-                    >
-                      {canRecord ? 'Confirm Entry' : 'Enter Details'}
-                    </Button>
-                  )}
+                  <Button 
+                    onClick={() => handleRecordItem(originalIndex)}
+                    disabled={!hasData}
+                    variant={hasData ? "default" : "outline"}
+                    className={`w-full h-10 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all ${
+                      hasData ? 'shadow-md shadow-primary/10' : 'opacity-40'
+                    }`}
+                  >
+                    {hasData ? 'Confirm Entry' : 'Enter Details'}
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -362,7 +351,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       </div>
 
       {/* Confirmed Purchase Ledger */}
-      {recordedItems.size > 0 && (
+      {ledger.length > 0 && (
         <Card className="border-none shadow-2xl overflow-hidden rounded-3xl animate-in slide-in-from-bottom-4 duration-700 glass-card">
           <CardHeader className="bg-primary/5 border-b border-primary/10 p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -376,7 +365,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                 </div>
               </div>
               <Badge className="bg-success text-success-foreground border-none font-black px-6 py-1.5 rounded-xl shadow-lg shadow-success/20 tracking-widest text-[10px]">
-                {recordedItems.size} ENTRIES AUDITED
+                {ledger.length} ENTRIES VERIFIED
               </Badge>
             </div>
           </CardHeader>
@@ -390,34 +379,42 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                     <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">Quantity</th>
                     <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Price</th>
                     <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest">Net Value</th>
-                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">Audit</th>
+                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-primary/5">
-                  {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => {
-                    const originalIdx = inventory.findIndex(i => i === item);
+                  {ledger.map((item) => {
+                    const isEditing = editingLedgerId === item.id;
                     return (
-                      <tr key={index} className="hover:bg-primary/[0.02] transition-colors group">
+                      <tr key={item.id} className="hover:bg-primary/[0.02] transition-colors group">
                         <td className="px-8 py-5">
                           <span className="font-black text-sm text-foreground uppercase tracking-tight">{item.item}</span>
                         </td>
                         <td className="px-8 py-5 text-center">
-                          <Input 
-                            value={item.quantity}
-                            onChange={(e) => handleUpdateLedgerItem(originalIdx, 'quantity', e.target.value)}
-                            className="w-20 mx-auto h-9 text-xs font-black bg-muted border-none text-center rounded-lg"
-                          />
+                          {isEditing ? (
+                            <Input 
+                              value={item.quantity}
+                              onChange={(e) => handleUpdateLedger(item.id, 'quantity', e.target.value)}
+                              className="w-20 mx-auto h-9 text-xs font-black bg-muted border-none text-center rounded-lg"
+                            />
+                          ) : (
+                            <span className="font-black text-xs bg-muted px-4 py-1.5 rounded-xl border border-primary/5 shadow-sm">{item.quantity}</span>
+                          )}
                         </td>
                         <td className="px-8 py-5 text-right">
-                          <div className="relative inline-block w-32">
-                            <Input 
-                              type="number"
-                              value={item.price}
-                              onChange={(e) => handleUpdateLedgerItem(originalIdx, 'price', e.target.value)}
-                              className="w-full h-9 text-xs font-black text-success bg-muted border-none text-right pr-8 rounded-lg"
-                            />
-                            <span className="absolute right-2 top-2.5 text-[8px] font-black text-success/40">KSH</span>
-                          </div>
+                          {isEditing ? (
+                            <div className="relative inline-block w-32">
+                              <Input 
+                                type="number"
+                                value={item.price}
+                                onChange={(e) => handleUpdateLedger(item.id, 'price', e.target.value)}
+                                className="w-full h-9 text-xs font-black text-success bg-muted border-none text-right pr-8 rounded-lg"
+                              />
+                              <span className="absolute right-2 top-2.5 text-[8px] font-black text-success/40">KSH</span>
+                            </div>
+                          ) : (
+                            <span className="font-mono text-sm text-muted-foreground">{Number(item.price).toLocaleString()}</span>
+                          )}
                         </td>
                         <td className="px-8 py-5 text-right">
                           <span className="font-black text-sm text-primary tracking-tight">
@@ -426,14 +423,33 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                         </td>
                         <td className="px-8 py-5 text-center">
                           <div className="flex items-center justify-center space-x-2">
-                            <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
-                              <CheckCircle2 className="h-4 w-4 text-success" />
-                            </div>
+                            {isEditing ? (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => {
+                                  setEditingLedgerId(null);
+                                  showSuccess('Saved', 'Ledger entry updated');
+                                }}
+                                className="h-8 w-8 bg-success/10 text-success hover:bg-success hover:text-white rounded-full transition-all"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => setEditingLedgerId(item.id)}
+                                className="h-8 w-8 text-primary/40 hover:text-primary hover:bg-primary/10 rounded-full transition-all"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={() => handleUnrecordItem(originalIdx)}
-                              className="h-8 w-8 text-destructive/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleRemoveLedgerEntry(item.id)}
+                              className="h-8 w-8 text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -461,26 +477,27 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
             {/* Mobile List View */}
             <div className="md:hidden divide-y divide-primary/5">
-              {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => {
-                const originalIdx = inventory.findIndex(i => i === item);
+              {ledger.map((item) => {
+                const isEditing = editingLedgerId === item.id;
                 return (
-                  <div key={index} className="p-6 space-y-4">
+                  <div key={item.id} className="p-6 space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Item Particulars</p>
                         <h4 className="font-black text-lg text-foreground uppercase">{item.item}</h4>
                       </div>
                       <div className="flex gap-2">
-                        <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
-                          <CheckCircle2 className="h-4 w-4 text-success" />
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleUnrecordItem(originalIdx)}
-                          className="h-8 w-8 text-destructive/60"
-                        >
-                          <Trash2 className="h-4 w-4" />
+                        {isEditing ? (
+                          <Button size="icon" variant="ghost" className="h-10 w-10 bg-success/10 text-success rounded-full" onClick={() => setEditingLedgerId(null)}>
+                            <Check className="h-5 w-5" />
+                          </Button>
+                        ) : (
+                          <Button size="icon" variant="ghost" className="h-10 w-10 bg-primary/5 text-primary rounded-full" onClick={() => setEditingLedgerId(item.id)}>
+                            <Edit2 className="h-5 w-5" />
+                          </Button>
+                        )}
+                        <Button size="icon" variant="ghost" className="h-10 w-10 bg-destructive/5 text-destructive rounded-full" onClick={() => handleRemoveLedgerEntry(item.id)}>
+                          <Trash2 className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
@@ -488,20 +505,28 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400">Qty</label>
-                        <Input 
-                          value={item.quantity}
-                          onChange={(e) => handleUpdateLedgerItem(originalIdx, 'quantity', e.target.value)}
-                          className="h-9 font-black bg-muted/20 border-none rounded-xl"
-                        />
+                        {isEditing ? (
+                          <Input 
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateLedger(item.id, 'quantity', e.target.value)}
+                            className="h-10 font-black bg-muted rounded-xl border-none"
+                          />
+                        ) : (
+                          <p className="font-black text-sm">{item.quantity}</p>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400">Price</label>
-                        <Input 
-                          type="number"
-                          value={item.price}
-                          onChange={(e) => handleUpdateLedgerItem(originalIdx, 'price', e.target.value)}
-                          className="h-9 font-black bg-muted/20 border-none rounded-xl text-success"
-                        />
+                        {isEditing ? (
+                          <Input 
+                            type="number"
+                            value={item.price}
+                            onChange={(e) => handleUpdateLedger(item.id, 'price', e.target.value)}
+                            className="h-10 font-black bg-muted rounded-xl border-none text-success"
+                          />
+                        ) : (
+                          <p className="font-black text-sm text-success">{formatCurrency(Number(item.price))}</p>
+                        )}
                       </div>
                     </div>
 
@@ -544,13 +569,13 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => (
+            {ledger.map((item, index) => (
               <tr key={index}>
                 <td className="py-2 text-xs font-bold uppercase">{item.item}</td>
                 <td className="py-2 text-xs text-center">{item.quantity || '-'}</td>
                 <td className="py-2 text-xs text-right font-mono">{item.price ? Number(item.price).toLocaleString() : '-'}</td>
                 <td className="py-2 text-xs text-right font-black font-mono">
-                  {item.price && item.quantity ? (Number(item.price) * Number(item.quantity)).toLocaleString() : '-'}
+                  {formatCurrency(Number(item.price) * Number(item.quantity))}
                 </td>
               </tr>
             ))}
