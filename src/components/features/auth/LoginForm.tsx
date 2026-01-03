@@ -20,6 +20,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     password: '',
     firstName: '',
     lastName: '',
+    role: 'staff' as 'staff' | 'manager' | 'director',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,7 +68,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           email: formData.email,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          role: 'staff',
+          role: formData.role,
         }, formData.password);
 
         if (result.success) {
@@ -109,28 +110,44 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         <CardContent className="space-y-6 pt-2">
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
-                  <Input
-                    placeholder="Enter first name"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
-                    required
-                  />
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
+                    <Input
+                      placeholder="Enter first name"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Last Name</label>
+                    <Input
+                      placeholder="Enter last name"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Last Name</label>
-                  <Input
-                    placeholder="Enter last name"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
+
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-500 delay-100">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Professional Role</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    className="w-full h-11 px-3 py-2 border border-primary/5 bg-muted/20 rounded-md text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-foreground"
                     required
-                  />
+                  >
+                    <option value="staff" className="bg-background">Staff Member</option>
+                    <option value="manager" className="bg-background">Operations Manager</option>
+                    <option value="director" className="bg-background">Director / Investor</option>
+                  </select>
                 </div>
-              </div>
+              </>
             )}
 
             <div className="space-y-1.5">
