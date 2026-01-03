@@ -20,7 +20,7 @@ export const useEntertainmentItems = () => {
         return;
       }
 
-      const userIsAdmin = user?.role === 'admin';
+      const userIsAdmin = user?.role === 'director' || user?.role === 'investor';
 
       let query = supabase
         .from('entertainment_equipment')

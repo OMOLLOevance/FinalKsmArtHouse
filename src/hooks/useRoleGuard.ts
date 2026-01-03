@@ -1,1 +1,67 @@
-import { useAuth } from '@/contexts/AuthContext';\n\ntype UserRole = 'staff' | 'operations_manager' | 'director' | 'investor';\n\ninterface RolePermissions {\n  canCreate: boolean;\n  canReadAll: boolean;\n  canReadOwn: boolean;\n  canDelete: boolean;\n}\n\nexport function useRoleGuard() {\n  const { user } = useAuth();\n  const userRole = user?.role as UserRole || 'staff';\n\n  const getPermissions = (): RolePermissions => {\n    switch (userRole) {\n      case 'staff':\n        return {\n          canCreate: true,\n          canReadAll: false,\n          canReadOwn: true,\n          canDelete: false,\n        };\n      case 'operations_manager':\n        return {\n          canCreate: true,\n          canReadAll: true,\n          canReadOwn: true,\n          canDelete: false,\n        };\n      case 'director':\n      case 'investor':\n        return {\n          canCreate: true,\n          canReadAll: true,\n          canReadOwn: true,\n          canDelete: true,\n        };\n      default:\n        return {\n          canCreate: false,\n          canReadAll: false,\n          canReadOwn: false,\n          canDelete: false,\n        };\n    }\n  };\n\n  const permissions = getPermissions();\n\n  const canDeleteTransaction = () => permissions.canDelete;\n  const canViewAllTransactions = () => permissions.canReadAll;\n  const isStaff = () => userRole === 'staff';\n  const isOperationsManager = () => userRole === 'operations_manager';\n  const isDirectorOrInvestor = () => ['director', 'investor'].includes(userRole);\n\n  return {\n    userRole,\n    permissions,\n    canDeleteTransaction,\n    canViewAllTransactions,\n    isStaff,\n    isOperationsManager,\n    isDirectorOrInvestor,\n  };\n}\n
+import { useAuth } from '@/contexts/AuthContext';
+
+type UserRole = 'staff' | 'operations_manager' | 'director' | 'investor';
+
+interface RolePermissions {
+  canCreate: boolean;
+  canReadAll: boolean;
+  canReadOwn: boolean;
+  canDelete: boolean;
+}
+
+export function useRoleGuard() {
+  const { user } = useAuth();
+  const userRole = user?.role as UserRole || 'staff';
+
+  const getPermissions = (): RolePermissions => {
+    switch (userRole) {
+      case 'staff':
+        return {
+          canCreate: true,
+          canReadAll: false,
+          canReadOwn: true,
+          canDelete: false,
+        };
+      case 'operations_manager':
+        return {
+          canCreate: true,
+          canReadAll: true,
+          canReadOwn: true,
+          canDelete: false,
+        };
+      case 'director':
+      case 'investor':
+        return {
+          canCreate: true,
+          canReadAll: true,
+          canReadOwn: true,
+          canDelete: true,
+        };
+      default:
+        return {
+          canCreate: false,
+          canReadAll: false,
+          canReadOwn: false,
+          canDelete: false,
+        };
+    }
+  };
+
+  const permissions = getPermissions();
+
+  const canDeleteTransaction = () => permissions.canDelete;
+  const canViewAllTransactions = () => permissions.canReadAll;
+  const isStaff = () => userRole === 'staff';
+  const isOperationsManager = () => userRole === 'operations_manager';
+  const isDirectorOrInvestor = () => ['director', 'investor'].includes(userRole);
+
+  return {
+    userRole,
+    permissions,
+    canDeleteTransaction,
+    canViewAllTransactions,
+    isStaff,
+    isOperationsManager,
+    isDirectorOrInvestor,
+  };
+}

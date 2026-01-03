@@ -20,7 +20,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     password: '',
     firstName: '',
     lastName: '',
-    role: 'staff' as 'staff' | 'manager' | 'director',
+    role: 'staff' as 'staff' | 'operations_manager' | 'director',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -143,7 +143,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     required
                   >
                     <option value="staff" className="bg-background">Staff Member</option>
-                    <option value="manager" className="bg-background">Operations Manager</option>
+                    <option value="operations_manager" className="bg-background">Operations Manager</option>
                     <option value="director" className="bg-background">Director / Investor</option>
                   </select>
                 </div>
