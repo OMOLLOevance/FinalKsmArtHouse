@@ -13,7 +13,7 @@ export interface CateringItem {
   updated_at: string;
 }
 
-export interface InventoryItem {
+export interface CateringTypeInventoryItem {
   id: string;
   name: string;
   category: string;

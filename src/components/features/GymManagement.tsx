@@ -46,6 +46,7 @@ interface GymManagementProps {
 
 const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const { data: finances, isLoading: financesLoading, refetch: refetchFinances } = useGymFinancesQuery();
   const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useGymMembersQuery();
 

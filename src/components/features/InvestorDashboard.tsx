@@ -62,7 +62,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, trend, ic
   </motion.div>
 );
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-background/90 backdrop-blur-md border border-border p-3 rounded-xl shadow-xl">

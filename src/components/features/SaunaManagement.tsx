@@ -7,6 +7,7 @@ import {
   useCreateSaunaBookingMutation, 
   useDeleteSaunaBookingMutation
 } from '@/hooks/use-sauna-api';
+import { useAuth } from '@/contexts/AuthContext';
 import { SaunaBooking } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
