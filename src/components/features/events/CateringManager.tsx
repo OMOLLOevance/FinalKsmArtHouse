@@ -212,107 +212,131 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       const categoryDbItems = inventoryItems.filter(i => i.category === categoryName);
       const categoryPendingItems = pendingItems.filter(i => i.category === categoryName);
 
+      if (categoryDbItems.length === 0 && categoryPendingItems.length === 0) {
+        return (
+          <div key={categoryName} className="space-y-4">
+            <div className="flex items-center justify-between border-b pb-2 border-primary/20">
+              <h3 className="text-lg font-black tracking-tight text-foreground uppercase tracking-widest opacity-80">{categoryName}</h3>
+              <Button size="xs" variant="outline" onClick={() => handleAddSlot(categoryName)} className="h-8 text-[10px] font-black uppercase tracking-widest border-primary/20">
+                <Plus className="h-3 w-3 mr-1" /> Initialize {categoryName}
+              </Button>
+            </div>
+            <div className="py-8 text-center text-muted-foreground bg-muted/5 border border-dashed rounded-2xl">
+              <p className="text-xs font-bold uppercase tracking-widest opacity-40">No records found in this classification</p>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div key={categoryName} className="space-y-4">
           <div className="flex items-center justify-between border-b pb-2 border-primary/20">
-            <h3 className="text-lg font-black tracking-tight text-foreground">{categoryName}</h3>
-            <Button size="xs" variant="outline" onClick={() => handleAddSlot(categoryName)}>
-              <Plus className="h-3 w-3 mr-1" /> Add Item to {categoryName}
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-6 bg-primary rounded-full" />
+              <h3 className="text-lg font-black tracking-tight text-foreground uppercase tracking-widest">{categoryName}</h3>
+            </div>
+            <Button size="xs" variant="outline" onClick={() => handleAddSlot(categoryName)} className="h-8 text-[10px] font-black uppercase tracking-widest border-primary/20 hover:bg-primary hover:text-white transition-all">
+              <Plus className="h-3 w-3 mr-1" /> Add New {categoryName}
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* Pending New Items */}
-            {categoryPendingItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden border-primary bg-primary/5 shadow-md border-dashed">
-                <div className="p-3 space-y-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1">
-                      <label className="text-[9px] font-black uppercase text-primary tracking-widest mb-1 block">New Particulars</label>
+          <div className="overflow-hidden rounded-2xl border border-primary/5 shadow-xl glass-card">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/30 border-b border-primary/5">
+                  <th className="px-6 py-4 text-[10px] font-black uppercase text-muted-foreground tracking-widest">Item Particulars</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest w-32">Good Condition</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest w-32">Needs Repair</th>
+                  <th className="px-6 py-4 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest w-40">Operational Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary/5">
+                {/* Pending New Items */}
+                {categoryPendingItems.map((item) => (
+                  <tr key={item.id} className="bg-primary/[0.03] animate-in fade-in slide-in-from-left-2 duration-300">
+                    <td className="px-6 py-3">
                       <Input
                         value={item.particular}
                         onChange={(e) => handleInventoryFieldChange(item.id, 'particular', e.target.value, true)}
-                        className="h-8 text-xs font-bold bg-background"
-                        placeholder="Enter item name..."
+                        className="h-10 text-sm font-black bg-background border-primary/20 shadow-inner rounded-xl"
+                        placeholder="New Item Name..."
                         autoFocus
                       />
-                    </div>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setPendingItems(prev => prev.filter(p => p.id !== item.id))}>
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-muted-foreground block text-center">Good</label>
+                    </td>
+                    <td className="px-6 py-3">
                       <Input
                         type="number"
                         value={item.good_condition}
                         onChange={(e) => handleInventoryFieldChange(item.id, 'good_condition', e.target.value, true)}
-                        className="h-8 text-xs text-center font-bold"
+                        className="h-10 text-sm text-center font-black bg-background border-primary/20 rounded-xl"
                       />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-muted-foreground block text-center">Repair</label>
+                    </td>
+                    <td className="px-6 py-3">
                       <Input
                         type="number"
                         value={item.repair_needed}
                         onChange={(e) => handleInventoryFieldChange(item.id, 'repair_needed', e.target.value, true)}
-                        className="h-8 text-xs text-center font-bold"
+                        className="h-10 text-sm text-center font-black bg-background border-primary/20 rounded-xl text-destructive"
                       />
-                    </div>
-                  </div>
-                  <Button className="w-full h-8 text-[10px] font-black uppercase" size="sm" onClick={() => handleSaveItem(item, true)}>
-                    <Save className="h-3 w-3 mr-2" /> Add to {categoryName}
-                  </Button>
-                </div>
-              </Card>
-            ))}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Button size="sm" onClick={() => handleSaveItem(item, true)} className="h-9 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20">
+                          <Save className="h-3.5 w-3.5 mr-2" /> Save
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl" onClick={() => setPendingItems(prev => prev.filter(p => p.id !== item.id))}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
 
-            {/* Existing DB Items */}
-            {categoryDbItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all border-l-4 border-l-primary/40">
-                <div className="p-3 space-y-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1">
-                      <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1 block">Particulars</label>
-                      <Input
-                        value={localInventory[item.id]?.particular ?? item.particular}
-                        onChange={(e) => handleInventoryFieldChange(item.id, 'particular', e.target.value, false)}
-                        className="h-8 text-xs font-medium bg-background"
-                      />
-                    </div>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive/50 hover:text-destructive hover:bg-destructive/10" onClick={() => deleteInventory.mutate(item.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-muted-foreground block text-center">Good</label>
-                      <Input
-                        type="number"
-                        value={localInventory[item.id]?.good_condition ?? item.good_condition}
-                        onChange={(e) => handleInventoryFieldChange(item.id, 'good_condition', e.target.value, false)}
-                        className="h-8 text-xs text-center font-bold"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-muted-foreground block text-center">Repair</label>
-                      <Input
-                        type="number"
-                        value={localInventory[item.id]?.repair_needed ?? item.repair_needed}
-                        onChange={(e) => handleInventoryFieldChange(item.id, 'repair_needed', e.target.value, false)}
-                        className="h-8 text-xs text-center font-bold text-destructive"
-                      />
-                    </div>
-                  </div>
-                  {localInventory[item.id] && (
-                    <Button variant="outline" className="w-full h-7 text-[9px] font-black uppercase border-primary/30 text-primary hover:bg-primary hover:text-white" onClick={() => handleSaveItem(item, false)}>
-                      <Save className="h-3 w-3 mr-2" /> Save Changes
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
+                {/* Existing DB Items */}
+                {categoryDbItems.map((item) => {
+                  const hasChanges = !!localInventory[item.id];
+                  return (
+                    <tr key={item.id} className="hover:bg-primary/[0.01] transition-colors group">
+                      <td className="px-6 py-4">
+                        <Input
+                          value={localInventory[item.id]?.particular ?? item.particular}
+                          onChange={(e) => handleInventoryFieldChange(item.id, 'particular', e.target.value, false)}
+                          className="h-10 text-sm font-bold bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl transition-all"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Input
+                          type="number"
+                          value={localInventory[item.id]?.good_condition ?? item.good_condition}
+                          onChange={(e) => handleInventoryFieldChange(item.id, 'good_condition', e.target.value, false)}
+                          className="h-10 text-sm text-center font-black bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Input
+                          type="number"
+                          value={localInventory[item.id]?.repair_needed ?? item.repair_needed}
+                          onChange={(e) => handleInventoryFieldChange(item.id, 'repair_needed', e.target.value, false)}
+                          className="h-10 text-sm text-center font-black bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl text-destructive"
+                        />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          {hasChanges && (
+                            <Button size="sm" variant="outline" onClick={() => handleSaveItem(item, false)} className="h-9 px-4 text-[10px] font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl shadow-sm animate-in zoom-in-95">
+                              <Save className="h-3.5 w-3.5 mr-2" /> Commit
+                            </Button>
+                          )}
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteInventory.mutate(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       );
