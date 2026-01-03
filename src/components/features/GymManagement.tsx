@@ -48,6 +48,14 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
   const { data: finances, isLoading: financesLoading, refetch: refetchFinances } = useGymFinancesQuery();
   const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useGymMembersQuery();
+
+  const addFinanceMutation = useCreateGymFinanceMutation();
+  const updateFinanceMutation = useUpdateGymFinanceMutation();
+  const deleteFinanceMutation = useDeleteGymFinanceMutation();
+  const addMemberMutation = useCreateGymMemberMutation();
+  const updateMemberMutation = useUpdateGymMemberMutation();
+  const deleteMemberMutation = useDeleteGymMemberMutation();
+
   const [activeTab, setActiveTab] = useState<'finances' | 'members'>('finances');
   const [isAdding, setIsAdding] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
