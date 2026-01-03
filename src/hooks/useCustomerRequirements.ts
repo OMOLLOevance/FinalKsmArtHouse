@@ -31,10 +31,10 @@ export const useCustomerRequirementsQuery = (customerId?: string) => {
       
       return (response.data || []).map(item => ({
         ...item,
-        customer_name: item.customers?.name,
-        item_name: item.decor_inventory?.item_name,
-        item_category: item.decor_inventory?.category,
-        item_price: item.decor_inventory?.price,
+        customer_name: item.customers?.name || 'Unknown',
+        item_name: item.decor_inventory?.item_name || 'Unknown',
+        item_category: item.decor_inventory?.category || 'N/A',
+        item_price: Number(item.decor_inventory?.price || 0),
       }));
     },
     enabled: !!userId && isAuthenticated,

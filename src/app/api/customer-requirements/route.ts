@@ -24,27 +24,47 @@ export async function GET(request: NextRequest) {
 
     const client = token ? createAuthenticatedClient(token) : supabase;
 
+    // Use a more robust fetching strategy to avoid "relationship not found" schema cache issues
+    // First, fetch the base requirements
     let query = client
       .from('customer_requirements')
-      .select(`
-        *,
-        customers (name),
-        decor_inventory (item_name, category, price)
-      `)
+      .select('*')
       .eq('user_id', userId);
 
     if (customerId) {
       query = query.eq('customer_id', customerId);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data: requirements, error: reqError } = await query.order('created_at', { ascending: false });
 
-    if (error) {
-        logger.error('Customer Requirements GET Error:', error);
-        throw ApiError.fromSupabase(error);
+    if (reqError) {
+        logger.error('Requirements fetch error:', reqError);
+        throw ApiError.fromSupabase(reqError);
     }
 
-    return NextResponse.json({ data: data || [] });
+    if (!requirements || requirements.length === 0) {
+        return NextResponse.json({ data: [] });
+    }
+
+    // Now manually join the data to be 100% safe from Supabase schema cache issues
+    const customerIds = [...new Set(requirements.map(r => r.customer_id))];
+    const itemIds = [...new Set(requirements.map(r => r.decor_item_id))];
+
+    const [customersRes, itemsRes] = await Promise.all([
+        client.from('customers').select('id, name').in('id', customerIds),
+        client.from('decor_inventory').select('id, item_name, category, price').in('id', itemIds)
+    ]);
+
+    const customersMap = new Map(customersRes.data?.map(c => [c.id, c]) || []);
+    const itemsMap = new Map(itemsRes.data?.map(i => [i.id, i]) || []);
+
+    const enrichedData = requirements.map(req => ({
+        ...req,
+        customers: customersMap.get(req.customer_id) || { name: 'Unknown' },
+        decor_inventory: itemsMap.get(req.decor_item_id) || { item_name: 'Unknown', category: 'N/A', price: 0 }
+    }));
+
+    return NextResponse.json({ data: enrichedData });
   } catch (error: any) {
     logger.error('Customer Requirements GET Exception:', error);
     const status = error instanceof ApiError ? error.status : 500;
