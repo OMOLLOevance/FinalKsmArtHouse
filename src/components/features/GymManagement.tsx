@@ -16,6 +16,7 @@ import { calculateMembershipEndDate } from '@/utils/calculations';
 import { sanitizePhoneNumber, formatCurrency } from '@/utils/formatters';
 import { useFinanceSummary } from '@/hooks/use-finance';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
