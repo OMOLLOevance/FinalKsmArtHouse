@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, ArrowLeft, Save, Waves } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, Waves, X } from 'lucide-react';
 import { 
   useSaunaBookingsQuery, 
   useCreateSaunaBookingMutation, 
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
 
@@ -73,8 +73,17 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
 
   if (bookingsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner text="Loading sauna data..." />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-10 w-48 bg-muted animate-pulse rounded-lg" />
+          <div className="h-10 w-32 bg-muted animate-pulse rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="h-24 bg-muted/20 animate-pulse rounded-xl" />
+          <div className="h-24 bg-muted/20 animate-pulse rounded-xl" />
+          <div className="h-24 bg-muted/20 animate-pulse rounded-xl" />
+        </div>
+        <SkeletonCard count={8} />
       </div>
     );
   }
@@ -90,7 +99,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
             </Button>
           )}
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Sauna Management</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-primary">Sauna Management</h2>
             <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Wellness Operations</p>
           </div>
         </div>
@@ -101,14 +110,19 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
       </div>
 
       {isAdding && (
-        <Card>
+        <Card className="glass-card glow-primary">
           <CardHeader>
-            <CardTitle>New Booking Entry</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>New Booking Entry</CardTitle>
+              <Button variant="ghost" size="icon" onClick={() => setIsAdding(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Date</label>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Date</label>
                 <Input 
                   type="date" 
                   value={formData.date} 
@@ -116,8 +130,8 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                   required 
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium">Time</label>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Time</label>
                 <Input 
                   type="time" 
                   value={formData.time} 
@@ -125,31 +139,33 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                   required 
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium">Client</label>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Client Name</label>
                 <Input 
                   type="text" 
                   value={formData.client} 
                   onChange={(e) => setFormData({ ...formData, client: e.target.value })} 
+                  placeholder="Enter client name"
                   required 
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium">Amount</label>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Amount (KSH)</label>
                 <Input 
                   type="number" 
                   value={formData.amount || ''} 
                   onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} 
+                  placeholder="0.00"
                   required 
                 />
               </div>
-              <div className="md:col-span-2 flex justify-end space-x-2">
+              <div className="md:col-span-2 flex justify-end space-x-2 pt-4">
                 <Button variant="outline" type="button" onClick={() => setIsAdding(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createBookingMutation.isPending}>
                   <Save className="h-4 w-4 mr-2" />
-                  {createBookingMutation.isPending ? 'Saving...' : 'Save'}
+                  {createBookingMutation.isPending ? 'Saving...' : 'Save Booking'}
                 </Button>
               </div>
             </form>
@@ -171,7 +187,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-success">
-                {formatCurrency(bookings?.reduce((sum: number, b: SaunaBooking) => sum + Number(b.amount), 0) || 0)}
+                {formatCurrency(bookings?.reduce((sum: number, b: any) => sum + Number(b.amount), 0) || 0)}
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Revenue</div>
             </div>
@@ -181,7 +197,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-primary">
-                {bookings?.filter((b: SaunaBooking) => b.status === 'booked').length || 0}
+                {bookings?.filter((b: any) => b.status === 'booked').length || 0}
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Upcoming</div>
             </div>
@@ -192,20 +208,20 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
       <Card className="border-none shadow-sm bg-transparent">
         <CardHeader className="px-0 pb-4">
           <CardTitle className="text-xl font-bold">Recent Bookings</CardTitle>
-          <CardDescription className="text-xs">History of wellness sessions</CardDescription>
+          <CardDescription className="text-xs uppercase tracking-[0.2em] font-black opacity-60">History of wellness sessions</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {bookings?.map((item: SaunaBooking) => (
-              <Card key={item.id} className={`overflow-hidden border-l-4 ${item.status === 'completed' ? 'border-l-success' : 'border-l-warning'} hover:shadow-md transition-shadow`}>
+            {bookings?.map((item: any) => (
+              <Card key={item.id} className={`overflow-hidden border-l-4 ${item.status === 'completed' ? 'border-l-success' : 'border-l-warning'} hover-lift glass-card transition-all duration-300`}>
                 <div className="p-4 space-y-4">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{item.date}</p>
-                      <h4 className="text-lg font-bold text-primary truncate max-w-[160px]">{item.client}</h4>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-[0.2em] mb-1">{item.date}</p>
+                      <h4 className="text-lg font-black text-foreground truncate" title={item.client}>{item.client}</h4>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Badge variant={item.status === 'completed' ? 'success' : 'warning'} className="text-[9px] h-4 font-black uppercase tracking-tighter">
+                    <div className="flex items-center space-x-1 ml-2">
+                      <Badge variant={item.status === 'completed' ? 'success' : 'warning'} className="text-[8px] h-4 font-black uppercase tracking-widest px-1.5 border-none">
                         {item.status}
                       </Badge>
                       <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
@@ -214,11 +230,12 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                     </div>
                   </div>
 
-                  <div className="bg-muted/30 p-2 rounded-lg border">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Amount Paid</label>
-                      <p className="text-sm font-black text-success">{formatCurrency(Number(item.amount))}</p>
+                  <div className="bg-muted/20 p-3 rounded-xl border border-primary/5 shadow-inner flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
+                      <Waves className="h-3.5 w-3.5 text-primary opacity-50" />
+                      <span className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest">Amount Paid</span>
                     </div>
+                    <p className="text-base font-black text-success tracking-tighter">{formatCurrency(Number(item.amount))}</p>
                   </div>
                 </div>
               </Card>
@@ -226,7 +243,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
             {bookings?.length === 0 && (
               <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
                 <Waves className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-medium">No bookings recorded yet.</p>
+                <p className="text-lg font-medium opacity-50">No bookings recorded yet.</p>
               </div>
             )}
           </div>

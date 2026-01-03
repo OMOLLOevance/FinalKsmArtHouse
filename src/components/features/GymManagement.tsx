@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/Dialog';
+import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
 
 import { calculateMembershipEndDate } from '@/utils/calculations';
 import { sanitizePhoneNumber, formatCurrency } from '@/utils/formatters';
@@ -231,24 +232,24 @@ Thank you for being part of our fitness community!`
   const renderFinanceCards = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
       {monthlyFinances.map((finance) => (
-        <Card key={finance.id} className={`overflow-hidden border-l-4 ${finance.type === 'income' ? 'border-l-success' : 'border-l-destructive'} hover:shadow-md transition-shadow`}>
+        <Card key={finance.id} className={`overflow-hidden border-l-4 ${finance.type === 'income' ? 'border-l-success' : 'border-l-destructive'} hover-lift glass-card transition-all duration-300`}>
           <div className="p-4 space-y-3">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{finance.date}</p>
+                <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest opacity-60">{finance.date}</p>
                 <h4 className="text-sm font-bold truncate max-w-[150px]">{finance.description}</h4>
               </div>
               <div className="flex space-x-1">
-                <Button variant="ghost" size="xs" onClick={() => handleEditFinance(finance)} className="h-7 w-7 p-0">
-                  <Edit className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="xs" onClick={() => handleEditFinance(finance)} className="h-7 w-7 p-0 hover:bg-primary/10">
+                  <Edit className="h-3.5 w-3.5 text-primary/70" />
                 </Button>
                 <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
-            <div className="bg-muted/30 p-2 rounded border">
-              <p className={`text-lg font-black ${finance.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+            <div className="bg-muted/30 p-2 rounded-lg border border-primary/5 shadow-inner">
+              <p className={`text-lg font-black tracking-tighter ${finance.type === 'income' ? 'text-success' : 'text-destructive'}`}>
                 {finance.type === 'income' ? '+' : '-'}{formatCurrency(finance.amount)}
               </p>
             </div>
@@ -256,9 +257,9 @@ Thank you for being part of our fitness community!`
         </Card>
       ))}
       {monthlyFinances.length === 0 && (
-        <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
-          <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-20" />
-          <p className="text-lg font-medium">No finance records for this month.</p>
+        <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-2xl bg-muted/5">
+          <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-10" />
+          <p className="text-lg font-medium opacity-50">No finance records for this month.</p>
         </div>
       )}
     </div>
@@ -269,18 +270,18 @@ Thank you for being part of our fitness community!`
       {members?.slice(0, displayCount).map((member) => {
         const isExpired = new Date(member.endDate) < new Date();
         return (
-          <Card key={member.id} className={`overflow-hidden border-l-4 ${isExpired ? 'border-l-destructive' : 'border-l-primary'} hover:shadow-md transition-shadow`}>
+          <Card key={member.id} className={`overflow-hidden border-l-4 ${isExpired ? 'border-l-destructive' : 'border-l-primary'} hover-lift glass-card transition-all duration-300`}>
             <div className="p-4 space-y-4">
               <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="text-lg font-bold text-primary truncate max-w-[160px]">{member.name}</h4>
-                  <Badge variant={isExpired ? 'destructive' : 'success'} className="text-[9px] h-4 font-black uppercase tracking-tighter">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-lg font-black text-foreground truncate leading-tight mb-1">{member.name}</h4>
+                  <Badge variant={isExpired ? 'destructive' : 'success'} className="text-[8px] h-4 font-black uppercase tracking-widest px-1.5 border-none">
                     {isExpired ? 'Expired' : 'Active'}
                   </Badge>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Button variant="ghost" size="xs" onClick={() => handleEditMember(member)} className="h-7 w-7 p-0">
-                    <Edit className="h-3.5 w-3.5" />
+                <div className="flex items-center space-x-1 shrink-0 ml-2">
+                  <Button variant="ghost" size="xs" onClick={() => handleEditMember(member)} className="h-7 w-7 p-0 hover:bg-primary/10">
+                    <Edit className="h-3.5 w-3.5 text-primary/70" />
                   </Button>
                   <Button variant="ghost" size="xs" onClick={() => sendWhatsAppNotification(member, 7)} className="h-7 w-7 p-0 text-green-600 hover:bg-green-50">
                     <MessageCircle className="h-3.5 w-3.5" />
@@ -290,14 +291,15 @@ Thank you for being part of our fitness community!`
                   </Button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 bg-muted/30 p-2 rounded-lg border">
+
+              <div className="grid grid-cols-2 gap-2 bg-muted/20 p-2.5 rounded-xl border border-primary/5">
                 <div className="space-y-0.5">
-                  <label className="text-[8px] font-black uppercase text-muted-foreground">Package</label>
-                  <p className="text-xs font-bold capitalize">{member.packageType.replace('-', ' ')}</p>
+                  <label className="text-[8px] font-black uppercase text-muted-foreground/70 tracking-widest block">Package</label>
+                  <p className="text-[10px] font-bold capitalize text-primary">{member.packageType.replace('-', ' ')}</p>
                 </div>
                 <div className="space-y-0.5">
-                  <label className="text-[8px] font-black uppercase text-muted-foreground">Expires</label>
-                  <p className={`text-xs font-bold ${isExpired ? 'text-destructive' : 'text-foreground'}`}>{member.endDate}</p>
+                  <label className="text-[8px] font-black uppercase text-muted-foreground/70 tracking-widest block text-right">Expires</label>
+                  <p className={`text-[10px] font-bold text-right ${isExpired ? 'text-destructive' : 'text-foreground'}`}>{member.endDate}</p>
                 </div>
               </div>
             </div>
@@ -305,9 +307,9 @@ Thank you for being part of our fitness community!`
         );
       })}
       {members?.length === 0 && (
-        <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
-          <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
-          <p className="text-lg font-medium">No gym members found.</p>
+        <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-2xl bg-muted/5">
+          <Users className="h-12 w-12 mx-auto mb-4 opacity-10" />
+          <p className="text-lg font-medium opacity-50">No gym members found.</p>
         </div>
       )}
     </div>
@@ -315,11 +317,18 @@ Thank you for being part of our fitness community!`
 
   if (financesLoading || membersLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading gym data...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-10 w-64 bg-muted animate-pulse rounded-lg" />
+          <div className="h-10 w-32 bg-muted animate-pulse rounded-lg" />
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="h-24 bg-muted/20 animate-pulse rounded-xl" />
+          <div className="h-24 bg-muted/20 animate-pulse rounded-xl" />
+          <div className="h-24 bg-muted/20 animate-pulse rounded-xl" />
+          <div className="h-24 bg-muted/20 animate-pulse rounded-xl" />
+        </div>
+        <SkeletonCard count={12} />
       </div>
     );
   }

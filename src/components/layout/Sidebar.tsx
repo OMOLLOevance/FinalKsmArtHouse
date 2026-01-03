@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const navItems = [
@@ -89,57 +90,54 @@ const Sidebar = () => {
       <div className={`
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 fixed md:static inset-y-0 left-0 z-50
-        flex flex-col w-72 bg-card border-r border-border h-screen
-        transition-all duration-300 ease-in-out overflow-y-auto
-        print:hidden
+        flex flex-col w-72 bg-card/95 backdrop-blur-xl border-r border-primary/10 h-screen
+        transition-all duration-500 ease-in-out overflow-y-auto
+        print:hidden shadow-2xl shadow-primary/5
       `}>
-        <div className="p-6 border-b border-border">
+        <div className="p-8 border-b border-primary/5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Sparkles className="w-5 h-5 text-white" />
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary via-indigo-600 to-teal-500 rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 animate-pulse">
+                <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-tighter text-primary">KSM.ART HOUSE</h1>
-                <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase opacity-70">Premium Suite</p>
+                <h1 className="text-xl font-black tracking-tighter text-primary leading-none mb-1">KSM.ART</h1>
+                <p className="text-[9px] text-muted-foreground font-black tracking-[0.2em] uppercase opacity-60">Management Suite</p>
               </div>
             </div>
             <ThemeToggle />
           </div>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-6 space-y-2">
           {navItems.map((item) => {
             if (item.isSection) {
               const isExpanded = expandedSections[item.id];
               return (
-                <div key={item.id} className="space-y-1">
+                <div key={item.id} className="space-y-2 py-2">
                   <button
                     onClick={() => toggleSection(item.id)}
-                    className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all hover:bg-muted text-muted-foreground hover:text-foreground"
+                    className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 hover:text-primary transition-colors"
                   >
-                    <div className="flex items-center">
-                      <item.icon className="w-4 h-4 mr-3 text-primary opacity-70" />
-                      <span>{item.label}</span>
-                    </div>
-                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    <span>{item.label}</span>
+                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                   </button>
                   
                   {isExpanded && (
-                    <div className="ml-4 space-y-1">
+                    <div className="space-y-1">
                       {item.children?.map((child) => {
                         const isActive = pathname === child.href;
                         return (
                           <button
                             key={child.id}
                             onClick={() => handleNavigation(child.href)}
-                            className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                            className={`w-full flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
                               isActive 
-                                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20' 
-                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]' 
+                                : 'text-muted-foreground hover:text-primary hover:bg-primary/5 hover:translate-x-1'
                             }`}
                           >
-                            <child.icon className="w-4 h-4 mr-3" />
+                            <child.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-white' : 'text-primary/60'}`} />
                             <span>{child.label}</span>
                           </button>
                         );
@@ -154,13 +152,13 @@ const Sidebar = () => {
                 <button
                   key={item.id}
                   onClick={() => handleNavigation(item.href!)}
-                  className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all ${
+                  className={`w-full flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
                     isActive 
-                      ? 'bg-primary text-primary-foreground shadow-md' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' 
+                      : 'text-muted-foreground hover:text-primary hover:bg-primary/5 hover:translate-x-1'
                   }`}
                 >
-                  <item.icon className="w-4 h-4 mr-3" />
+                  <item.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-white' : 'text-primary/60'}`} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -168,28 +166,28 @@ const Sidebar = () => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border bg-muted/20">
+        <div className="p-6 border-t border-primary/5 bg-primary/5 backdrop-blur-sm">
           {user ? (
             <div className="space-y-4">
               <div className="flex items-center space-x-3 px-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-primary-foreground text-sm font-black shadow-inner">
                   {user.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{user.email}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</p>
+                  <p className="text-sm font-black truncate text-foreground">{user.email?.split('@')[0]}</p>
+                  <Badge variant="outline" className="text-[8px] uppercase font-black py-0 px-1.5 border-primary/30 text-primary">{user.role}</Badge>
                 </div>
               </div>
               <Button 
-                variant="outline" 
-                className="w-full justify-start text-destructive border-destructive/20 hover:bg-destructive/5"
+                variant="ghost" 
+                className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive font-black text-[10px] uppercase tracking-widest h-10"
                 onClick={logout}
               >
                 <LogOut className="w-4 h-4 mr-2" /> Sign Out
               </Button>
             </div>
           ) : (
-            <div className="h-20 bg-muted animate-pulse rounded-lg" />
+            <div className="h-20 bg-muted animate-pulse rounded-2xl" />
           )}
         </div>
       </div>

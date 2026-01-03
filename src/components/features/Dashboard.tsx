@@ -174,28 +174,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {modules.map((module) => (
           <Card 
             key={module.id}
-            className="cursor-pointer group hover-lift hover-glow border-primary/5 transition-all duration-300"
+            className="cursor-pointer group card-premium border-primary/10 transition-all duration-500 glass-card hover:shadow-2xl hover:shadow-primary/10"
             onClick={() => handleModuleClick(module.id)}
           >
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
-              <div className="p-3 rounded-xl bg-primary/5 group-hover:bg-primary group-hover:shadow-lg group-hover:shadow-primary/30 transition-all duration-500">
-                <module.icon className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
+              <div className="p-4 rounded-2xl bg-primary/5 group-hover:bg-primary group-hover:rotate-[360deg] transition-all duration-700 ease-in-out">
+                <module.icon className="h-7 w-7 text-primary group-hover:text-primary-foreground transition-colors" />
               </div>
-              <BarChart3 className="h-4 w-4 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:text-primary transition-all" />
+              <Activity className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </CardHeader>
 
             <CardContent>
-              <h3 className="font-bold text-lg mb-1 text-foreground group-hover:text-primary transition-colors">
+              <h3 className="font-black text-xl mb-1 tracking-tight text-foreground group-hover:text-primary transition-colors">
                 {module.title}
               </h3>
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+              <p className="text-xs font-medium text-muted-foreground/80 mb-6 line-clamp-2 leading-relaxed uppercase tracking-wider">
                 {module.description}
               </p>
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="font-semibold">
+              <div className="flex items-center justify-between pt-4 border-t border-primary/5">
+                <Badge variant="outline" className="font-bold border-primary/20 text-[10px] uppercase tracking-widest px-2 py-0.5">
                   {module.stats}
                 </Badge>
-                <span className="text-xs font-bold text-success">
+                <span className="text-xs font-black text-primary tracking-tighter">
                   {module.revenue}
                 </span>
               </div>
@@ -207,62 +207,62 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Quick Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Today's Summary</CardTitle>
+        <Card className="glass-card border-none shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-primary/70">Today's Summary</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Revenue</span>
-              <span className="font-semibold">{formatCurrency(Math.floor(stats.totalRevenue * 0.1))}</span>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Revenue</span>
+              <span className="font-black text-success">{formatCurrency(Math.floor(stats.totalRevenue * 0.1))}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Orders</span>
-              <span className="font-semibold">{Math.floor(stats.moduleStats.restaurant * 0.3)}</span>
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Orders</span>
+              <span className="font-black">{Math.floor(stats.moduleStats.restaurant * 0.3)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">New Customers</span>
-              <span className="font-semibold">{Math.floor(stats.totalCustomers * 0.05)}</span>
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">New Customers</span>
+              <span className="font-black">{Math.floor(stats.totalCustomers * 0.05)}</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>This Week</CardTitle>
+        <Card className="glass-card border-none shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-primary/70">This Week</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Events</span>
-              <span className="font-semibold">{stats.moduleStats.events}</span>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Events</span>
+              <span className="font-black text-primary">{stats.moduleStats.events}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Gym Sessions</span>
-              <span className="font-semibold">{stats.moduleStats.gym * 7}</span>
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gym Sessions</span>
+              <span className="font-black text-primary">{stats.moduleStats.gym * 7}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Spa Bookings</span>
-              <span className="font-semibold">{stats.moduleStats.sauna}</span>
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Spa Bookings</span>
+              <span className="font-black text-primary">{stats.moduleStats.sauna}</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Performance</CardTitle>
+        <Card className="glass-card border-none shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-primary/70">Performance</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Customer Satisfaction</span>
-              <span className="font-semibold text-success">98.2%</span>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Customer Satisfaction</span>
+              <span className="font-black text-success">98.2%</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">On-time Delivery</span>
-              <span className="font-semibold text-success">96.8%</span>
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">On-time Delivery</span>
+              <span className="font-black text-success">96.8%</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Repeat Customers</span>
-              <span className="font-semibold text-secondary">{((stats.totalCustomers / (stats.totalCustomers + 10)) * 100).toFixed(1)}%</span>
+            <div className="flex justify-between items-center bg-muted/20 p-2 rounded-lg">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Repeat Customers</span>
+              <span className="font-black text-secondary">{((stats.totalCustomers / (stats.totalCustomers + 10)) * 100).toFixed(1)}%</span>
             </div>
           </CardContent>
         </Card>

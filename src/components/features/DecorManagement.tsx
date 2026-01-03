@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { ArrowLeft, Plus, Package, TrendingUp, TrendingDown, AlertTriangle, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -266,90 +268,95 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
       {/* Inventory Form List */}
       <div className="space-y-4">
         {filteredItems.map((item) => (
-          <Card key={item.id} className="overflow-hidden border-l-4 border-l-primary/40 hover:shadow-md transition-shadow">
-            <div className="p-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
-                <div>
-                  <h3 className="text-lg font-bold text-primary flex items-center">
-                    <Package className="h-4 w-4 mr-2 opacity-70" />
-                    {item.item_name}
-                  </h3>
-                  <span className="text-[10px] font-bold bg-muted px-2 py-0.5 rounded uppercase text-muted-foreground tracking-wider">
-                    {item.category.replace('_', ' ')}
-                  </span>
+          <Card key={item.id} className="overflow-hidden border-l-4 border-l-primary/40 hover-lift glow-primary glass-card transition-all duration-500">
+            <div className="p-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-primary/10 rounded-2xl">
+                    <Package className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-foreground tracking-tight leading-none mb-1">
+                      {item.item_name}
+                    </h3>
+                    <Badge variant="secondary" className="text-[8px] font-black uppercase tracking-widest px-2 py-0 border-none bg-muted/50">
+                      {item.category.replace('_', ' ')}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 bg-muted/30 p-1 rounded-xl border">
                   <Button
                     size="xs"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => handleAction(item.id, 'hire')}
                     disabled={item.in_store === 0 || actionMutation.isPending}
-                    className="h-7 px-3 border-primary/20 hover:bg-primary hover:text-white"
+                    className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white rounded-lg transition-all"
                   >
                     Hire
                   </Button>
                   <Button
                     size="xs"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => handleAction(item.id, 'return')}
                     disabled={item.hired === 0 || actionMutation.isPending}
-                    className="h-7 px-3 border-secondary/20 hover:bg-secondary hover:text-white"
+                    className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-secondary hover:text-white rounded-lg transition-all"
                   >
                     Return
                   </Button>
                   <Button
                     size="xs"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => handleAction(item.id, 'damage')}
                     disabled={item.in_store === 0 || actionMutation.isPending}
-                    className="h-7 px-3 border-destructive/20 hover:bg-destructive hover:text-white"
+                    className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-destructive hover:text-white rounded-lg transition-all"
                   >
                     Damage
                   </Button>
                   <Button
                     size="xs"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => handleAction(item.id, 'repair')}
                     disabled={item.damaged === 0 || actionMutation.isPending}
-                    className="h-7 px-3 border-green-200 hover:bg-green-600 hover:text-white"
+                    className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-green-600 hover:text-white rounded-lg transition-all"
                   >
                     Repair
                   </Button>
+                  <Separator orientation="vertical" className="h-4 mx-1" />
                   <Button
                     size="xs"
                     variant="ghost"
                     onClick={() => handleItemClick(item)}
-                    className="h-7 w-7 p-0"
+                    className="h-8 w-8 p-0 hover:bg-primary/10 rounded-lg"
                     title="Assign to Customer"
                   >
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <Users className="h-4 w-4 text-primary/70" />
                   </Button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-muted/10 p-3 rounded-lg border">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-muted/20 p-4 rounded-2xl border border-primary/5 shadow-inner">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">In Store</label>
-                  <div className="bg-background rounded border">
-                    {renderEditableCell(item, 'in_store', 'text-center font-bold text-lg')}
+                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1">In Store</label>
+                  <div className="bg-background rounded-xl border border-primary/5 shadow-sm">
+                    {renderEditableCell(item, 'in_store', 'text-center font-black text-xl')}
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Hired</label>
-                  <div className="bg-background rounded border">
-                    {renderEditableCell(item, 'hired', 'text-center font-bold text-lg text-secondary')}
+                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1 text-secondary">Currently Hired</label>
+                  <div className="bg-background rounded-xl border border-primary/5 shadow-sm">
+                    {renderEditableCell(item, 'hired', 'text-center font-black text-xl text-secondary')}
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Damaged</label>
-                  <div className="bg-background rounded border">
-                    {renderEditableCell(item, 'damaged', 'text-center font-bold text-lg text-destructive')}
+                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1 text-destructive">Damaged</label>
+                  <div className="bg-background rounded-xl border border-primary/5 shadow-sm">
+                    {renderEditableCell(item, 'damaged', 'text-center font-black text-xl text-destructive')}
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Price</label>
-                  <div className="bg-background rounded border">
-                    {renderEditableCell(item, 'price', 'text-right font-black text-lg text-green-600')}
+                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1 text-green-600">Price (KSH)</label>
+                  <div className="bg-background rounded-xl border border-primary/5 shadow-sm">
+                    {renderEditableCell(item, 'price', 'text-right font-black text-xl text-green-600')}
                   </div>
                 </div>
               </div>
