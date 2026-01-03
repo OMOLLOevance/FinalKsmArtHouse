@@ -3,8 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PageLoader } from '@/components/ui/LoadingSpinner';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
+
+const RESTRICTED_ROUTES: Record<string, string[]> = {
+  '/customers': ['admin', 'director', 'manager'],
+};
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -17,21 +22,26 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         logger.info(`Unauthorized access attempt to ${pathname}, redirecting to /login`);
         router.push('/login');
       } 
-      else if (isAuthenticated && pathname === '/login') {
-        logger.info('Authenticated user on login page, redirecting to dashboard');
-        router.push('/');
+      else if (isAuthenticated) {
+        if (pathname === '/login') {
+          logger.info('Authenticated user on login page, redirecting to dashboard');
+          router.push('/');
+        } else {
+          // Check role-based clearance
+          const allowedRoles = RESTRICTED_ROUTES[pathname];
+          if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+            toast.error('Access Restricted: Insufficient professional clearance for this module.');
+            router.push('/');
+          }
+        }
       }
     }
-  }, [isAuthenticated, isLoading, pathname, router]);
+  }, [isAuthenticated, isLoading, pathname, router, user]);
 
 
-  // Show loading spinner while auth status is being determined
+  // Show professional PageLoader while auth status is being determined
   if (isLoading) {
-    return (
-        <div className="flex items-center justify-center min-h-screen">
-            <LoadingSpinner />
-        </div>
-    );
+    return <PageLoader text="Verifying Credentials..." />;
   }
 
   // If on login page, render children (login form)

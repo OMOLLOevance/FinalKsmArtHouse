@@ -29,11 +29,15 @@ interface SaunaBooking {
 }
 
 const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
+  const { user } = useAuth();
   const { data: bookings, isLoading: bookingsLoading } = useSaunaBookingsQuery();
   const createBookingMutation = useCreateSaunaBookingMutation();
   const deleteBookingMutation = useDeleteSaunaBookingMutation();
 
   const [isAdding, setIsAdding] = useState(false);
+
+  // Role Permissions
+  const isStaff = user?.role === 'staff';
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -224,9 +228,11 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                       <Badge variant={item.status === 'completed' ? 'success' : 'warning'} className="text-[8px] h-4 font-black uppercase tracking-widest px-1.5 border-none">
                         {item.status}
                       </Badge>
-                      <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {!isStaff && (
+                        <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 

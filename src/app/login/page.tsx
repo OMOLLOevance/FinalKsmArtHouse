@@ -6,6 +6,12 @@ import { Sparkles } from 'lucide-react';
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background animated-bg relative overflow-hidden px-4">
+      {/* Visual confirmation of update: Diagonal accent */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none -z-5">
+        <div className="absolute top-0 left-0 w-full h-32 bg-primary/5 -skew-y-6 transform origin-top-left border-b border-primary/10" />
+        <div className="absolute bottom-0 right-0 w-full h-32 bg-secondary/5 skew-y-6 transform origin-bottom-right border-t border-secondary/10" />
+      </div>
+
       {/* Abstract Background Accents */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />

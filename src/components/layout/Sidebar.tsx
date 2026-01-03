@@ -13,26 +13,28 @@ import { Badge } from '@/components/ui/Badge';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+  { id: 'dashboard', label: 'Intelligence Hub', icon: LayoutDashboard, href: '/', roles: ['admin', 'director', 'manager', 'staff'] },
   {
     id: 'business',
-    label: 'Business Operations',
+    label: 'Operations',
     icon: Building2,
     isSection: true,
+    roles: ['admin', 'director', 'manager', 'staff'],
     children: [
-      { id: 'events', label: 'Event Management', icon: Calendar, href: '/events' },
-      { id: 'gym', label: 'Gym Management', icon: Dumbbell, href: '/gym' },
-      { id: 'restaurant', label: 'Restaurant', icon: Utensils, href: '/restaurant' },
-      { id: 'sauna', label: 'Sauna & Spa', icon: Waves, href: '/sauna' },
+      { id: 'events', label: 'Event Management', icon: Calendar, href: '/events', roles: ['admin', 'director', 'manager', 'staff'] },
+      { id: 'gym', label: 'Gym Management', icon: Dumbbell, href: '/gym', roles: ['admin', 'director', 'manager', 'staff'] },
+      { id: 'restaurant', label: 'Restaurant', icon: Utensils, href: '/restaurant', roles: ['admin', 'director', 'manager', 'staff'] },
+      { id: 'sauna', label: 'Sauna & Spa', icon: Waves, href: '/sauna', roles: ['admin', 'director', 'manager', 'staff'] },
     ]
   },
   {
     id: 'management',
-    label: 'Customer Management',
+    label: 'Client Relations',
     icon: Users,
     isSection: true,
+    roles: ['admin', 'director', 'manager'],
     children: [
-      { id: 'customers', label: 'Customer Database', icon: Users, href: '/customers' },
+      { id: 'customers', label: 'Customer Database', icon: Users, href: '/customers', roles: ['admin', 'director', 'manager'] },
     ]
   }
 ];
@@ -45,6 +47,7 @@ const Sidebar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     business: true,
+    management: true,
   });
 
   useEffect(() => {
@@ -62,14 +65,23 @@ const Sidebar = () => {
     setIsMobileMenuOpen(false);
   };
 
-  // Only render full sidebar on client to prevent hydration issues
+  // Filter items based on role
+  const filteredNavItems = useMemo(() => {
+    if (!user?.role) return [];
+    return navItems.filter(item => item.roles.includes(user.role)).map(item => ({
+      ...item,
+      children: item.children?.filter(child => child.roles.includes(user.role))
+    }));
+  }, [user?.role]);
+
+  // Only render full sidebar on client
   if (!mounted) {
     return <div className="hidden md:flex w-72 bg-card border-r h-screen" />;
   }
 
   return (
     <>
-      {/* Mobile Header Bar - Sticky & Professional */}
+      {/* ... Mobile Header Bar ... */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card/80 backdrop-blur-xl border-b border-primary/5 z-40 flex items-center justify-between px-4 print:hidden">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-br from-primary to-teal-500 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
@@ -87,7 +99,7 @@ const Sidebar = () => {
         </Button>
       </div>
 
-      {/* Professional Backdrop Overlay */}
+      {/* ... Backdrop ... */}
       {isMobileMenuOpen && (
         <div 
           className="md:hidden fixed inset-0 bg-background/60 backdrop-blur-md z-40 animate-in fade-in duration-300 print:hidden"
@@ -95,7 +107,6 @@ const Sidebar = () => {
         />
       )}
 
-      {/* Main Sidebar Container - Adaptive Width */}
       <div className={`
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 fixed md:static inset-y-0 left-0 z-50
@@ -119,7 +130,7 @@ const Sidebar = () => {
         </div>
         
         <nav className="flex-1 p-6 space-y-2">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             if (item.isSection) {
               const isExpanded = expandedSections[item.id];
               return (

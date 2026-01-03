@@ -22,26 +22,15 @@ interface GymManagementProps {
 }
 
 const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
+  const { user } = useAuth();
   const { data: finances, isLoading: financesLoading, refetch: refetchFinances } = useGymFinancesQuery();
   const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useGymMembersQuery();
-  const addFinanceMutation = useCreateGymFinanceMutation();
-  const updateFinanceMutation = useUpdateGymFinanceMutation();
-  const deleteFinanceMutation = useDeleteGymFinanceMutation();
-  const addMemberMutation = useCreateGymMemberMutation();
-  const updateMemberMutation = useUpdateGymMemberMutation();
-  const deleteMemberMutation = useDeleteGymMemberMutation();
-  const { showSuccess, showError } = useToast();
-  
-  const [activeTab, setActiveTab] = useState<'finances' | 'members'>('finances');
-  const [displayCount, setDisplayCount] = useState(20);
-  const [editingFinance, setEditingFinance] = useState<GymFinance | null>(null);
-  const [editingMember, setEditingMember] = useState<GymMember | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
-  const [showQuickExpense, setShowQuickExpense] = useState(false);
-  const [quickExpenseAmount, setQuickExpenseAmount] = useState('');
-  const [quickExpenseDescription, setQuickExpenseDescription] = useState('');
+// ...
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string; type: 'finance' | 'member'; name?: string }>({ isOpen: false, id: '', type: 'finance' });
+
+  // Role Permissions
+  const isStaff = user?.role === 'staff';
+  const isManager = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'director';
 
   const [financeFormData, setFinanceFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -243,9 +232,11 @@ Thank you for being part of our fitness community!`
                 <Button variant="ghost" size="xs" onClick={() => handleEditFinance(finance)} className="h-7 w-7 p-0 hover:bg-primary/10">
                   <Edit className="h-3.5 w-3.5 text-primary/70" />
                 </Button>
-                <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                {!isStaff && (
+                  <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
             </div>
             <div className="bg-muted/30 p-2 rounded-lg border border-primary/5 shadow-inner">
@@ -286,9 +277,11 @@ Thank you for being part of our fitness community!`
                   <Button variant="ghost" size="xs" onClick={() => sendWhatsAppNotification(member, 7)} className="h-7 w-7 p-0 text-green-600 hover:bg-green-50">
                     <MessageCircle className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: member.id, type: 'member' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  {!isStaff && (
+                    <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: member.id, type: 'member' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
               </div>
 
