@@ -40,4 +40,4 @@ USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
 -- 3. Success Notification
-RAISE NOTICE 'Event Items table successfully synchronized with Application logic.';
+SELECT 'Event Items table successfully synchronized' as status;

@@ -391,6 +391,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Item to Customer Requirements</DialogTitle>
+            <DialogDescription>Assign this asset to a specific customer event for tracking.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>

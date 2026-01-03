@@ -506,39 +506,66 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     <div className="space-y-6">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* 1. Global visibility reset */
-          body * {
-            visibility: hidden !important;
-          }
-          
-          /* 2. Show only the target document and its contents */
-          #printable-quotation, #printable-quotation * {
-            visibility: visible !important;
-          }
-
-          /* 3. Force document to the absolute top of page 1 */
-          #printable-quotation {
-            display: block !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 1.5cm !important;
-            background: white !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-
-          /* 4. Reset browser specific print margins */
+          /* 1. Reset Page and Body */
           @page {
             margin: 0;
             size: auto;
           }
           
-          /* 5. Ensure backgrounds are pure white */
-          html, body {
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
             background: white !important;
+            height: auto !important;
+            min-height: 100% !important;
+          }
+
+          /* 2. Hide everything except the portal content */
+          body > :not([data-radix-portal]) {
+            display: none !important;
+          }
+
+          /* 3. Reset Portal and Dialog Containers */
+          [data-radix-portal], 
+          [data-radix-portal] > div,
+          div[role="dialog"] {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+            transform: none !important;
+          }
+
+          /* 4. Hide all UI overhead */
+          div[data-state="open"] > div:first-child,
+          button,
+          .print\\:hidden,
+          [data-radix-collection],
+          .DialogHeader {
+            display: none !important;
+          }
+
+          /* 5. Target the specific document area */
+          #printable-quotation {
+            display: block !important;
+            width: 100% !important;
+            padding: 1.5cm !important;
+            margin: 0 !important;
+            background: white !important;
+          }
+
+          /* 6. Ensure sharp black text */
+          #printable-quotation * {
+            color: black !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}} />

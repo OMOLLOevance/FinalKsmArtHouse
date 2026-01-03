@@ -5,7 +5,7 @@ import { ArrowLeft, Plus, Database, Trash2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { useEventItemsQuery, useCreateEventItemMutation, useDeleteEventItemMutation } from '@/hooks/use-event-api';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -36,17 +36,22 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) {
+    if (!formData.name.trim()) {
       toast.error('Item name is required');
       return;
     }
 
     try {
-      await createItemMutation.mutateAsync({
-        ...formData,
-        category,
-        quantity_available: formData.quantityAvailable
-      });
+      const payload = {
+        name: formData.name.trim(),
+        category: category,
+        quantityAvailable: Number(formData.quantityAvailable) || 0,
+        price: Number(formData.price) || 0,
+        unit: formData.unit || 'pieces',
+        status: 'available'
+      };
+
+      await createItemMutation.mutateAsync(payload);
       setShowAddDialog(false);
       setFormData({ name: '', quantityAvailable: 0, price: 0, unit: 'pieces', status: 'available' });
       await refetch();
@@ -134,7 +139,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">Add New {category} Item</DialogTitle>
-            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">Register new equipment or services for {category} management.</p>
+            <DialogDescription className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">Register new equipment or services for {category} management.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddItem} className="space-y-4 pt-4">
             <div className="space-y-1.5">

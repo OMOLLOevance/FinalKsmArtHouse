@@ -183,7 +183,7 @@ const InvestorDashboard: React.FC = () => {
             6-Month Performance Overview
           </p>
         </div>
-        <div className="h-[300px] min-h-[350px] w-full">
+        <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={stats.revenueHistory}>
               <defs>
