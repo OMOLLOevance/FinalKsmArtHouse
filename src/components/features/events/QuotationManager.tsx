@@ -495,40 +495,46 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     <div className="space-y-6">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* Universal reset for print */
-          body { 
-            background: white !important; 
-            margin: 0 !important; 
-            padding: 0 !important;
-          }
-          
-          /* Hide EVERYTHING in the DOM tree */
+          /* 1. Hide everything by default */
           body * {
-            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
           }
           
-          /* Show ONLY the quotation container and its children */
+          /* 2. Target only the specific quotation and its child elements */
           #printable-quotation, #printable-quotation * {
-            display: block !important;
             visibility: visible !important;
+            height: auto !important;
           }
 
-          /* Force container to be static and take up full page */
+          /* 3. Force the quotation to be the only block visible at the top */
           #printable-quotation {
             display: block !important;
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
-            margin: 0 !important;
             padding: 1.5cm !important;
+            margin: 0 !important;
             background: white !important;
             border: none !important;
+            box-shadow: none !important;
           }
 
-          /* Ensure tables look correct in print */
-          table { width: 100% !important; border-collapse: collapse !important; }
-          th, td { border-bottom: 1px solid #eee !important; }
+          /* 4. Ensure no background colors/images from the app leak in */
+          body, html {
+            background: white !important;
+          }
+
+          /* 5. Hide ALL UI/Portal wrappers that aren't the actual content */
+          [role="dialog"], [data-radix-portal], .fixed, .absolute {
+            background: none !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
         }
       `}} />
       <div className="flex items-center justify-between print:hidden">
