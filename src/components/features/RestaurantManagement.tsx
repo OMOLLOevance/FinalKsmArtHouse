@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt } from 'lucide-react';
+import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt, Trash2 } from 'lucide-react';
 import ItemServingsManager from './ItemServingsManager';
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
 import { InventoryItem } from '@/types';
@@ -138,6 +138,23 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
     const recordedList = Array.from(recordedItems).map(idx => inventory[idx]).filter(Boolean);
     return calculateTotalCost(recordedList.map(i => ({ price: i.price, quantity: i.quantity })));
   }, [inventory, recordedItems]);
+
+  const handleUpdateLedgerItem = (idx: number, field: 'quantity' | 'price', value: string) => {
+    setInventory(prev => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleUnrecordItem = (idx: number) => {
+    setRecordedItems(prev => {
+      const next = new Set(prev);
+      next.delete(idx);
+      return next;
+    });
+    showSuccess('Updated', 'Item removed from confirmed ledger');
+  };
 
   const filteredInventory = useMemo(() => {
     if (!searchTerm) return inventory;
@@ -377,31 +394,54 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-primary/5">
-                  {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => (
-                    <tr key={index} className="hover:bg-primary/[0.02] transition-colors group">
-                      <td className="px-8 py-5">
-                        <span className="font-black text-sm text-foreground uppercase tracking-tight">{item.item}</span>
-                      </td>
-                      <td className="px-8 py-5 text-center">
-                        <span className="font-black text-xs bg-muted px-4 py-1.5 rounded-xl border border-primary/5 shadow-sm">{item.quantity}</span>
-                      </td>
-                      <td className="px-8 py-5 text-right font-mono text-sm text-muted-foreground">
-                        {Number(item.price).toLocaleString()}
-                      </td>
-                      <td className="px-8 py-5 text-right">
-                        <span className="font-black text-sm text-primary tracking-tight">
-                          {formatCurrency(Number(item.price) * Number(item.quantity))}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5 text-center">
-                        <div className="flex items-center justify-center">
-                          <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
-                            <CheckCircle2 className="h-4 w-4 text-success" />
+                  {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => {
+                    const originalIdx = inventory.findIndex(i => i === item);
+                    return (
+                      <tr key={index} className="hover:bg-primary/[0.02] transition-colors group">
+                        <td className="px-8 py-5">
+                          <span className="font-black text-sm text-foreground uppercase tracking-tight">{item.item}</span>
+                        </td>
+                        <td className="px-8 py-5 text-center">
+                          <Input 
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateLedgerItem(originalIdx, 'quantity', e.target.value)}
+                            className="w-20 mx-auto h-9 text-xs font-black bg-muted border-none text-center rounded-lg"
+                          />
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <div className="relative inline-block w-32">
+                            <Input 
+                              type="number"
+                              value={item.price}
+                              onChange={(e) => handleUpdateLedgerItem(originalIdx, 'price', e.target.value)}
+                              className="w-full h-9 text-xs font-black text-success bg-muted border-none text-right pr-8 rounded-lg"
+                            />
+                            <span className="absolute right-2 top-2.5 text-[8px] font-black text-success/40">KSH</span>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <span className="font-black text-sm text-primary tracking-tight">
+                            {formatCurrency(Number(item.price) * Number(item.quantity))}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5 text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
+                              <CheckCircle2 className="h-4 w-4 text-success" />
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleUnrecordItem(originalIdx)}
+                              className="h-8 w-8 text-destructive/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="bg-primary/5 border-t-2 border-primary/10">
@@ -421,29 +461,57 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
             {/* Mobile List View */}
             <div className="md:hidden divide-y divide-primary/5">
-              {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => (
-                <div key={index} className="p-6 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Item Particulars</p>
-                      <h4 className="font-black text-lg text-foreground uppercase">{item.item}</h4>
+              {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => {
+                const originalIdx = inventory.findIndex(i => i === item);
+                return (
+                  <div key={index} className="p-6 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Item Particulars</p>
+                        <h4 className="font-black text-lg text-foreground uppercase">{item.item}</h4>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleUnrecordItem(originalIdx)}
+                          className="h-8 w-8 text-destructive/60"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
-                      <CheckCircle2 className="h-4 w-4 text-success" />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-slate-400">Qty</label>
+                        <Input 
+                          value={item.quantity}
+                          onChange={(e) => handleUpdateLedgerItem(originalIdx, 'quantity', e.target.value)}
+                          className="h-9 font-black bg-muted/20 border-none rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-slate-400">Price</label>
+                        <Input 
+                          type="number"
+                          value={item.price}
+                          onChange={(e) => handleUpdateLedgerItem(originalIdx, 'price', e.target.value)}
+                          className="h-9 font-black bg-muted/20 border-none rounded-xl text-success"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded-2xl border border-primary/5">
-                    <div>
-                      <p className="text-[9px] font-black text-muted-foreground uppercase tracking-tighter mb-1">Qty x Price</p>
-                      <p className="text-sm font-bold">{item.quantity} × {Number(item.price).toLocaleString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[9px] font-black text-primary uppercase tracking-tighter mb-1">Subtotal</p>
+
+                    <div className="flex justify-between items-center bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                      <p className="text-[9px] font-black text-primary uppercase tracking-tighter">Verified Total</p>
                       <p className="text-sm font-black text-primary">{formatCurrency(Number(item.price) * Number(item.quantity))}</p>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="p-8 bg-primary/5 text-center space-y-2">
                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Total Expenditure</p>
                 <p className="text-4xl font-black text-primary tracking-tighter">{formatCurrency(totalCost)}</p>
