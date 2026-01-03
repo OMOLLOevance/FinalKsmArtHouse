@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -438,81 +438,85 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
 
       {/* Add Item Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add New Decor Item</DialogTitle>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
+              Initialize Decor Asset
+            </DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              Register a new physical asset into the professional inventory system.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Category:</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    {newItem.category || 'Select Category'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  {categories.map(category => (
-                    <DropdownMenuItem 
-                      key={category} 
-                      onClick={() => setNewItem({ ...newItem, category, item_name: '' })}
-                    >
-                      {category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Item Name:</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start" disabled={!newItem.category}>
-                    {newItem.item_name || (newItem.category ? 'Select Item' : 'Select Category First')}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  {items
-                    .filter(item => item.category === newItem.category)
-                    .map(item => (
-                      <DropdownMenuItem 
-                        key={item.id} 
-                        onClick={() => setNewItem({ ...newItem, item_name: item.item_name, price: item.price })}
-                      >
-                        {item.item_name}
-                      </DropdownMenuItem>
+          
+          <div className="space-y-6 pt-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Classification</label>
+                <div className="relative">
+                  <Input 
+                    placeholder="e.g. Table Clothes, Lighting" 
+                    value={newItem.category} 
+                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                    className="font-bold h-11"
+                    list="category-suggestions"
+                  />
+                  <datalist id="category-suggestions">
+                    {categories.map(cat => (
+                      <option key={cat} value={cat} />
                     ))}
-                  {newItem.category && items.filter(item => item.category === newItem.category).length === 0 && (
-                    <DropdownMenuItem disabled>
-                      No items in this category
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </datalist>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Name / Particulars</label>
+                <Input 
+                  placeholder="e.g. Gold Satin Runner" 
+                  value={newItem.item_name} 
+                  onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
+                  className="font-bold h-11"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Initial Stock</label>
+                  <Input 
+                    type="number" 
+                    placeholder="0" 
+                    value={newItem.in_store || ''} 
+                    onChange={(e) => setNewItem({ ...newItem, in_store: parseInt(e.target.value) || 0 })}
+                    className="font-bold h-11 text-center"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Unit Price (KSH)</label>
+                  <Input 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={newItem.price || ''} 
+                    onChange={(e) => setNewItem({ ...newItem, price: parseFloat(e.target.value) || 0 })}
+                    className="font-bold h-11 text-right text-success"
+                  />
+                </div>
+              </div>
             </div>
-            <Input
-              placeholder="Initial quantity"
-              type="number"
-              value={newItem.in_store}
-              onChange={(e) => setNewItem({ ...newItem, in_store: parseInt(e.target.value) || 0 })}
-            />
-            <Input
-              placeholder="Price (KSH)"
-              type="number"
-              value={newItem.price}
-              onChange={(e) => setNewItem({ ...newItem, price: parseFloat(e.target.value) || 0 })}
-            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+
+          <DialogFooter className="pt-6 gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddDialog(false)}
+              className="flex-1 sm:flex-none h-11 px-8 font-black uppercase tracking-widest text-[10px]"
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleAddItem}
               disabled={!newItem.category || !newItem.item_name || addItemMutation.isPending}
+              className="flex-1 sm:flex-none h-11 px-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
             >
-              Add Item
+              {addItemMutation.isPending ? 'Registering...' : 'Register Asset'}
             </Button>
           </DialogFooter>
         </DialogContent>

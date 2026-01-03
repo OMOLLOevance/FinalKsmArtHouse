@@ -9,7 +9,7 @@ DECLARE
         'customers', 'gym_members', 'gym_finances', 
         'restaurant_sales', 'sauna_bookings', 'event_items', 
         'catering_inventory', 'catering_items', 'decor_inventory', 
-        'decor_allocations', 'sauna_spa_finances'
+        'decor_allocations', 'sauna_spa_finances', 'customer_requirements'
     ];
 BEGIN
     FOREACH t IN ARRAY tables LOOP
