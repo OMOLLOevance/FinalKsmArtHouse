@@ -24,8 +24,7 @@ export async function GET(request: NextRequest) {
 
     const client = token ? createAuthenticatedClient(token) : supabase;
 
-    // Use a more robust fetching strategy to avoid "relationship not found" schema cache issues
-    // First, fetch the base requirements
+    // 1. Fetch requirements
     let query = client
       .from('customer_requirements')
       .select('*')
@@ -37,31 +36,32 @@ export async function GET(request: NextRequest) {
 
     const { data: requirements, error: reqError } = await query.order('created_at', { ascending: false });
 
-    if (reqError) {
-        logger.error('Requirements fetch error:', reqError);
-        throw ApiError.fromSupabase(reqError);
-    }
+    if (reqError) throw ApiError.fromSupabase(reqError);
+    if (!requirements || requirements.length === 0) return NextResponse.json({ data: [] });
 
-    if (!requirements || requirements.length === 0) {
-        return NextResponse.json({ data: [] });
-    }
-
-    // Now manually join the data to be 100% safe from Supabase schema cache issues
-    const customerIds = [...new Set(requirements.map(r => r.customer_id))];
+    // 2. Identify all IDs we need to look up
+    const targetIds = [...new Set(requirements.map(r => r.customer_id))];
     const itemIds = [...new Set(requirements.map(r => r.decor_item_id))];
 
-    const [customersRes, itemsRes] = await Promise.all([
-        client.from('customers').select('id, name').in('id', customerIds),
+    // 3. Fetch from BOTH possible customer tables and the inventory
+    const [customersRes, allocationsRes, itemsRes] = await Promise.all([
+        client.from('customers').select('id, name').in('id', targetIds),
+        client.from('monthly_allocations').select('id, customer_name').in('id', targetIds),
         client.from('decor_inventory').select('id, item_name, category, price').in('id', itemIds)
     ]);
 
-    const customersMap = new Map(customersRes.data?.map(c => [c.id, c]) || []);
+    // 4. Create a unified customer map (checking both sources)
+    const customersMap = new Map();
+    customersRes.data?.forEach(c => customersMap.set(c.id, { name: c.name }));
+    allocationsRes.data?.forEach(a => customersMap.set(a.id, { name: a.customer_name }));
+    
     const itemsMap = new Map(itemsRes.data?.map(i => [i.id, i]) || []);
 
+    // 5. Build enriched data
     const enrichedData = requirements.map(req => ({
         ...req,
-        customers: customersMap.get(req.customer_id) || { name: 'Unknown' },
-        decor_inventory: itemsMap.get(req.decor_item_id) || { item_name: 'Unknown', category: 'N/A', price: 0 }
+        customers: customersMap.get(req.customer_id) || { name: 'Unknown Client' },
+        decor_inventory: itemsMap.get(req.decor_item_id) || { item_name: 'Unknown Item', category: 'N/A', price: 0 }
     }));
 
     return NextResponse.json({ data: enrichedData });

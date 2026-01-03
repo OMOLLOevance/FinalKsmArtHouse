@@ -5,15 +5,53 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
 
+import { supabase } from '@/lib/supabase';
+
 export const useCustomersQuery = () => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['customers', userId],
-    queryFn: () => customerService.getCustomers(userId!).catch(err => {
-      logger.error('Customers fetch error:', err);
-      return [];
-    }),
+    queryKey: ['customers-combined', userId],
+    queryFn: async () => {
+      try {
+        // Fetch from regular customers table
+        const customersRes = await customerService.getCustomers(userId!).catch(() => []);
+        
+        // Fetch from monthly allocations table
+        const { data: allocations, error } = await supabase
+          .from('monthly_allocations')
+          .select('id, customer_name, event_type, event_date, location, phone_number, total_ksh, deposit_paid, status')
+          .eq('user_id', userId);
+        
+        if (error) throw error;
+
+        // Map allocations to match customer structure
+        const mappedAllocations = (allocations || []).map(a => ({
+          id: a.id,
+          name: a.customer_name,
+          contact: a.phone_number || 'N/A',
+          location: a.location || 'N/A',
+          eventType: a.event_type || 'Event',
+          eventDate: a.event_date || '',
+          totalAmount: Number(a.total_ksh || 0),
+          paidAmount: Number(a.deposit_paid || 0),
+          paymentStatus: (a.deposit_paid >= a.total_ksh ? 'full' : 'deposit') as any,
+          paymentMethod: 'cash' as any,
+          serviceStatus: (a.status === 'completed' ? 'served' : 'pending') as any,
+          notes: '',
+          isAllocation: true
+        }));
+
+        // Combine and remove duplicates (by ID)
+        const combined = [...customersRes, ...mappedAllocations];
+        const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+        
+        return unique;
+      } catch (err) {
+        logger.error('Combined customers fetch error:', err);
+        return [];
+      }
+    },
     enabled: !!userId && isAuthenticated,
     retry: 3,
     staleTime: 5 * 60 * 1000,

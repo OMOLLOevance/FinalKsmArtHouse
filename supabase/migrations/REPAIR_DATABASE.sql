@@ -234,6 +234,28 @@ CREATE TABLE IF NOT EXISTS public.monthly_allocations (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 14. Quotations
+CREATE TABLE IF NOT EXISTS public.quotations (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    customer_name TEXT NOT NULL,
+    customer_email TEXT,
+    customer_phone TEXT,
+    number_of_guests INTEGER DEFAULT 0,
+    theme TEXT,
+    event_date DATE,
+    event_type TEXT,
+    custom_event_type TEXT,
+    quotation_type TEXT NOT NULL,
+    sections JSONB NOT NULL DEFAULT '[]',
+    additional_charges JSONB DEFAULT '{}',
+    status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'approved', 'rejected')),
+    total_amount DECIMAL(12,2) DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 9. Enable RLS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
@@ -248,6 +270,7 @@ ALTER TABLE public.decor_inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.decor_allocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customer_requirements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.monthly_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quotations ENABLE ROW LEVEL SECURITY;
 
 -- 10. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_customers_user_id ON public.customers(user_id);
@@ -264,6 +287,7 @@ CREATE INDEX IF NOT EXISTS idx_customer_requirements_user_id ON public.customer_
 CREATE INDEX IF NOT EXISTS idx_customer_requirements_customer ON public.customer_requirements(customer_id);
 CREATE INDEX IF NOT EXISTS idx_monthly_allocations_user_id ON public.monthly_allocations(user_id);
 CREATE INDEX IF NOT EXISTS idx_monthly_allocations_event_date ON public.monthly_allocations(event_date);
+CREATE INDEX IF NOT EXISTS idx_quotations_user_id ON public.quotations(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_restaurant_sale_date ON public.restaurant_sales(sale_date);
 CREATE INDEX IF NOT EXISTS idx_gym_transaction_date ON public.gym_finances(transaction_date);
@@ -343,5 +367,8 @@ BEGIN
 
     DROP POLICY IF EXISTS "Manage own monthly allocations" ON public.monthly_allocations;
     CREATE POLICY "Manage own monthly allocations" ON public.monthly_allocations FOR ALL USING (auth.uid() = user_id);
+
+    DROP POLICY IF EXISTS "Manage own quotations" ON public.quotations;
+    CREATE POLICY "Manage own quotations" ON public.quotations FOR ALL USING (auth.uid() = user_id);
 END
 $$;

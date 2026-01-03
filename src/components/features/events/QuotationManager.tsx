@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 
 interface QuotationManagerProps {
   onBack: () => void;
@@ -74,8 +75,7 @@ const FOOD_TEMPLATE: QuotationSection[] = [
 
 const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const { userId } = useAuth();
-  const { quotations: dbQuotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations();
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const { quotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
@@ -106,31 +106,6 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   });
 
   useEffect(() => {
-    if (dbQuotations && dbQuotations.length > 0) {
-      const mappedQuotations: Quotation[] = dbQuotations.map(q => ({
-        id: q.id,
-        quotationNumber: `QT-${q.id.slice(-6)}`,
-        customerName: (q as any).customer_name,
-        customerEmail: (q as any).customer_email,
-        customerPhone: (q as any).customer_phone,
-        numberOfGuests: (q as any).number_of_guests,
-        theme: (q as any).theme,
-        eventDate: (q as any).event_date,
-        eventType: (q as any).event_type,
-        customEventType: (q as any).custom_event_type,
-        quotationType: (q as any).quotation_type === 'Event/Decor' ? 'event' as const : 'food' as const,
-        sections: (q as any).sections || [],
-        grandTotal: Number((q as any).total_amount),
-        additionalCharges: (q as any).additional_charges || { cateringLabour: 0, serviceCharge: 0, transport: 0 },
-        status: (q as any).status as 'draft' | 'sent' | 'approved' | 'rejected',
-        createdAt: (q as any).created_at,
-        notes: (q as any).notes,
-      }));
-      setQuotations(mappedQuotations);
-    }
-  }, [dbQuotations]);
-
-  useEffect(() => {
     if (!editingQuotation) {
        setSections(quotationType === 'event' ? EVENT_TEMPLATE : FOOD_TEMPLATE);
     }
@@ -140,20 +115,20 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     const itemsTotal = sections.reduce((sum, section) => 
       sum + section.items.reduce((s, item) => s + item.total, 0), 0);
     if (quotationType === 'food') {
-      return itemsTotal + additionalCharges.cateringLabour + additionalCharges.serviceCharge + additionalCharges.transport;
+      return itemsTotal + (additionalCharges?.cateringLabour || 0) + (additionalCharges?.serviceCharge || 0) + (additionalCharges?.transport || 0);
     }
     return itemsTotal;
   };
 
   const handleItemChange = (sectionIndex: number, itemIndex: number, field: keyof QuotationItem, value: string | number) => {
-    const newSections = [...sections];
-    const item = { ...newSections[sectionIndex].items[itemIndex] };
+    const newSections = JSON.parse(JSON.stringify(sections));
+    const item = newSections[sectionIndex].items[itemIndex];
 
     if (field === 'unitPrice' || field === 'quantity') {
-      (item as any)[field] = Number(value);
+      item[field] = Number(value);
       item.total = item.unitPrice * item.quantity;
     } else {
-      (item as any)[field] = value;
+      item[field] = value;
     }
 
     newSections[sectionIndex].items[itemIndex] = item;
@@ -161,7 +136,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   };
 
   const handleDeleteItem = (sectionIndex: number, itemIndex: number) => {
-    const newSections = [...sections];
+    const newSections = JSON.parse(JSON.stringify(sections));
     newSections[sectionIndex].items[itemIndex] = {
       id: newSections[sectionIndex].items[itemIndex].id,
       description: '',
@@ -176,37 +151,45 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId) {
+      toast.error('Session expired. Please log in.');
+      return;
+    }
     setSaving(true);
 
     const quotationData = {
+      user_id: userId,
       customer_name: formData.customerName,
-      customer_email: formData.customerEmail,
-      customer_phone: formData.customerPhone,
-      number_of_guests: formData.numberOfGuests,
-      theme: formData.theme,
-      event_date: formData.eventDate,
-      event_type: formData.eventType === 'Other' ? formData.customEventType : formData.eventType,
-      custom_event_type: formData.customEventType,
+      customer_email: formData.customerEmail || null,
+      customer_phone: formData.customerPhone || null,
+      number_of_guests: Number(formData.numberOfGuests) || 0,
+      theme: formData.theme || null,
+      event_date: formData.eventDate || null,
+      event_type: (formData.eventType === 'Other' ? formData.customEventType : formData.eventType) || null,
+      custom_event_type: formData.customEventType || null,
       quotation_type: quotationType === 'event' ? 'Event/Decor' : 'Food/Catering',
       sections: sections.map(s => ({ name: s.name, items: s.items })),
       additional_charges: additionalCharges,
-      notes: formData.notes,
-      status: editingQuotation?.status || 'draft' as const,
+      notes: formData.notes || null,
+      status: editingQuotation?.status || 'draft',
       total_amount: calculateGrandTotal(),
     };
 
     try {
-      if (!userId) return;
       if (editingQuotation) {
         await updateQuotation(editingQuotation.id, quotationData);
+        toast.success('Quotation updated successfully');
       } else {
-        await createQuotation(quotationData as any);
+        await createQuotation(quotationData);
+        toast.success('Quotation saved successfully');
       }
       resetForm();
       setShowForm(false);
       await fetchQuotations();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to save quotation:', error);
+      const msg = error.response?.data?.error || error.message || 'Unknown error';
+      toast.error(`Failed to save: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -249,13 +232,11 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       await fetchQuotations();
     } catch (error) {
       logger.error('Sync failed:', error);
-    } finally {
-      setIsSyncing(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure?')) {
+    if (confirm('Are you sure you want to delete this quotation?')) {
       try {
         await deleteQuotation(id);
         await fetchQuotations();
@@ -275,11 +256,12 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   };
 
   const filteredQuotations = useMemo(() => {
+    if (!quotations) return [];
     return viewMode === 'date'
       ? quotations.filter(q => q.eventDate === selectedDate)
       : quotations.filter(q =>
-          q.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          q.quotationNumber.toLowerCase().includes(searchTerm.toLowerCase())
+          (q.customerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+          (q.quotationNumber?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         );
   }, [quotations, viewMode, selectedDate, searchTerm]);
 
