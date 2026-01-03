@@ -104,14 +104,16 @@
     @apply shadow-[0_0_15px_-3px_rgba(13,148,136,0.2)] hover:shadow-[0_0_20px_-3px_rgba(13,148,136,0.4)];
   }
 
-  /* Glassmorphism Refinement */
+  /* Glassmorphism Refinement - Hardened for Brave/Strict Privacy */
   .glass-card {
-    @apply bg-white/70 dark:bg-card/70 backdrop-blur-md border border-white/20 dark:border-white/5;
+    @apply bg-white/80 dark:bg-card/80 border border-white/20 dark:border-white/10;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
-  /* Standardized Card Hover */
+  /* Standardized Card Hover - High Compatibility */
   .card-premium {
-    @apply relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-primary/30;
+    @apply relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 bg-card;
   }
 
   .card-premium::after {

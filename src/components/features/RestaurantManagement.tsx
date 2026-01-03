@@ -375,11 +375,11 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-muted/30 border-b border-primary/5">
-                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">Item Particulars</th>
-                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">Quantity</th>
-                    <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Price</th>
-                    <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest">Net Value</th>
-                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">Actions</th>
+                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest whitespace-nowrap">Item Particulars</th>
+                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest whitespace-nowrap">Quantity</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest whitespace-nowrap">Unit Price</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest whitespace-nowrap">Net Value</th>
+                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-primary/5">
@@ -387,7 +387,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                     const isEditing = editingLedgerId === item.id;
                     return (
                       <tr key={item.id} className="hover:bg-primary/[0.02] transition-colors group">
-                        <td className="px-8 py-5">
+                        <td className="px-8 py-5 whitespace-nowrap">
                           <span className="font-black text-sm text-foreground uppercase tracking-tight">{item.item}</span>
                         </td>
                         <td className="px-8 py-5 text-center">

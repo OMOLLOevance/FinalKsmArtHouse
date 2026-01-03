@@ -251,20 +251,20 @@ const InvestorDashboard: React.FC = () => {
             {businessUnits.map((unit) => (
               <div 
                 key={unit.name}
-                className="flex items-center space-x-6 p-6 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/10 hover:bg-muted/50 transition-all duration-500 group"
+                className="flex items-center space-x-6 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-border shadow-sm hover:shadow-xl hover:border-primary/20 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-500 group"
               >
                 <div className="p-4 rounded-2xl bg-primary/10 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-primary/5">
                   {unit.icon}
                 </div>
                 <div className="flex-1 space-y-1">
-                  <h3 className="font-black text-lg tracking-tight">{unit.name}</h3>
+                  <h3 className="font-black text-lg tracking-tight text-foreground">{unit.name}</h3>
                   <div className="flex items-center space-x-2">
                     <p className="text-2xl font-black text-primary tracking-tighter">{unit.revenue}</p>
-                    <Badge variant="secondary" className="text-[8px] font-black uppercase opacity-70 border-none h-4">
+                    <Badge variant="secondary" className="text-[10px] font-black uppercase bg-primary/5 text-primary border-none h-5 px-2">
                       {unit.share}
                     </Badge>
                   </div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-50">{unit.description}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-70">{unit.description}</p>
                 </div>
               </div>
             ))}
