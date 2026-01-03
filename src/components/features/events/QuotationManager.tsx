@@ -142,29 +142,30 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
   const handleDownloadPDF = async () => {
     if (!printRef.current || !selectedQuotation) {
-      toast.error('No quotation selected for download');
+      toast.error('Initialization failed: No active proposal selected.');
       return;
     }
     
     try {
       setIsGeneratingPDF(true);
-      const loadingToast = toast.loading('Generating HD Quotation PDF...');
+      const loadingToast = toast.loading('Generating Professional Document...');
       
       const element = printRef.current;
       
-      // Use html2canvas with high scale for HD quality
       const canvas = await html2canvas(element, {
-        scale: 3, 
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 1000,
-        scrollY: -window.scrollY, // Fix for scrolled content being cut off
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        scrollY: -window.scrollY,
+        windowWidth: 1200
       });
       
       const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: 'p',
         unit: 'mm',
         format: 'a4'
       });
@@ -172,15 +173,14 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      // Add the image to the PDF
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`KSM_Quotation_${selectedQuotation.quotationNumber}.pdf`);
+      pdf.save(`KSM_PROPOSAL_${selectedQuotation.quotationNumber}.pdf`);
       
       toast.dismiss(loadingToast);
-      toast.success('HD PDF Generated Successfully');
+      toast.success('Document downloaded successfully');
     } catch (error) {
       logger.error('PDF generation failed:', error);
-      toast.error('HD generation failed. Please use "Send to Printer" -> "Save as PDF"');
+      toast.error('Digital generation failed. Please use "Send to Printer" -> "Save as PDF"');
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -492,57 +492,53 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     );
   }
 
+  const handleDirectPrint = () => {
+    // Add a class to body to help with isolation
+    document.body.classList.add('is-printing');
+    window.print();
+    // Use a slight delay to remove the class after print dialog opens
+    setTimeout(() => {
+      document.body.classList.remove('is-printing');
+    }, 500);
+  };
+
   return (
     <div className="space-y-6">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* 1. Eliminate everything in the main app layout */
-          body > :not([data-radix-portal]) {
-            display: none !important;
+          /* 1. Global visibility reset */
+          body * {
+            visibility: hidden !important;
           }
           
-          /* 2. Reset portal positioning to the top of the paper */
-          [data-radix-portal] {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
+          /* 2. Show only the target document and its contents */
+          #printable-quotation, #printable-quotation * {
+            visibility: visible !important;
           }
 
-          /* 3. Hide all UI noise (buttons, close icons, overlays) */
-          button, 
-          .print\\:hidden, 
-          div[data-state="open"] > div:first-child,
-          [data-radix-collection] {
-            display: none !important;
-          }
-
-          /* 4. Flatten the dialog so it doesn't float or center */
-          div[role="dialog"] {
-            position: static !important;
-            width: 100% !important;
-            max-width: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            transform: none !important;
-            background: white !important;
-          }
-
-          /* 5. Target the specific document and force it to the top */
+          /* 3. Force document to the absolute top of page 1 */
           #printable-quotation {
             display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
-            padding: 1cm 1.5cm !important;
             margin: 0 !important;
+            padding: 1.5cm !important;
+            background: white !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+
+          /* 4. Reset browser specific print margins */
+          @page {
+            margin: 0;
+            size: auto;
           }
           
-          /* 6. Ensure text is black and crisp */
-          #printable-quotation * {
-            color: black !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+          /* 5. Ensure backgrounds are pure white */
+          html, body {
+            background: white !important;
           }
         }
       `}} />
@@ -608,13 +604,20 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
       {/* Professional View/Print Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent id="printable-quotation-container" className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Client Proposal: {selectedQuotation?.quotationNumber}</DialogTitle>
-            <DialogDescription>Professional document preview and export portal</DialogDescription>
+        <DialogContent id="printable-quotation-container" className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl bg-slate-100">
+          <DialogHeader className="p-6 border-b bg-white print:hidden">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl font-black uppercase text-primary tracking-tight">Proposal Preview</DialogTitle>
+                <DialogDescription className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-50">Review client document before final export</DialogDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowViewDialog(false)} className="rounded-full">
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </DialogHeader>
           
-          <div ref={printRef} id="printable-quotation" className="p-8 md:p-12 bg-white text-slate-900">
+          <div ref={printRef} id="printable-quotation" className="p-8 md:p-12 bg-white text-slate-900 mx-auto shadow-sm my-8">
             <div className="flex justify-between items-start border-b-4 border-primary pb-8 mb-10">
               <div className="space-y-2">
                 <div className="flex items-center space-x-3 mb-2">
@@ -740,7 +743,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                 <><FileDown className="h-4 w-4 mr-2" /> Download High-Quality PDF</>
               )}
             </Button>
-            <Button onClick={() => window.print()} className="bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] h-11 px-8">
+            <Button onClick={handleDirectPrint} className="bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] h-11 px-8">
               <Printer className="h-4 w-4 mr-2" /> Send to Printer
             </Button>
           </div>

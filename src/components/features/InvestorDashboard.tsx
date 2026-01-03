@@ -174,7 +174,7 @@ const InvestorDashboard: React.FC = () => {
       </div>
 
       {/* Revenue Trend Chart */}
-      <Card className="p-8 glass-card border-primary/5 shadow-2xl">
+      <Card className="p-8 glass-card border-primary/5 shadow-2xl min-w-0">
         <div className="flex flex-col space-y-4 mb-6">
           <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">
             Revenue Trend

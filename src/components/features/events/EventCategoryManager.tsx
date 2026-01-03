@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Database } from 'lucide-react';
+import { ArrowLeft, Plus, Database, Trash2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import { useEventItemsQuery } from '@/hooks/use-event-api';
+import { useEventItemsQuery, useCreateEventItemMutation, useDeleteEventItemMutation } from '@/hooks/use-event-api';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
+import { toast } from 'sonner';
 
 interface ManagerProps {
   onBack: () => void;
@@ -18,15 +19,55 @@ interface ManagerProps {
 }
 
 const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title }) => {
-  const { data: items, isLoading } = useEventItemsQuery();
+  const { data: items, isLoading, refetch } = useEventItemsQuery();
+  const createItemMutation = useCreateEventItemMutation();
+  const deleteItemMutation = useDeleteEventItemMutation();
   const [showAddDialog, setShowAddDialog] = useState(false);
   
+  const [formData, setFormData] = useState({
+    name: '',
+    quantityAvailable: 0,
+    price: 0,
+    unit: 'pieces',
+    status: 'available'
+  });
+
   const filteredItems = items?.filter(item => item.category === category) || [];
+
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name) {
+      toast.error('Item name is required');
+      return;
+    }
+
+    try {
+      await createItemMutation.mutateAsync({
+        ...formData,
+        category,
+        quantity_available: formData.quantityAvailable // Match backend expected field name if necessary, though hook might handle it
+      });
+      setShowAddDialog(false);
+      setFormData({ name: '', quantityAvailable: 0, price: 0, unit: 'pieces', status: 'available' });
+      await refetch();
+    } catch (error) {
+      // Error handled by mutation hook
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        await deleteItemMutation.mutateAsync(id);
+        await refetch();
+      } catch (error) {}
+    }
+  };
 
   if (isLoading) return <LoadingSpinner text={`Loading ${title}...`} />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={onBack}>
@@ -60,6 +101,9 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
                         {item.status}
                       </Badge>
                     </div>
+                    <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 bg-muted/30 p-2 rounded-lg border">
@@ -87,19 +131,58 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
       </Card>
 
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add New {category} Item</DialogTitle>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">Add New {category} Item</DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">Register new equipment or services for {category} management.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <Input placeholder="Item name" />
-            <Input placeholder="Quantity" type="number" />
-            <Input placeholder="Price (KSH)" type="number" />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button onClick={() => setShowAddDialog(false)}>Add Item</Button>
-          </DialogFooter>
+          <form onSubmit={handleAddItem} className="space-y-4 pt-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Item Name</label>
+              <Input 
+                placeholder="e.g. Hand Sanitizer" 
+                value={formData.name} 
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+                required 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Stock Quantity</label>
+                <Input 
+                  type="number" 
+                  placeholder="0" 
+                  value={formData.quantityAvailable || ''} 
+                  onChange={(e) => setFormData({ ...formData, quantityAvailable: parseInt(e.target.value) || 0 })} 
+                  required 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Price (KSH)</label>
+                <Input 
+                  type="number" 
+                  placeholder="0.00" 
+                  value={formData.price || ''} 
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })} 
+                  required 
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Unit</label>
+              <Input 
+                placeholder="e.g. Litres, Pieces" 
+                value={formData.unit} 
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })} 
+              />
+            </div>
+            <DialogFooter className="pt-6">
+              <Button variant="outline" type="button" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+              <Button type="submit" disabled={createItemMutation.isPending}>
+                {createItemMutation.isPending ? 'Saving...' : 'Add Item'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
