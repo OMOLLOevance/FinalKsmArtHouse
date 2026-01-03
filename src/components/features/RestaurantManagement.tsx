@@ -344,6 +344,81 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
         })}
       </div>
 
+      {/* Confirmed Purchase Ledger */}
+      {recordedItems.size > 0 && (
+        <Card className="border-none shadow-2xl overflow-hidden rounded-3xl animate-in slide-in-from-bottom-4 duration-700">
+          <CardHeader className="bg-slate-50 border-b p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-primary/10 rounded-xl">
+                  <Receipt className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black uppercase tracking-tight">Daily Purchase Ledger</CardTitle>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Audited inventory acquisitions for {selectedDate}</CardDescription>
+                </div>
+              </div>
+              <Badge className="bg-success/10 text-success border-none font-black px-4 py-1 rounded-full">
+                {recordedItems.size} ITEMS VALIDATED
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Item Particulars</th>
+                    <th className="px-6 py-4 text-center text-[10px] font-black uppercase text-slate-400 tracking-widest">Quantity</th>
+                    <th className="px-6 py-4 text-right text-[10px] font-black uppercase text-slate-400 tracking-widest">Unit Price</th>
+                    <th className="px-6 py-4 text-right text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Value</th>
+                    <th className="px-6 py-4 text-center text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <span className="font-black text-sm text-slate-700 uppercase">{item.item}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-bold text-sm bg-slate-100 px-3 py-1 rounded-lg">{item.quantity}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono text-sm text-slate-500">
+                        {Number(item.price).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="font-black text-sm text-primary">
+                          {formatCurrency(Number(item.price) * Number(item.quantity))}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center">
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-primary/5">
+                    <td colSpan={3} className="px-6 py-6 text-right text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                      Total Validated Cost:
+                    </td>
+                    <td className="px-6 py-6 text-right">
+                      <span className="text-2xl font-black text-primary tracking-tighter">
+                        {formatCurrency(totalCost)}
+                      </span>
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Empty State */}
       {filteredInventory.length === 0 && (
         <div className="py-20 text-center space-y-4 print:hidden">
