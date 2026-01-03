@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -45,10 +45,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('quotations')
       .select('*')
       .eq('user_id', userId)
@@ -66,9 +69,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const validatedData = QuotationSchema.parse(body);
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('quotations')
       .insert([validatedData])
       .select()
@@ -90,10 +96,13 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('quotations')
       .update(updates)
       .eq('id', id)
@@ -113,10 +122,13 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const { error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { error } = await client
       .from('quotations')
       .delete()
       .eq('id', id);

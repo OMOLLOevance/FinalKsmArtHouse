@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -17,10 +17,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('catering_inventory')
       .select('*')
       .eq('user_id', userId)
@@ -28,40 +31,51 @@ export async function GET(request: NextRequest) {
       .order('particular', { ascending: true });
 
     if (error) {
-        logger.error('Supabase error in Catering Inventory GET:', error);
-        return NextResponse.json({ error: error.message, details: error.details, code: error.code }, { status: 500 });
+        logger.error('Catering Inventory GET Database Error:', error);
+        throw ApiError.fromSupabase(error);
     }
 
     return NextResponse.json({ data: data || [] });
   } catch (error: any) {
-    logger.error('Catering Inventory GET Exception:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    logger.error('Catering Inventory GET Error:', error);
+    const status = error instanceof ApiError ? error.status : 500;
+    return NextResponse.json({ 
+        error: error.message || 'Internal Server Error',
+        details: error.details || null
+    }, { status });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const validatedData = CateringInventorySchema.parse(body);
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('catering_inventory')
       .upsert(validatedData)
       .select()
       .single();
 
     if (error) {
-        logger.error('Supabase error in Catering Inventory POST:', error);
-        return NextResponse.json({ error: error.message, details: error.details, code: error.code }, { status: 500 });
+        logger.error('Catering Inventory POST Database Error:', error);
+        throw ApiError.fromSupabase(error);
     }
 
     return NextResponse.json({ data });
   } catch (error: any) {
-    logger.error('Catering Inventory POST Exception:', error);
+    logger.error('Catering Inventory POST Error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 });
     }
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const status = error instanceof ApiError ? error.status : 500;
+    return NextResponse.json({ 
+        error: error.message || 'Internal Server Error',
+        details: error.details || null
+    }, { status });
   }
 }
 
@@ -69,19 +83,29 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const { error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { error } = await client
       .from('catering_inventory')
       .delete()
       .eq('id', id);
 
-    if (error) throw ApiError.fromSupabase(error);
+    if (error) {
+        logger.error('Catering Inventory DELETE Database Error:', error);
+        throw ApiError.fromSupabase(error);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     logger.error('Catering Inventory DELETE Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const status = error instanceof ApiError ? error.status : 500;
+    return NextResponse.json({ 
+        error: error.message || 'Internal Server Error',
+        details: error.details || null
+    }, { status });
   }
 }

@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   email TEXT UNIQUE NOT NULL,
   first_name TEXT,
   last_name TEXT,
-  role TEXT DEFAULT 'staff' CHECK (role IN ('admin', 'manager', 'staff')),
+  role TEXT DEFAULT 'staff' CHECK (role IN ('admin', 'manager', 'staff', 'director')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -117,6 +117,33 @@ CREATE TABLE IF NOT EXISTS public.event_items (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 8. Catering Inventory (Physical Assets)
+CREATE TABLE IF NOT EXISTS public.catering_inventory (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  particular TEXT NOT NULL,
+  good_condition INTEGER DEFAULT 0,
+  repair_needed INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 9. Catering Items (Service/Billing Items)
+CREATE TABLE IF NOT EXISTS public.catering_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  unit TEXT DEFAULT 'pieces',
+  price_per_plate DECIMAL(10,2) NOT NULL DEFAULT 0,
+  min_order INTEGER DEFAULT 0,
+  description TEXT,
+  available BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable RLS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
@@ -126,6 +153,8 @@ ALTER TABLE public.restaurant_sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sauna_bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sauna_spa_finances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.catering_inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.catering_items ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Check if policies exist before creating to avoid errors
@@ -157,6 +186,12 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own event items') THEN
         CREATE POLICY "Users can manage own event items" ON public.event_items FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own catering inventory') THEN
+        CREATE POLICY "Users can manage own catering inventory" ON public.catering_inventory FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage own catering items') THEN
+        CREATE POLICY "Users can manage own catering items" ON public.catering_items FOR ALL USING (auth.uid() = user_id);
     END IF;
 END
 $$;

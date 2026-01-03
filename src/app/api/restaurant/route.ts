@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -21,10 +21,19 @@ export async function GET(request: NextRequest) {
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    let query = supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    // Map frontend field names to database column names
+    let selectFields = fields;
+    if (fields.includes('date')) {
+      selectFields = fields.replace('date', 'sale_date');
+    }
+
+    let query = client
       .from('restaurant_sales')
-      .select(fields)
+      .select(selectFields)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -47,6 +56,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     
     // Map frontend names to exact DB schema provided
     const dataToValidate = {
@@ -61,7 +71,9 @@ export async function POST(request: NextRequest) {
 
     const validatedData = RestaurantSaleSchema.parse(dataToValidate);
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('restaurant_sales')
       .insert([validatedData])
       .select()
@@ -84,10 +96,13 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
+
+    const client = token ? createAuthenticatedClient(token) : supabase;
 
     // Map any incoming update fields to DB names if they exist
     const dbUpdates: any = { ...updates };
@@ -96,7 +111,7 @@ export async function PUT(request: NextRequest) {
     if (updates.unitPrice) dbUpdates.unit_price = updates.unitPrice;
     if (updates.totalAmount) dbUpdates.total_amount = updates.totalAmount;
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('restaurant_sales')
       .update(dbUpdates)
       .eq('id', id)
@@ -117,12 +132,15 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { error } = await client
       .from('restaurant_sales')
       .delete()
       .eq('id', id);

@@ -36,6 +36,26 @@ export const supabase = createClient(
   },
 });
 
+// Helper to create an authenticated client for server-side use
+export const createAuthenticatedClient = (token: string) => {
+  return createClient(
+    supabaseUrl || '',
+    supabaseAnonKey || '',
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-client-info': 'ksm-art-house-api@1.0.0',
+        },
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+};
+
 // Database health check
 export const checkDatabaseHealth = async () => {
   const tables = [

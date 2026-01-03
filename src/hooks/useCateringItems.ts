@@ -29,6 +29,9 @@ export const useCreateCateringItemMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['catering-items'] });
       toast.success('Service item added');
     },
+    onError: (error: any) => {
+      toast.error(`Failed to add item: ${error.message || 'Unknown error'}`);
+    },
   });
 };
 
@@ -43,6 +46,9 @@ export const useUpdateCateringItemMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['catering-items'] });
       toast.success('Service item updated');
     },
+    onError: (error: any) => {
+      toast.error(`Failed to update item: ${error.message || 'Unknown error'}`);
+    },
   });
 };
 
@@ -56,6 +62,9 @@ export const useDeleteCateringItemMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['catering-items'] });
       toast.success('Service item removed');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to remove item: ${error.message || 'Unknown error'}`);
     },
   });
 };

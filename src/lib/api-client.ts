@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { toast } from 'sonner';
 import { tokenStorage } from './token-storage';
 import { logger } from './logger';
+import { supabase } from './supabase';
 
 class APIClient {
   private client: AxiosInstance;
@@ -20,8 +21,11 @@ class APIClient {
   private setupInterceptors() {
     // Request interceptor
     this.client.interceptors.request.use(
-      (config) => {
-        const token = tokenStorage.getToken();
+      async (config) => {
+        // Try to get token from Supabase session directly
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token || tokenStorage.getToken();
+        
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }

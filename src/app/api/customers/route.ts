@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -27,8 +27,11 @@ export async function GET(request: NextRequest) {
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    let query = supabase.from('customers').select(fields).order('created_at', { ascending: false });
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    let query = client.from('customers').select(fields).order('created_at', { ascending: false });
     
     if (userId) {
       query = query.eq('user_id', userId);
@@ -51,6 +54,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     
     const dataToValidate = {
       user_id: body.userId || body.user_id,
@@ -70,7 +74,9 @@ export async function POST(request: NextRequest) {
 
     const validatedData = CustomerSchema.parse(dataToValidate);
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('customers')
       .insert([validatedData])
       .select()
@@ -93,12 +99,15 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('customers')
       .update(updates)
       .eq('id', id)
@@ -119,12 +128,15 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { error } = await client
       .from('customers')
       .delete()
       .eq('id', id);

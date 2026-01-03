@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -18,8 +18,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    let query = supabase.from('decor_inventory').select('*');
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    let query = client.from('decor_inventory').select('*');
     if (userId) query = query.eq('user_id', userId);
 
     const { data, error } = await query
@@ -38,11 +41,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const { action, id, ...itemData } = body;
+
+    const client = token ? createAuthenticatedClient(token) : supabase;
 
     if (action && id) {
       // Handle special actions: hire, return, damage, repair
-      const { data: current, error: fetchError } = await supabase
+      const { data: current, error: fetchError } = await client
         .from('decor_inventory')
         .select('in_store, hired, damaged')
         .eq('id', id)
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
           break;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('decor_inventory')
         .update(updates)
         .eq('id', id)
@@ -83,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Handle normal insertion
     const validatedData = DecorInventorySchema.parse(itemData);
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('decor_inventory')
       .insert([validatedData])
       .select()
@@ -101,8 +107,11 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('decor_inventory')
       .update(updates)
       .eq('id', id)

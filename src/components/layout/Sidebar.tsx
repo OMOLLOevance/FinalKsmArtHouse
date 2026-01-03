@@ -50,6 +50,15 @@ const Sidebar = () => {
     management: true,
   });
 
+  // Filter items based on role - MUST be before any early returns
+  const filteredNavItems = useMemo(() => {
+    if (!user?.role) return [];
+    return navItems.filter(item => item.roles.includes(user.role)).map(item => ({
+      ...item,
+      children: item.children?.filter(child => child.roles.includes(user.role))
+    }));
+  }, [user?.role]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -65,14 +74,7 @@ const Sidebar = () => {
     setIsMobileMenuOpen(false);
   };
 
-  // Filter items based on role
-  const filteredNavItems = useMemo(() => {
-    if (!user?.role) return [];
-    return navItems.filter(item => item.roles.includes(user.role)).map(item => ({
-      ...item,
-      children: item.children?.filter(child => child.roles.includes(user.role))
-    }));
-  }, [user?.role]);
+
 
   // Only render full sidebar on client
   if (!mounted) {

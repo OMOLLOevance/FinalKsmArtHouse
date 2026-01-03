@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -22,9 +22,12 @@ export async function GET(request: NextRequest) {
   const fields = searchParams.get('fields') || '*';
   const limit = parseInt(searchParams.get('limit') || '100');
   const offset = parseInt(searchParams.get('offset') || '0');
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
   try {
-    let query = supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    let query = client
       .from('sauna_bookings')
       .select(fields)
       .order('created_at', { ascending: false })
@@ -48,6 +51,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const userId = body.userId || body.user_id;
 
     const dataToValidate = {
@@ -64,7 +68,9 @@ export async function POST(request: NextRequest) {
 
     const validatedData = BookingSchema.parse(dataToValidate);
 
-    const { data: inserted, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data: inserted, error } = await client
       .from('sauna_bookings')
       .insert([validatedData])
       .select()
@@ -87,17 +93,20 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
+
+    const client = token ? createAuthenticatedClient(token) : supabase;
 
     const dbUpdates: any = { ...updates };
     if (updates.date) dbUpdates.booking_date = updates.date;
     if (updates.time) dbUpdates.booking_time = updates.time;
     if (updates.client) dbUpdates.client_name = updates.client;
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('sauna_bookings')
       .update(dbUpdates)
       .eq('id', id)
@@ -118,12 +127,15 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { error } = await client
       .from('sauna_bookings')
       .delete()
       .eq('id', id);

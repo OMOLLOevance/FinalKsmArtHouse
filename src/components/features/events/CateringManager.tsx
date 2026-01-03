@@ -13,6 +13,10 @@ import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, 
+  DialogDescription, DialogFooter 
+} from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { logger } from '@/lib/logger';
@@ -31,10 +35,10 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
-  const { items: serviceItems, loading: servicesLoading, addItem, updateItem, deleteItem, refetch: fetchServices } = useCateringItems();
+  const { items: serviceItems, loading: servicesLoading, error: servicesError, addItem, updateItem, deleteItem, refetch: fetchServices } = useCateringItems();
   
   // Inventory Hooks
-  const { data: inventoryItems = [], isLoading: inventoryLoading } = useCateringInventoryQuery();
+  const { data: inventoryItems = [], isLoading: inventoryLoading, error: inventoryError } = useCateringInventoryQuery();
   const upsertInventory = useUpsertCateringInventoryMutation();
   const deleteInventory = useDeleteCateringInventoryMutation();
 
@@ -127,6 +131,9 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       const localData = isPending ? {} : (localInventory[item.id!] || {});
       const dataToSave = { ...item, ...localData };
       
+      // Remove user_id from the data since the hook will set it
+      delete dataToSave.user_id;
+      
       await upsertInventory.mutateAsync(dataToSave);
       toast.success('Inventory updated');
       
@@ -169,8 +176,9 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       setEditingItem(null);
       setFormData({ item: '', quantity: 0, unitPrice: 0, category: '', notes: '', eventBudget: 0, amountPaid: 0, paymentMethod: 'cash', eventLocation: '', paymentStatus: 'deposit', serviceStatus: 'not-served' });
       await fetchServices();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to save item:', error);
+      toast.error(`Failed to save item: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -313,6 +321,17 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6 pb-12">
+      {(servicesError || inventoryError) && (
+        <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl flex items-center justify-between text-destructive text-sm font-bold animate-in zoom-in-95 duration-300">
+          <div className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            <span>Failed to synchronize some data. Database might be initializing.</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => { fetchServices(); }} className="h-8 border-destructive/30 hover:bg-destructive/10 text-destructive">
+            Retry Sync
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
@@ -320,7 +339,6 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setIsAdding(true)} size="sm"><Plus className="h-4 w-4 mr-2" /> Add Service Item</Button>
-          <Button variant="outline" onClick={() => fetchServices()} size="sm"><Database className="h-4 w-4 mr-2" /> Sync</Button>
         </div>
       </div>
 
@@ -352,25 +370,69 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
         </Card>
       </div>
 
-      {(isAdding || editingItem) && (
-        <Card>
-          <CardHeader><CardTitle>{editingItem ? 'Edit' : 'Add'} Item</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input placeholder="Item Name" value={formData.item} onChange={(e) => setFormData({ ...formData, item: e.target.value })} required />
-              <Input placeholder="Category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} required />
-              <Input type="number" placeholder="Quantity" value={formData.quantity || ''} onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })} required />
-              <Input type="number" placeholder="Price (KSH)" value={formData.unitPrice || ''} onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })} required />
-              <Input type="number" placeholder="Budget (KSH)" value={formData.eventBudget || ''} onChange={(e) => setFormData({ ...formData, eventBudget: Number(e.target.value) })} />
-              <Input type="number" placeholder="Paid (KSH)" value={formData.amountPaid || ''} onChange={(e) => setFormData({ ...formData, amountPaid: Number(e.target.value) })} />
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => { setIsAdding(false); setEditingItem(null); }}>Cancel</Button>
-                <Button type="submit" className="flex-1">Save</Button>
+      <Dialog 
+        open={isAdding || !!editingItem} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAdding(false);
+            setEditingItem(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
+              {editingItem ? 'Update' : 'Initialize'} Service Item
+            </DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              {editingItem ? 'Modify existing professional billing record' : 'Register a new professional catering service item'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Item Particulars</label>
+                <Input placeholder="e.g. Premium Buffet" value={formData.item} onChange={(e) => setFormData({ ...formData, item: e.target.value })} required className="font-bold" />
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Classification</label>
+                <Input placeholder="e.g. Catering" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} required className="font-bold" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Quantity / Servings</label>
+                <Input type="number" placeholder="0" value={formData.quantity || ''} onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })} required className="font-bold" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Unit Price (KSH)</label>
+                <Input type="number" placeholder="0.00" value={formData.unitPrice || ''} onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })} required className="font-bold text-success" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Allocated Budget (KSH)</label>
+                <Input type="number" placeholder="0.00" value={formData.eventBudget || ''} onChange={(e) => setFormData({ ...formData, eventBudget: Number(e.target.value) })} className="font-bold text-primary" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Amount Remitted (KSH)</label>
+                <Input type="number" placeholder="0.00" value={formData.amountPaid || ''} onChange={(e) => setFormData({ ...formData, amountPaid: Number(e.target.value) })} className="font-bold text-success" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-2">
+              <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Operational Notes</label>
+              <Input placeholder="Enter any specific requirements or details..." value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="font-medium" />
+            </div>
+
+            <DialogFooter className="pt-6 gap-2 sm:gap-0">
+              <Button type="button" variant="outline" className="flex-1 sm:flex-none h-11 px-8 font-black uppercase tracking-widest text-[10px]" onClick={() => { setIsAdding(false); setEditingItem(null); }}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1 sm:flex-none h-11 px-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
+                {editingItem ? 'Update Entry' : 'Register Item'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Inventory Section */}
       <Card className="border-primary/10 shadow-sm bg-transparent border-none shadow-none">
@@ -425,9 +487,13 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
               );
             })}
             {serviceItems.length === 0 && (
-              <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border-2 border-dashed">
-                <Clock className="h-12 w-12 mx-auto mb-4 opacity-20" /><p className="text-lg font-medium">No service items recorded yet.</p>
-                <Button variant="link" onClick={() => setIsAdding(true)}>Add your first service item</Button>
+              <div className="col-span-full py-16 text-center text-muted-foreground bg-muted/5 rounded-2xl border-2 border-dashed border-primary/10">
+                <Utensils className="h-12 w-12 mx-auto mb-4 opacity-20 text-primary" />
+                <p className="text-xl font-bold text-foreground">No Service Items Found</p>
+                <p className="text-sm mb-6 max-w-xs mx-auto">Create your first client billing item to track event pricing and budgets.</p>
+                <Button variant="default" onClick={() => setIsAdding(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Add Your First Item
+                </Button>
               </div>
             )}
           </div>

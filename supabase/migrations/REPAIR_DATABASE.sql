@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   email TEXT UNIQUE NOT NULL,
   first_name TEXT,
   last_name TEXT,
-  role TEXT DEFAULT 'staff' CHECK (role IN ('admin', 'manager', 'staff')),
+  role TEXT DEFAULT 'staff' CHECK (role IN ('admin', 'manager', 'staff', 'director')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -108,16 +108,27 @@ CREATE TABLE IF NOT EXISTS public.event_items (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 8. Catering Inventory
+-- 8. Catering Inventory (Physical Assets)
 CREATE TABLE IF NOT EXISTS public.catering_inventory (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  particular TEXT NOT NULL,
+  good_condition INTEGER DEFAULT 0,
+  repair_needed INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 9. Catering Items (Service/Billing Items)
+CREATE TABLE IF NOT EXISTS public.catering_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
-  unit TEXT NOT NULL,
-  quantity INTEGER DEFAULT 0,
+  unit TEXT DEFAULT 'pieces',
   price_per_plate DECIMAL(10,2) NOT NULL DEFAULT 0,
-  min_order INTEGER DEFAULT 1,
+  min_order INTEGER DEFAULT 0,
   description TEXT,
   available BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -133,6 +144,7 @@ ALTER TABLE public.restaurant_sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sauna_bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catering_inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.catering_items ENABLE ROW LEVEL SECURITY;
 
 -- 10. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_customers_user_id ON public.customers(user_id);
@@ -142,6 +154,7 @@ CREATE INDEX IF NOT EXISTS idx_restaurant_sales_user_id ON public.restaurant_sal
 CREATE INDEX IF NOT EXISTS idx_sauna_bookings_user_id ON public.sauna_bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_event_items_user_id ON public.event_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_catering_inventory_user_id ON public.catering_inventory(user_id);
+CREATE INDEX IF NOT EXISTS idx_catering_items_user_id ON public.catering_items(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_restaurant_sale_date ON public.restaurant_sales(sale_date);
 CREATE INDEX IF NOT EXISTS idx_gym_transaction_date ON public.gym_finances(transaction_date);
@@ -200,5 +213,8 @@ BEGIN
     
     DROP POLICY IF EXISTS "Manage own catering inventory" ON public.catering_inventory;
     CREATE POLICY "Manage own catering inventory" ON public.catering_inventory FOR ALL USING (auth.uid() = user_id);
+
+    DROP POLICY IF EXISTS "Manage own catering items" ON public.catering_items;
+    CREATE POLICY "Manage own catering items" ON public.catering_items FOR ALL USING (auth.uid() = user_id);
 END
 $$;

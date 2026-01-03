@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -44,10 +44,13 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-    let query = supabase.from('decor_allocations').select('*').eq('user_id', userId);
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    let query = client.from('decor_allocations').select('*').eq('user_id', userId);
     
     if (monthStr) {
       const month = parseInt(monthStr);
@@ -76,9 +79,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const validatedData = DecorAllocationSchema.parse(body);
 
-    const { data, error } = await supabase
+    const client = token ? createAuthenticatedClient(token) : supabase;
+
+    const { data, error } = await client
       .from('decor_allocations')
       .upsert(validatedData, { 
         onConflict: 'month, year, row_number, user_id' 
