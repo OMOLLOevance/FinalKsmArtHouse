@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userRole = await getUserRole(user.id, client);
+
     // Map frontend field names to database column names safely
     const selectFields = fields.split(',').map(f => f.trim() === 'date' ? 'sale_date' : f).join(',');
 
@@ -51,7 +53,8 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (userId) {
+    // Only filter by userId if specified AND user is staff
+    if (userId && userRole === 'staff') {
       query = query.eq('user_id', userId);
     }
 

@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userRole = await getUserRole(user.id, client);
+
     // RLS policies will handle the filtering based on user role
     let query = client
       .from('sauna_bookings')
@@ -50,7 +52,8 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (userId) {
+    // Only filter by userId if specified AND user is staff
+    if (userId && userRole === 'staff') {
       query = query.eq('user_id', userId);
     }
 

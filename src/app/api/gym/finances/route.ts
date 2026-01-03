@@ -40,15 +40,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userRole = await getUserRole(user.id, client);
+
     // RLS policies will handle the filtering based on user role
-    // Staff will only see their own records, managers/directors will see all
+    // For staff: only see their own records
+    // For operations_manager/director/investor: see all records
     let query = client
       .from('gym_finances')
       .select(fields)
       .order('transaction_date', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (userId) {
+    // Only filter by userId if specified AND user is staff
+    if (userId && userRole === 'staff') {
       query = query.eq('user_id', userId);
     }
 
