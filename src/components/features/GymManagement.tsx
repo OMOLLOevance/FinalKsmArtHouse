@@ -64,7 +64,7 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const isManager = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'director';
 
   const form = useForm<MemberFormValues>({
-    resolver: zodResolver(MemberSchema),
+    resolver: zodResolver(MemberSchema) as any,
     defaultValues: {
       name: '',
       phoneNumber: '',
