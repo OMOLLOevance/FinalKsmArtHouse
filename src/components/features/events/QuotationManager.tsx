@@ -158,7 +158,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 1000 // Fixed width for consistent rendering
+        windowWidth: 1000,
+        scrollY: -window.scrollY, // Fix for scrolled content being cut off
       });
       
       const imgData = canvas.toDataURL('image/png', 1.0);
@@ -495,45 +496,53 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     <div className="space-y-6">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* 1. Hide everything by default */
-          body * {
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: visible !important;
+          /* 1. Eliminate everything in the main app layout */
+          body > :not([data-radix-portal]) {
+            display: none !important;
           }
           
-          /* 2. Target only the specific quotation and its child elements */
-          #printable-quotation, #printable-quotation * {
-            visibility: visible !important;
-            height: auto !important;
+          /* 2. Reset portal positioning to the top of the paper */
+          [data-radix-portal] {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
           }
 
-          /* 3. Force the quotation to be the only block visible at the top */
+          /* 3. Hide all UI noise (buttons, close icons, overlays) */
+          button, 
+          .print\\:hidden, 
+          div[data-state="open"] > div:first-child,
+          [data-radix-collection] {
+            display: none !important;
+          }
+
+          /* 4. Flatten the dialog so it doesn't float or center */
+          div[role="dialog"] {
+            position: static !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            transform: none !important;
+            background: white !important;
+          }
+
+          /* 5. Target the specific document and force it to the top */
           #printable-quotation {
             display: block !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
             width: 100% !important;
-            padding: 1.5cm !important;
+            padding: 1cm 1.5cm !important;
             margin: 0 !important;
-            background: white !important;
-            border: none !important;
-            box-shadow: none !important;
           }
-
-          /* 4. Ensure no background colors/images from the app leak in */
-          body, html {
-            background: white !important;
-          }
-
-          /* 5. Hide ALL UI/Portal wrappers that aren't the actual content */
-          [role="dialog"], [data-radix-portal], .fixed, .absolute {
-            background: none !important;
-            box-shadow: none !important;
-            border: none !important;
+          
+          /* 6. Ensure text is black and crisp */
+          #printable-quotation * {
+            color: black !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}} />
