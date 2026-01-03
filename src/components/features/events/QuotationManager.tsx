@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Plus, Search, FileText, Edit, Trash2, Printer, X, Loader, Database, ChevronDown, ChevronUp, Sparkles, Download } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { ArrowLeft, Plus, Search, FileText, Edit, Trash2, Printer, X, Loader, Database, ChevronDown, ChevronUp, Sparkles, Download, FileDown } from 'lucide-react';
 import { useQuotations } from '@/hooks/useQuotations';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface QuotationManagerProps {
   onBack: () => void;
@@ -89,6 +91,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -134,6 +138,51 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       window.print();
       document.title = originalTitle;
     }, 200);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!printRef.current || !selectedQuotation) {
+      toast.error('No quotation selected for download');
+      return;
+    }
+    
+    try {
+      setIsGeneratingPDF(true);
+      const loadingToast = toast.loading('Generating HD Quotation PDF...');
+      
+      const element = printRef.current;
+      
+      // Use html2canvas with high scale for HD quality
+      const canvas = await html2canvas(element, {
+        scale: 3, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1000 // Fixed width for consistent rendering
+      });
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // Add the image to the PDF
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`KSM_Quotation_${selectedQuotation.quotationNumber}.pdf`);
+      
+      toast.dismiss(loadingToast);
+      toast.success('HD PDF Generated Successfully');
+    } catch (error) {
+      logger.error('PDF generation failed:', error);
+      toast.error('HD generation failed. Please use "Send to Printer" -> "Save as PDF"');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const handleItemChange = (sectionIndex: number, itemIndex: number, field: keyof QuotationItem, value: string | number) => {
@@ -446,41 +495,40 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     <div className="space-y-6">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* Hide absolutely everything in the root */
-          body > * {
-            display: none !important;
-          }
-          /* Except the Radix UI Portal where the dialog lives */
-          body > [data-radix-portal] {
-            display: block !important;
-          }
-          /* Inside the portal, hide the overlay and other dialog content */
-          [data-radix-portal] div[role="dialog"] {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
+          /* Universal reset for print */
+          body { 
+            background: white !important; 
+            margin: 0 !important; 
             padding: 0 !important;
-            background: white !important;
-            border: none !important;
-            box-shadow: none !important;
           }
-          /* Hide the close button, footer buttons, etc */
-          button, .print\\:hidden, [data-radix-collection] {
+          
+          /* Hide EVERYTHING in the DOM tree */
+          body * {
             display: none !important;
           }
-          /* Show ONLY our specific document */
+          
+          /* Show ONLY the quotation container and its children */
+          #printable-quotation, #printable-quotation * {
+            display: block !important;
+            visibility: visible !important;
+          }
+
+          /* Force container to be static and take up full page */
           #printable-quotation {
             display: block !important;
-            visibility: visible !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 1.5cm !important;
+            background: white !important;
+            border: none !important;
           }
-          #printable-quotation * {
-            visibility: visible !important;
-          }
+
+          /* Ensure tables look correct in print */
+          table { width: 100% !important; border-collapse: collapse !important; }
+          th, td { border-bottom: 1px solid #eee !important; }
         }
       `}} />
       <div className="flex items-center justify-between print:hidden">
@@ -545,8 +593,13 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
       {/* Professional View/Print Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl">
-          <div id="printable-quotation" className="p-8 md:p-12 bg-white text-slate-900">
+        <DialogContent id="printable-quotation-container" className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Client Proposal: {selectedQuotation?.quotationNumber}</DialogTitle>
+            <DialogDescription>Professional document preview and export portal</DialogDescription>
+          </DialogHeader>
+          
+          <div ref={printRef} id="printable-quotation" className="p-8 md:p-12 bg-white text-slate-900">
             <div className="flex justify-between items-start border-b-4 border-primary pb-8 mb-10">
               <div className="space-y-2">
                 <div className="flex items-center space-x-3 mb-2">
@@ -661,8 +714,16 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           </div>
           <div className="p-6 bg-slate-50 border-t flex justify-end gap-3 sticky bottom-0 print:hidden">
             <Button variant="outline" onClick={() => setShowViewDialog(false)}>Close Preview</Button>
-            <Button onClick={() => handlePrintIndividual(selectedQuotation!)} className="bg-slate-800 text-white hover:bg-slate-900 font-black uppercase tracking-widest text-[10px] h-11 px-8">
-              <Download className="h-4 w-4 mr-2" /> Save as PDF (Download)
+            <Button 
+              onClick={handleDownloadPDF} 
+              disabled={isGeneratingPDF}
+              className="bg-slate-800 text-white hover:bg-slate-900 font-black uppercase tracking-widest text-[10px] h-11 px-8"
+            >
+              {isGeneratingPDF ? (
+                <><Loader className="h-4 w-4 mr-2 animate-spin" /> Processing...</>
+              ) : (
+                <><FileDown className="h-4 w-4 mr-2" /> Download High-Quality PDF</>
+              )}
             </Button>
             <Button onClick={() => window.print()} className="bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] h-11 px-8">
               <Printer className="h-4 w-4 mr-2" /> Send to Printer
