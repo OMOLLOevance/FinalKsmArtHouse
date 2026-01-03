@@ -69,29 +69,38 @@ const Sidebar = () => {
 
   return (
     <>
-      <div className="md:hidden fixed top-4 left-4 z-50 print:hidden">
+      {/* Mobile Header Bar - Sticky & Professional */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card/80 backdrop-blur-xl border-b border-primary/5 z-40 flex items-center justify-between px-4 print:hidden">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-primary to-teal-500 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-black tracking-tighter text-primary text-sm uppercase">KSM.ART</span>
+        </div>
         <Button
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="bg-card/90 backdrop-blur-sm shadow-lg"
+          className="hover:bg-primary/10 transition-colors"
         >
-          {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          {isMobileMenuOpen ? <X className="w-5 h-5 text-primary" /> : <Menu className="w-5 h-5 text-primary" />}
         </Button>
       </div>
 
+      {/* Professional Backdrop Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40 print:hidden"
+          className="md:hidden fixed inset-0 bg-background/60 backdrop-blur-md z-40 animate-in fade-in duration-300 print:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
+      {/* Main Sidebar Container - Adaptive Width */}
       <div className={`
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 fixed md:static inset-y-0 left-0 z-50
-        flex flex-col w-72 bg-card/95 backdrop-blur-xl border-r border-primary/10 h-screen
-        transition-all duration-500 ease-in-out overflow-y-auto
+        flex flex-col w-[85vw] sm:w-72 bg-card/95 backdrop-blur-xl border-r border-primary/10 h-screen
+        transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-y-auto
         print:hidden shadow-2xl shadow-primary/5
       `}>
         <div className="p-8 border-b border-primary/5">
