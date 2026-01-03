@@ -25,11 +25,8 @@ export async function GET(request: NextRequest) {
 
     const client = token ? createAuthenticatedClient(token) : supabase;
 
-    // Map frontend field names to database column names
-    let selectFields = fields;
-    if (fields.includes('date')) {
-      selectFields = fields.replace('date', 'sale_date');
-    }
+    // Map frontend field names to database column names safely
+    const selectFields = fields.split(',').map(f => f.trim() === 'date' ? 'sale_date' : f).join(',');
 
     let query = client
       .from('restaurant_sales')
