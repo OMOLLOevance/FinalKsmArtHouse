@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Plus, Package, TrendingUp, TrendingDown, AlertTriangle, Users } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ArrowLeft, Plus, Package, TrendingUp, TrendingDown, AlertTriangle, Users, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -26,9 +26,16 @@ interface DecorManagementProps {
   onBack: () => void;
 }
 
+const DEFAULT_DECOR_CATEGORIES = [
+  'TABLE CLOTHES', 'SATIN TABLE CLOTHES', 'RUNNERS', 'ELASTIC TIEBACKS',
+  'SHEER CURTAINS', 'SPANDEX', 'DROPS', 'TRADITIONAL ITEMS',
+  'CHARGER PLATES', 'TABLE MIRRORS', 'HOLDERS', 'ARTIFICIAL FLOWERS',
+  'HANGING FLOWERS', 'CENTREPIECES'
+];
+
 const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   const { data: items = [], isLoading } = useDecorInventoryQuery();
-  const { data: categories = [] } = useDecorCategoriesQuery();
+  const { data: dbCategories = [] } = useDecorCategoriesQuery();
   const { data: customers = [] } = useCustomersQuery();
   const actionMutation = useDecorActionMutation();
   const addItemMutation = useAddDecorItemMutation();
@@ -50,6 +57,10 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     in_store: 0,
     price: 0
   });
+
+  const categories = useMemo(() => {
+    return [...new Set([...DEFAULT_DECOR_CATEGORIES, ...dbCategories])].sort();
+  }, [dbCategories]);
 
   const filteredItems = items.filter(item => {
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
@@ -444,7 +455,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               Initialize Decor Asset
             </DialogTitle>
             <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
-              Register a new physical asset into the professional inventory system.
+              Register a new physical asset or restock existing inventory.
             </DialogDescription>
           </DialogHeader>
           
@@ -452,30 +463,45 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Classification</label>
-                <div className="relative">
+                <div className="relative group">
                   <Input 
-                    placeholder="e.g. Table Clothes, Lighting" 
+                    placeholder="Search or type category..." 
                     value={newItem.category} 
-                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                    className="font-bold h-11"
-                    list="category-suggestions"
+                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value.toUpperCase() })}
+                    className="font-black h-11 border-primary/10 focus:border-primary uppercase"
+                    list="decor-categories"
                   />
-                  <datalist id="category-suggestions">
+                  <datalist id="decor-categories">
                     {categories.map(cat => (
                       <option key={cat} value={cat} />
                     ))}
                   </datalist>
+                  <p className="text-[8px] text-muted-foreground mt-1 ml-1">Click to see standard list or type to create new</p>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Name / Particulars</label>
-                <Input 
-                  placeholder="e.g. Gold Satin Runner" 
-                  value={newItem.item_name} 
-                  onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
-                  className="font-bold h-11"
-                />
+                <div className="relative group">
+                  <Input 
+                    placeholder={newItem.category ? `Select or type item in ${newItem.category}...` : "e.g. Gold Satin Runner"} 
+                    value={newItem.item_name} 
+                    onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
+                    className="font-bold h-11 border-primary/10 focus:border-primary pr-10"
+                    list="decor-items-suggestions"
+                  />
+                  <div className="absolute right-3 top-3.5 opacity-30 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                  <datalist id="decor-items-suggestions">
+                    {items
+                      .filter(item => item.category === newItem.category)
+                      .map(item => (
+                        <option key={item.id} value={item.item_name} />
+                      ))}
+                  </datalist>
+                  <p className="text-[8px] text-muted-foreground mt-1 ml-1">Double-click or type to see existing items in this category</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -486,7 +512,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                     placeholder="0" 
                     value={newItem.in_store || ''} 
                     onChange={(e) => setNewItem({ ...newItem, in_store: parseInt(e.target.value) || 0 })}
-                    className="font-bold h-11 text-center"
+                    className="font-black h-11 text-center bg-muted/20 border-none"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -496,7 +522,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                     placeholder="0.00" 
                     value={newItem.price || ''} 
                     onChange={(e) => setNewItem({ ...newItem, price: parseFloat(e.target.value) || 0 })}
-                    className="font-bold h-11 text-right text-success"
+                    className="font-black h-11 text-right text-success bg-muted/20 border-none"
                   />
                 </div>
               </div>
@@ -516,7 +542,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               disabled={!newItem.category || !newItem.item_name || addItemMutation.isPending}
               className="flex-1 sm:flex-none h-11 px-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
             >
-              {addItemMutation.isPending ? 'Registering...' : 'Register Asset'}
+              {addItemMutation.isPending ? 'Processing...' : 'Register Asset'}
             </Button>
           </DialogFooter>
         </DialogContent>

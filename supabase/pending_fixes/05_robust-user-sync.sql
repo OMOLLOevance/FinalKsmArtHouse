@@ -24,6 +24,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Re-create the trigger
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_user_sync ON auth.users;
 CREATE TRIGGER on_auth_user_sync
   AFTER INSERT OR UPDATE ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_auth_user_sync();

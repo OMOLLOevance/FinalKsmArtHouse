@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
 
 const AdvancedCustomerManagement = dynamic(() => import('@/components/features/AdvancedCustomerManagement'), {
@@ -9,5 +10,7 @@ const AdvancedCustomerManagement = dynamic(() => import('@/components/features/A
 });
 
 export default function CustomersPage() {
-  return <AdvancedCustomerManagement />;
+  const router = useRouter();
+  
+  return <AdvancedCustomerManagement onBack={() => router.push('/')} />;
 }

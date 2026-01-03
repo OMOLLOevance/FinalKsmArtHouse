@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Select, StatusBadge } from '@/components/ui/Select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -630,6 +631,124 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
           </div>
         )}
       </div>
+
+      {/* Add Customer Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
+              Initialize Allocation
+            </DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              Register a new client event allocation for {monthNames[month]} {year}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Customer Name</label>
+                <Input 
+                  placeholder="Enter customer name" 
+                  value={newCustomer.customer_name} 
+                  onChange={(e) => setNewCustomer({ ...newCustomer, customer_name: e.target.value })}
+                  className="font-bold h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Event Date</label>
+                <Input 
+                  type="date"
+                  value={newCustomer.date} 
+                  onChange={(e) => setNewCustomer({ ...newCustomer, date: e.target.value })}
+                  className="font-bold h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Location</label>
+                <Input 
+                  placeholder="Event location" 
+                  value={newCustomer.location} 
+                  onChange={(e) => setNewCustomer({ ...newCustomer, location: e.target.value })}
+                  className="font-bold h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Phone Number</label>
+                <Input 
+                  placeholder="Contact number" 
+                  value={newCustomer.phone_number} 
+                  onChange={(e) => setNewCustomer({ ...newCustomer, phone_number: e.target.value })}
+                  className="font-bold h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Event Type</label>
+                <select
+                  value={newCustomer.event_type}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, event_type: e.target.value })}
+                  className="w-full h-11 px-3 py-2 border border-input bg-background rounded-md text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                >
+                  <option value="Wedding">Wedding</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="Birthday">Birthday</option>
+                  <option value="Funeral">Funeral</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Total Quote (KSH)</label>
+                <Input 
+                  type="number" 
+                  placeholder="0.00" 
+                  value={newCustomer.total_ksh || ''} 
+                  onChange={(e) => setNewCustomer({ ...newCustomer, total_ksh: parseInt(e.target.value) || 0 })}
+                  className="font-black h-11 text-success"
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-4">Initial Equipment</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Double Tents</label>
+                  <Input type="number" value={newCustomer.double_tent || ''} onChange={(e) => setNewCustomer({...newCustomer, double_tent: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Single Tents</label>
+                  <Input type="number" value={newCustomer.single_tent || ''} onChange={(e) => setNewCustomer({...newCustomer, single_tent: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Round Tables</label>
+                  <Input type="number" value={newCustomer.round_table || ''} onChange={(e) => setNewCustomer({...newCustomer, round_table: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Chavari Seats</label>
+                  <Input type="number" value={newCustomer.chavari_seats || ''} onChange={(e) => setNewCustomer({...newCustomer, chavari_seats: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-6 gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddDialog(false)}
+              className="flex-1 sm:flex-none h-11 px-8 font-black uppercase tracking-widest text-[10px]"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveCustomer}
+              disabled={saving}
+              className="flex-1 sm:flex-none h-11 px-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+            >
+              {saving ? 'Processing...' : 'Add Allocation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
