@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Printer, Calendar, Save, Trash2, Edit3, Check, X, AlertCircle, Download, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -96,11 +96,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     'July', 'August', 'September', 'October', 'November', 'December'];
 
   // Fetch allocations for the selected month
-  useEffect(() => {
-    fetchAllocations();
-  }, [month, year]);
-
-  const fetchAllocations = async () => {
+  const fetchAllocations = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -136,7 +132,11 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [month, year]);
+
+  useEffect(() => {
+    fetchAllocations();
+  }, [fetchAllocations]);
 
   const handleAddCustomer = () => {
     if (!user) {

@@ -505,7 +505,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
                       <div className="space-y-0.5"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Budget</label><p className="text-sm font-bold text-primary">{formatCurrency(parsed.budget)}</p></div>
                       <div className="space-y-0.5"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Paid</label><p className="text-sm font-bold text-success">{formatCurrency(parsed.paid)}</p></div>
                     </div>
-                    {parsed.notes && <div className="px-1"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block mb-1">Notes</label><p className="text-xs text-muted-foreground line-clamp-2 italic">"{parsed.notes}"</p></div>}
+                    {parsed.notes && <div className="px-1"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block mb-1">Notes</label><p className="text-xs text-muted-foreground line-clamp-2 italic">&quot;{parsed.notes}&quot;</p></div>}
                   </div>
                 </Card>
               );
