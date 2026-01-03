@@ -346,67 +346,70 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
       {/* Confirmed Purchase Ledger */}
       {recordedItems.size > 0 && (
-        <Card className="border-none shadow-2xl overflow-hidden rounded-3xl animate-in slide-in-from-bottom-4 duration-700">
-          <CardHeader className="bg-slate-50 border-b p-6">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-2xl overflow-hidden rounded-3xl animate-in slide-in-from-bottom-4 duration-700 glass-card">
+          <CardHeader className="bg-primary/5 border-b border-primary/10 p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-primary/10 rounded-xl">
-                  <Receipt className="h-5 w-5 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-2xl">
+                  <Receipt className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-black uppercase tracking-tight">Daily Purchase Ledger</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Audited inventory acquisitions for {selectedDate}</CardDescription>
+                  <CardTitle className="text-2xl font-black uppercase tracking-tight text-primary">Purchase Ledger</CardTitle>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Verified Records for {selectedDate}</CardDescription>
                 </div>
               </div>
-              <Badge className="bg-success/10 text-success border-none font-black px-4 py-1 rounded-full">
-                {recordedItems.size} ITEMS VALIDATED
+              <Badge className="bg-success text-success-foreground border-none font-black px-6 py-1.5 rounded-xl shadow-lg shadow-success/20 tracking-widest text-[10px]">
+                {recordedItems.size} ENTRIES AUDITED
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/50 border-b">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Item Particulars</th>
-                    <th className="px-6 py-4 text-center text-[10px] font-black uppercase text-slate-400 tracking-widest">Quantity</th>
-                    <th className="px-6 py-4 text-right text-[10px] font-black uppercase text-slate-400 tracking-widest">Unit Price</th>
-                    <th className="px-6 py-4 text-right text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Value</th>
-                    <th className="px-6 py-4 text-center text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
+                  <tr className="bg-muted/30 border-b border-primary/5">
+                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">Item Particulars</th>
+                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">Quantity</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Price</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black uppercase text-muted-foreground tracking-widest">Net Value</th>
+                    <th className="px-8 py-5 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">Audit</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-primary/5">
                   {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => (
-                    <tr key={index} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <span className="font-black text-sm text-slate-700 uppercase">{item.item}</span>
+                    <tr key={index} className="hover:bg-primary/[0.02] transition-colors group">
+                      <td className="px-8 py-5">
+                        <span className="font-black text-sm text-foreground uppercase tracking-tight">{item.item}</span>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="font-bold text-sm bg-slate-100 px-3 py-1 rounded-lg">{item.quantity}</span>
+                      <td className="px-8 py-5 text-center">
+                        <span className="font-black text-xs bg-muted px-4 py-1.5 rounded-xl border border-primary/5 shadow-sm">{item.quantity}</span>
                       </td>
-                      <td className="px-6 py-4 text-right font-mono text-sm text-slate-500">
+                      <td className="px-8 py-5 text-right font-mono text-sm text-muted-foreground">
                         {Number(item.price).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="font-black text-sm text-primary">
+                      <td className="px-8 py-5 text-right">
+                        <span className="font-black text-sm text-primary tracking-tight">
                           {formatCurrency(Number(item.price) * Number(item.quantity))}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-8 py-5 text-center">
                         <div className="flex items-center justify-center">
-                          <CheckCircle2 className="h-4 w-4 text-success" />
+                          <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
+                            <CheckCircle2 className="h-4 w-4 text-success" />
+                          </div>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-primary/5">
-                    <td colSpan={3} className="px-6 py-6 text-right text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                      Total Validated Cost:
+                  <tr className="bg-primary/5 border-t-2 border-primary/10">
+                    <td colSpan={3} className="px-8 py-8 text-right text-[11px] font-black uppercase tracking-[0.3em] text-primary">
+                      Aggregated Daily Expenditure:
                     </td>
-                    <td className="px-6 py-6 text-right">
-                      <span className="text-2xl font-black text-primary tracking-tighter">
+                    <td className="px-8 py-8 text-right">
+                      <span className="text-3xl font-black text-primary tracking-tighter">
                         {formatCurrency(totalCost)}
                       </span>
                     </td>
@@ -414,6 +417,37 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                   </tr>
                 </tfoot>
               </table>
+            </div>
+
+            {/* Mobile List View */}
+            <div className="md:hidden divide-y divide-primary/5">
+              {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => (
+                <div key={index} className="p-6 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Item Particulars</p>
+                      <h4 className="font-black text-lg text-foreground uppercase">{item.item}</h4>
+                    </div>
+                    <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded-2xl border border-primary/5">
+                    <div>
+                      <p className="text-[9px] font-black text-muted-foreground uppercase tracking-tighter mb-1">Qty x Price</p>
+                      <p className="text-sm font-bold">{item.quantity} × {Number(item.price).toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-black text-primary uppercase tracking-tighter mb-1">Subtotal</p>
+                      <p className="text-sm font-black text-primary">{formatCurrency(Number(item.price) * Number(item.quantity))}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="p-8 bg-primary/5 text-center space-y-2">
+                <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Total Expenditure</p>
+                <p className="text-4xl font-black text-primary tracking-tighter">{formatCurrency(totalCost)}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
