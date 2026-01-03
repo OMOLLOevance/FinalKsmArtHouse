@@ -46,7 +46,7 @@ class APIClient {
           await this.handleTokenRefresh();
         }
         
-        const message = error.response?.data?.message || 'Network error';
+        const message = error.response?.data?.message || error.response?.data?.error || 'Network error';
         
         // Handle Network Errors (no response) gracefully
         if (!error.response) {
