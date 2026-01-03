@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Plus, Search, FileText, Edit, Trash2, Printer, X, Loader, Database, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, Search, FileText, Edit, Trash2, Printer, X, Loader, Database, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { useQuotations } from '@/hooks/useQuotations';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
@@ -85,6 +87,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const [saving, setSaving] = useState(false);
   const [showDatabasePanel, setShowDatabasePanel] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -118,6 +122,13 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       return itemsTotal + (additionalCharges?.cateringLabour || 0) + (additionalCharges?.serviceCharge || 0) + (additionalCharges?.transport || 0);
     }
     return itemsTotal;
+  };
+
+  const handlePrintIndividual = (quotation: Quotation) => {
+    setSelectedQuotation(quotation);
+    setTimeout(() => {
+      window.print();
+    }, 500);
   };
 
   const handleItemChange = (sectionIndex: number, itemIndex: number, field: keyof QuotationItem, value: string | number) => {
@@ -434,33 +445,187 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           <h2 className="text-2xl font-bold tracking-tight">Quotations</h2>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setShowForm(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4 mr-2" /> New</Button>
-          <Button onClick={handleSyncDatabase} variant="outline" disabled={isSyncing}><Database className="h-4 w-4 mr-2" /> Sync</Button>
+          <Button onClick={() => setShowForm(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] h-9"><Plus className="h-4 w-4 mr-2" /> New Quotation</Button>
         </div>
       </div>
 
       <div className="grid gap-4">
         {filteredQuotations.map((q) => (
-          <Card key={q.id}>
+          <Card key={q.id} className="hover-lift border-l-4 border-l-primary/40">
             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold">{q.quotationNumber}</h3>
-                    <Badge variant={q.status === 'approved' ? 'success' : 'outline'}>{q.status.toUpperCase()}</Badge>
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="font-black text-lg tracking-tight">{q.quotationNumber}</span>
+                    <Badge variant={
+                      q.status === 'approved' ? 'success' : 
+                      q.status === 'sent' ? 'default' : 'outline'
+                    } className="text-[9px] font-black uppercase tracking-widest">
+                      {q.status === 'draft' ? 'PROPOSAL' : q.status}
+                    </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{q.customerName} - {q.eventType}</p>
-                  <p className="font-bold text-primary">{formatCurrency(q.grandTotal)}</p>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{q.customerName}</p>
+                    <p className="text-[10px] uppercase font-black text-muted-foreground opacity-60 tracking-widest">{q.eventType} • {q.eventDate}</p>
+                  </div>
+                  <p className="text-lg font-black text-primary tracking-tighter">{formatCurrency(q.grandTotal)}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="icon" variant="ghost" onClick={() => handleEdit(q)}><Edit className="h-4 w-4 text-primary" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => handleDelete(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border border-primary/5">
+                  <Button size="xs" variant="ghost" className="h-8 px-3 font-bold text-[10px] uppercase" onClick={() => { setSelectedQuotation(q); setShowViewDialog(true); }}>
+                    <FileText className="h-3.5 w-3.5 mr-1.5" /> View
+                  </Button>
+                  <Button size="xs" variant="ghost" className="h-8 px-3 font-bold text-[10px] uppercase" onClick={() => handlePrintIndividual(q)}>
+                    <Printer className="h-3.5 w-3.5 mr-1.5" /> Print
+                  </Button>
+                  <Separator orientation="vertical" className="h-4 mx-1" />
+                  <Button size="xs" variant="ghost" className="h-8 w-8 p-0 text-primary" onClick={() => handleEdit(q)}><Edit className="h-3.5 w-3.5" /></Button>
+                  <Button size="xs" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDelete(q.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
+              
+              {q.status === 'draft' && (
+                <div className="mt-4 pt-4 border-t border-primary/5 flex gap-2">
+                  <Button size="xs" variant="outline" className="h-7 text-[9px] font-black uppercase" onClick={() => handleUpdateStatus(q.id, 'sent')}>Mark as Sent</Button>
+                  <Button size="xs" variant="outline" className="h-7 text-[9px] font-black uppercase border-green-600/30 text-green-600 hover:bg-green-50" onClick={() => handleUpdateStatus(q.id, 'approved')}>Quick Approve</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
+        
+        {filteredQuotations.length === 0 && (
+          <div className="text-center py-20 bg-muted/5 border-2 border-dashed rounded-2xl">
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-10" />
+            <p className="text-lg font-bold opacity-40">No Quotations Found</p>
+            <Button variant="link" onClick={() => setShowForm(true)}>Initialize your first proposal</Button>
+          </div>
+        )}
       </div>
+
+      {/* Professional View/Print Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl">
+          <div id="printable-quotation" className="p-8 md:p-12 bg-white text-slate-900 min-h-screen">
+            <div className="flex justify-between items-start border-b-4 border-primary pb-8 mb-10">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-12 h-12 bg-primary flex items-center justify-center rounded-xl">
+                    <Sparkles className="text-white w-7 h-7" />
+                  </div>
+                  <h1 className="text-4xl font-black tracking-tighter text-primary">KSM.ART HOUSE</h1>
+                </div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Premium Event Management & Decor</p>
+                <div className="text-[10px] font-bold text-slate-400 space-y-0.5">
+                  <p>Kisumu, Kenya</p>
+                  <p>Contact: +254 7XX XXX XXX</p>
+                  <p>Email: hello@ksmarthouse.com</p>
+                </div>
+              </div>
+              <div className="text-right space-y-1">
+                <Badge variant="outline" className="mb-4 border-primary/20 text-primary font-black uppercase tracking-widest text-[10px]">
+                  PROPOSAL #{selectedQuotation?.quotationNumber}
+                </Badge>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Date Issued</p>
+                <p className="text-sm font-bold">{new Date(selectedQuotation?.createdAt || '').toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-12 mb-12">
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-primary tracking-widest border-b pb-1">Client Details</h4>
+                <div className="space-y-1">
+                  <p className="text-xl font-black text-slate-800">{selectedQuotation?.customerName}</p>
+                  <p className="text-sm text-slate-500 font-medium">{selectedQuotation?.customerEmail}</p>
+                  <p className="text-sm text-slate-500 font-medium">{selectedQuotation?.customerPhone}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-primary tracking-widest border-b pb-1">Event Specifications</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[9px] font-black uppercase text-slate-400">Event Date</p>
+                    <p className="text-sm font-bold">{selectedQuotation?.eventDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase text-slate-400">Event Type</p>
+                    <p className="text-sm font-bold">{selectedQuotation?.eventType}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase text-slate-400">Pax Count</p>
+                    <p className="text-sm font-bold">{selectedQuotation?.numberOfGuests} Guests</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase text-slate-400">Theme</p>
+                    <p className="text-sm font-bold">{selectedQuotation?.theme}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-10 mb-12">
+              {selectedQuotation?.sections.map((section, sIdx) => (
+                <div key={sIdx}>
+                  <div className="bg-slate-50 p-2 border-l-4 border-primary mb-4">
+                    <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">{section.name}</h4>
+                  </div>
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[9px] font-black uppercase text-slate-400 border-b">
+                        <th className="py-2">Description</th>
+                        <th className="py-2 w-20">Unit</th>
+                        <th className="py-2 w-24 text-right">Unit Price</th>
+                        <th className="py-2 w-16 text-center">Qty</th>
+                        <th className="py-2 w-28 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {section.items.filter(i => i.description).map((item, iIdx) => (
+                        <tr key={iIdx} className="text-xs text-slate-700">
+                          <td className="py-3 font-medium">{item.description}</td>
+                          <td className="py-3 uppercase text-[10px] font-bold text-slate-400">{item.unit}</td>
+                          <td className="py-3 text-right font-mono">{item.unitPrice.toLocaleString()}</td>
+                          <td className="py-3 text-center">{item.quantity}</td>
+                          <td className="py-3 text-right font-black">{item.total.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col items-end space-y-3 pt-8 border-t-4 border-slate-100">
+              <div className="flex justify-between w-64 text-sm text-slate-500">
+                <span className="font-bold">Subtotal</span>
+                <span>{formatCurrency(selectedQuotation?.grandTotal || 0)}</span>
+              </div>
+              <div className="flex justify-between w-64 text-2xl font-black text-primary border-t-2 border-primary/20 pt-3">
+                <span className="tracking-tighter">TOTAL KSH</span>
+                <span>{formatCurrency(selectedQuotation?.grandTotal || 0)}</span>
+              </div>
+            </div>
+
+            <div className="mt-20 grid grid-cols-2 gap-20">
+              <div className="border-t border-slate-300 pt-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8">Client Acceptance</p>
+                <div className="h-px w-full bg-slate-200 mb-2" />
+                <p className="text-[10px] font-bold">Signature & Date</p>
+              </div>
+              <div className="border-t border-slate-300 pt-4 text-right">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8">Authorized Signature</p>
+                <div className="h-px w-full bg-slate-200 mb-2" />
+                <p className="text-[10px] font-bold">KSM.ART HOUSE Operations</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 bg-slate-50 border-t flex justify-end gap-3 sticky bottom-0">
+            <Button variant="outline" onClick={() => setShowViewDialog(false)}>Close Preview</Button>
+            <Button onClick={() => window.print()} className="bg-primary hover:bg-primary/90">
+              <Printer className="h-4 w-4 mr-2" /> Print PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
