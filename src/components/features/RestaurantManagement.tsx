@@ -35,8 +35,6 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   });
   
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [showDatabasePanel, setShowDatabasePanel] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const { showSuccess, showError } = useToast();
 
   const { addInventoryItem, loading, refetch: fetchInventory } = useRestaurantInventory(selectedMonth);
@@ -69,39 +67,6 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   const totalCost = useMemo(() => {
     return calculateTotalCost(inventory.map(i => ({ price: i.price, quantity: 1 })));
   }, [inventory]);
-
-  const handleSaveToDatabase = async () => {
-    setIsSaving(true);
-    try {
-      const itemsToSave = inventory.filter(item => item.quantity && item.price);
-      logger.info('Syncing restaurant inventory to database...', { date: selectedDate, count: itemsToSave.length });
-      
-      await Promise.all(itemsToSave.map(item => {
-        const quantity = parseFloat(item.quantity) || 0;
-        const unitPrice = parseFloat(item.price) || 0;
-
-        return addInventoryItem({
-          name: item.item,
-          category: 'general',
-          quantity: quantity,
-          unit: 'pieces',
-          unitPrice: unitPrice,
-          totalValue: quantity * unitPrice,
-          lastUpdated: new Date().toISOString()
-        } as any);
-      }));
-
-      localStorage.setItem(`restaurant_inventory_${selectedDate}`, JSON.stringify(inventory));
-      await fetchInventory();
-
-      showSuccess('Success', `Synced ${itemsToSave.length} items to database`);
-    } catch (error: any) {
-      logger.error('Database sync failed:', error);
-      showError('Sync Failed', error.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleSave = () => {
     try {
@@ -148,39 +113,6 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
           </div>
         </div>
       </div>
-
-      <Card className="print:hidden border-primary/20 bg-primary/5 shadow-none glass-card glow-primary">
-        <CardHeader className="pb-2">
-          <Button
-            variant="ghost"
-            onClick={() => setShowDatabasePanel(!showDatabasePanel)}
-            className="w-full flex items-center justify-between p-0 h-auto hover:bg-transparent"
-          >
-            <div className="flex items-center space-x-3 text-left">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Database className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Database Sync</CardTitle>
-                <CardDescription>Save this day's records to cloud</CardDescription>
-              </div>
-            </div>
-            {showDatabasePanel ? <ChevronUp /> : <ChevronDown />}
-          </Button>
-        </CardHeader>
-
-        {showDatabasePanel && (
-          <CardContent className="pt-4">
-            <Button
-              onClick={handleSaveToDatabase}
-              disabled={isSaving}
-              className="w-full h-11 font-bold shadow-lg shadow-primary/20"
-            >
-              {isSaving ? 'Syncing...' : 'Sync to Database'}
-            </Button>
-          </CardContent>
-        )}
-      </Card>
 
       <Card className="print:hidden glass-card">
         <CardContent className="pt-6">
