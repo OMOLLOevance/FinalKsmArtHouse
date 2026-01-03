@@ -13,6 +13,16 @@ const GymFinanceSchema = z.object({
   payment_method: z.string().default('cash'),
 });
 
+// Helper function to get user role
+async function getUserRole(userId: string, client: any): Promise<string> {
+  const { data } = await client
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role || 'staff';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -23,7 +33,15 @@ export async function GET(request: NextRequest) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    // RLS policies will handle the filtering based on user role
+    // Staff will only see their own records, managers/directors will see all
     let query = client
       .from('gym_finances')
       .select(fields)
@@ -37,13 +55,11 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      // Return empty data if table doesn't exist
       return NextResponse.json({ data: [] });
     }
 
     return NextResponse.json({ data: data || [] });
   } catch (error) {
-    // Return empty data for any error
     return NextResponse.json({ data: [] });
   }
 }
@@ -55,6 +71,18 @@ export async function POST(request: NextRequest) {
     const validatedData = GymFinanceSchema.parse(body);
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Ensure user_id matches authenticated user for staff
+    const userRole = await getUserRole(user.id, client);
+    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: Staff can only create their own transactions' }, { status: 403 });
+    }
 
     const { data, error } = await client
       .from('gym_finances')
@@ -86,17 +114,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const { data, error } = await client
-      .from('gym_finances')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw ApiError.fromSupabase(error);
-
-    return NextResponse.json({ data });
+    // Block all updates as per RBAC requirements
+    return NextResponse.json({ error: 'Forbidden: Transaction updates are not allowed' }, { status: 403 });
   } catch (error) {
     logger.error('Gym Finances PUT Error:', error);
     const status = error instanceof ApiError ? error.status : 500;
@@ -115,7 +141,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    const userRole = await getUserRole(user.id, client);
+    
+    // Only directors and investors can delete
+    if (!['director', 'investor'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete transactions' }, { status: 403 });
+    }
+
+    // RLS policy will handle the actual deletion permission
     const { error } = await client
       .from('gym_finances')
       .delete()

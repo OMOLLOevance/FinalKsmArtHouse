@@ -8,6 +8,7 @@ import {
   useDeleteSaunaBookingMutation
 } from '@/hooks/use-sauna-api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { SaunaBooking } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -29,8 +30,8 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
 
   const [isAdding, setIsAdding] = useState(false);
 
-  // Role Permissions
-  const isStaff = user?.role === 'staff';
+  // Role Permissions using RBAC hook
+  const { canDeleteTransaction } = useRoleGuard();
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -221,7 +222,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                       <Badge variant={item.status === 'completed' ? 'success' : 'warning'} className="text-[8px] h-4 font-black uppercase tracking-widest px-1.5 border-none">
                         {item.status}
                       </Badge>
-                      {!isStaff && (
+                      {canDeleteTransaction() && (
                         <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

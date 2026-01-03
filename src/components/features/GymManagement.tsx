@@ -17,6 +17,7 @@ import { sanitizePhoneNumber, formatCurrency } from '@/utils/formatters';
 import { useFinanceSummary } from '@/hooks/use-finance';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -68,9 +69,8 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const [quickExpenseDescription, setQuickExpenseDescription] = useState('');
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string; type: 'finance' | 'member'; name?: string }>({ isOpen: false, id: '', type: 'finance' });
 
-  // Role Permissions
-  const isStaff = user?.role === 'staff';
-  const isManager = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'director';
+  // Role Permissions using RBAC hook
+  const { canDeleteTransaction } = useRoleGuard();
 
   const form = useForm<MemberFormValues>({
     resolver: zodResolver(MemberSchema) as any,
@@ -287,7 +287,7 @@ Thank you for being part of our fitness community!`
                 <Button variant="ghost" size="xs" onClick={() => handleEditFinance(finance)} className="h-7 w-7 p-0 hover:bg-primary/10">
                   <Edit className="h-3.5 w-3.5 text-primary/70" />
                 </Button>
-                {!isStaff && (
+                {canDeleteTransaction() && (
                   <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -332,7 +332,7 @@ Thank you for being part of our fitness community!`
                   <Button variant="ghost" size="xs" onClick={() => sendWhatsAppNotification(member, 7)} className="h-7 w-7 p-0 text-green-600 hover:bg-green-50">
                     <MessageCircle className="h-3.5 w-3.5" />
                   </Button>
-                  {!isStaff && (
+                  {canDeleteTransaction() && (
                     <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: member.id, type: 'member' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

@@ -14,6 +14,16 @@ const RestaurantSaleSchema = z.object({
   expenses: z.number().min(0).default(0),
 });
 
+// Helper function to get user role
+async function getUserRole(userId: string, client: any): Promise<string> {
+  const { data } = await client
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role || 'staff';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -24,10 +34,17 @@ export async function GET(request: NextRequest) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Map frontend field names to database column names safely
     const selectFields = fields.split(',').map(f => f.trim() === 'date' ? 'sale_date' : f).join(',');
 
+    // RLS policies will handle the filtering based on user role
     let query = client
       .from('restaurant_sales')
       .select(selectFields)
@@ -69,6 +86,18 @@ export async function POST(request: NextRequest) {
     const validatedData = RestaurantSaleSchema.parse(dataToValidate);
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Ensure user_id matches authenticated user for staff
+    const userRole = await getUserRole(user.id, client);
+    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: Staff can only create their own transactions' }, { status: 403 });
+    }
 
     const { data, error } = await client
       .from('restaurant_sales')
@@ -100,24 +129,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Map any incoming update fields to DB names if they exist
-    const dbUpdates: any = { ...updates };
-    if (updates.date) dbUpdates.sale_date = updates.date;
-    if (updates.item) dbUpdates.item_name = updates.item;
-    if (updates.unitPrice) dbUpdates.unit_price = updates.unitPrice;
-    if (updates.totalAmount) dbUpdates.total_amount = updates.totalAmount;
-
-    const { data, error } = await client
-      .from('restaurant_sales')
-      .update(dbUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw ApiError.fromSupabase(error);
-
-    return NextResponse.json({ data });
+    // Block all updates as per RBAC requirements
+    return NextResponse.json({ error: 'Forbidden: Transaction updates are not allowed' }, { status: 403 });
   } catch (error) {
     logger.error('Restaurant PUT Error:', error);
     const status = error instanceof ApiError ? error.status : 500;
@@ -136,7 +156,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    const userRole = await getUserRole(user.id, client);
+    
+    // Only directors and investors can delete
+    if (!['director', 'investor'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete transactions' }, { status: 403 });
+    }
+
+    // RLS policy will handle the actual deletion permission
     const { error } = await client
       .from('restaurant_sales')
       .delete()

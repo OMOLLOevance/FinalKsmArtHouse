@@ -16,6 +16,16 @@ const BookingSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+// Helper function to get user role
+async function getUserRole(userId: string, client: any): Promise<string> {
+  const { data } = await client
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role || 'staff';
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
@@ -26,7 +36,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    // RLS policies will handle the filtering based on user role
     let query = client
       .from('sauna_bookings')
       .select(fields)
@@ -69,6 +86,18 @@ export async function POST(request: NextRequest) {
     const validatedData = BookingSchema.parse(dataToValidate);
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Ensure user_id matches authenticated user for staff
+    const userRole = await getUserRole(user.id, client);
+    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: Staff can only create their own transactions' }, { status: 403 });
+    }
 
     const { data: inserted, error } = await client
       .from('sauna_bookings')
@@ -100,22 +129,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const dbUpdates: any = { ...updates };
-    if (updates.date) dbUpdates.booking_date = updates.date;
-    if (updates.time) dbUpdates.booking_time = updates.time;
-    if (updates.client) dbUpdates.client_name = updates.client;
-
-    const { data, error } = await client
-      .from('sauna_bookings')
-      .update(dbUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw ApiError.fromSupabase(error);
-
-    return NextResponse.json({ data });
+    // Block all updates as per RBAC requirements
+    return NextResponse.json({ error: 'Forbidden: Transaction updates are not allowed' }, { status: 403 });
   } catch (error) {
     logger.error('Sauna PUT Error:', error);
     const status = error instanceof ApiError ? error.status : 500;
@@ -134,7 +156,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    const userRole = await getUserRole(user.id, client);
+    
+    // Only directors and investors can delete
+    if (!['director', 'investor'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete transactions' }, { status: 403 });
+    }
+
+    // RLS policy will handle the actual deletion permission
     const { error } = await client
       .from('sauna_bookings')
       .delete()
