@@ -26,8 +26,14 @@ export const calculateMembershipEndDate = (startDate: string | Date, packageType
  */
 export const calculateTotalCost = (items: { price?: number | string; quantity?: number | string }[]): number => {
   return items.reduce((total, item) => {
-    const price = typeof item.price === 'string' ? parseFloat(item.price) : (item.price || 0);
-    const quantity = typeof item.quantity === 'string' ? parseFloat(item.quantity) : (item.quantity || 1);
+    // Parse price: default to 0 if invalid or empty
+    const rawPrice = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
+    const price = (rawPrice === undefined || isNaN(rawPrice as number)) ? 0 : Number(rawPrice);
+    
+    // Parse quantity: default to 1 if invalid or empty
+    const rawQty = typeof item.quantity === 'string' ? parseFloat(item.quantity) : item.quantity;
+    const quantity = (rawQty === undefined || isNaN(rawQty as number)) ? 1 : Number(rawQty);
+    
     return total + (price * quantity);
   }, 0);
 };

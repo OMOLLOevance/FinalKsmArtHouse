@@ -6,11 +6,12 @@
  * Format number as currency (KSH)
  */
 export const formatCurrency = (amount: number): string => {
+  const safeAmount = isNaN(amount) || !isFinite(amount) ? 0 : amount;
   return new Intl.NumberFormat('en-KE', {
     style: 'currency',
     currency: 'KES',
     minimumFractionDigits: 0,
-  }).format(amount).replace('KES', 'KSH');
+  }).format(safeAmount).replace('KES', 'KSH');
 };
 
 /**

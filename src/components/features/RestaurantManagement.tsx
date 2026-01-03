@@ -65,7 +65,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   }, []);
 
   const totalCost = useMemo(() => {
-    return calculateTotalCost(inventory.map(i => ({ price: i.price, quantity: 1 })));
+    return calculateTotalCost(inventory.map(i => ({ price: i.price, quantity: i.quantity })));
   }, [inventory]);
 
   const handleSave = () => {
@@ -196,7 +196,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                     <td className="py-2 text-xs text-center">{item.quantity || '-'}</td>
                     <td className="py-2 text-xs text-right font-mono">{item.price ? Number(item.price).toLocaleString() : '-'}</td>
                     <td className="py-2 text-xs text-right font-black font-mono">
-                      {item.price && item.quantity ? (Number(item.price) * 1).toLocaleString() : '-'}
+                      {item.price && item.quantity ? (Number(item.price) * Number(item.quantity)).toLocaleString() : '-'}
                     </td>
                   </tr>
                 ))}
