@@ -13,6 +13,16 @@ const CateringInventorySchema = z.object({
   repair_needed: z.number().int().min(0).default(0),
 });
 
+// Helper function to get user role
+async function getUserRole(userId: string, client: any): Promise<string> {
+  const { data } = await client
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role || 'staff';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -22,6 +32,12 @@ export async function GET(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { data, error } = await client
       .from('catering_inventory')
@@ -53,6 +69,18 @@ export async function POST(request: NextRequest) {
     const validatedData = CateringInventorySchema.parse(body);
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Ensure user_id matches authenticated user for staff
+    const userRole = await getUserRole(user.id, client);
+    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: Staff can only create their own records' }, { status: 403 });
+    }
 
     const { data, error } = await client
       .from('catering_inventory')
@@ -88,6 +116,19 @@ export async function DELETE(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRole = await getUserRole(user.id, client);
+    
+    // Only directors and investors can delete
+    if (!['director', 'investor'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete records' }, { status: 403 });
+    }
 
     const { error } = await client
       .from('catering_inventory')

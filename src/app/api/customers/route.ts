@@ -20,6 +20,16 @@ const CustomerSchema = z.object({
   requirements: z.any().optional().nullable(),
 });
 
+// Helper function to get user role
+async function getUserRole(userId: string, client: any): Promise<string> {
+  const { data } = await client
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role || 'staff';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -30,6 +40,12 @@ export async function GET(request: NextRequest) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     let query = client.from('customers').select(fields).order('created_at', { ascending: false });
     
@@ -75,6 +91,18 @@ export async function POST(request: NextRequest) {
     const validatedData = CustomerSchema.parse(dataToValidate);
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Ensure user_id matches authenticated user for staff
+    const userRole = await getUserRole(user.id, client);
+    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: Staff can only create their own records' }, { status: 403 });
+    }
 
     const { data, error } = await client
       .from('customers')
@@ -106,6 +134,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { data, error } = await client
       .from('customers')
@@ -135,6 +169,19 @@ export async function DELETE(request: NextRequest) {
     }
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // Get current user from session
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRole = await getUserRole(user.id, client);
+    
+    // Only directors and investors can delete
+    if (!['director', 'investor'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete records' }, { status: 403 });
+    }
 
     const { error } = await client
       .from('customers')
