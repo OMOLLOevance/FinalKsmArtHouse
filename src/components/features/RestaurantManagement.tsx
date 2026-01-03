@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Save, Printer, Database, ChevronDown, ChevronUp, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt } from 'lucide-react';
 import ItemServingsManager from './ItemServingsManager';
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
 import { InventoryItem } from '@/types';
@@ -39,19 +39,28 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   const [searchTerm, setSearchTerm] = useState('');
   const [newItemName, setNewItemName] = useState('');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const { showSuccess, showError } = useToast();
+  const [recordedItems, setRecordedItems] = useState<Set<number>>(new Set());
+  const { showSuccess } = useToast();
 
-  const { loading, refetch: fetchInventory } = useRestaurantInventory(selectedMonth);
+  const { loading } = useRestaurantInventory(selectedMonth);
 
-  // Load Inventory
+  // Load Inventory from LocalStorage
   useEffect(() => {
     const loadInventory = () => {
       try {
         const stored = localStorage.getItem(`restaurant_inventory_${selectedDate}`);
         if (stored) {
-          setInventory(JSON.parse(stored));
+          const data = JSON.parse(stored);
+          setInventory(data);
+          // Mark items with existing data as recorded
+          const initialRecorded = new Set<number>();
+          data.forEach((item: any, idx: number) => {
+            if (item.quantity && item.price) initialRecorded.add(idx);
+          });
+          setRecordedItems(initialRecorded);
         } else {
           setInventory(defaultItems.map(item => ({ item, quantity: '', price: '' })));
+          setRecordedItems(new Set());
         }
       } catch (error) {
         logger.error('Error loading local inventory:', error);
@@ -80,6 +89,12 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
+    // Remove from recorded if changed
+    setRecordedItems(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
   }, []);
 
   const adjustQuantity = (index: number, delta: number) => {
@@ -88,20 +103,41 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
     handleChange(index, 'quantity', newQty.toString());
   };
 
+  const handleRecordItem = (index: number) => {
+    const item = inventory[index];
+    if (!item.quantity || !item.price) return;
+    
+    setRecordedItems(prev => {
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+    showSuccess('Recorded', `${item.item} committed to daily report`);
+  };
+
   const handleAddCustomItem = () => {
-    if (!newItemName.trim()) return;
-    setInventory(prev => [{ item: newItemName.trim(), quantity: '', price: '' }, ...prev]);
+    const name = newItemName.trim();
+    if (!name) return;
+    
+    setInventory(prev => [{ item: name, quantity: '', price: '' }, ...prev]);
     setNewItemName('');
-    showSuccess('Added', `${newItemName} added to today's list`);
+    showSuccess('Added', `${name} added to today's list`);
   };
 
   const removeItem = (index: number) => {
     setInventory(prev => prev.filter((_, i) => i !== index));
+    setRecordedItems(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
   };
 
   const totalCost = useMemo(() => {
-    return calculateTotalCost(inventory.map(i => ({ price: i.price, quantity: i.quantity })));
-  }, [inventory]);
+    // Only count recorded items in the total for professional auditing
+    const recordedList = Array.from(recordedItems).map(idx => inventory[idx]).filter(Boolean);
+    return calculateTotalCost(recordedList.map(i => ({ price: i.price, quantity: i.quantity })));
+  }, [inventory, recordedItems]);
 
   const filteredInventory = useMemo(() => {
     if (!searchTerm) return inventory;
@@ -138,8 +174,8 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
             </Button>
           )}
           <div>
-            <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Restaurant</h2>
-            <p className="text-muted-foreground italic text-[10px] uppercase font-black tracking-[0.2em] opacity-70">Strategic Asset & Expense Control</p>
+            <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Daily Inventory</h2>
+            <p className="text-muted-foreground italic text-[10px] uppercase font-black tracking-[0.2em] opacity-70">Kitchen Asset & Resource Logs</p>
           </div>
         </div>
 
@@ -156,11 +192,11 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
           <div className="flex items-center gap-2 px-2">
             {isAutoSaving ? (
               <span className="flex items-center text-[9px] font-black text-primary animate-pulse uppercase tracking-widest">
-                <Save className="h-3 w-3 mr-1" /> Auto-Saving...
+                <Save className="h-3 w-3 mr-1" /> Cloud Syncing...
               </span>
             ) : (
               <span className="flex items-center text-[9px] font-black text-success uppercase tracking-widest">
-                <CheckCircle2 className="h-3 w-3 mr-1" /> Records Synced
+                <CheckCircle2 className="h-3 w-3 mr-1" /> All Records Secure
               </span>
             )}
           </div>
@@ -168,25 +204,27 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       </div>
 
       {/* Expense Summary Banner */}
-      <Card className="bg-primary text-primary-foreground shadow-2xl border-none overflow-hidden relative group">
+      <Card className="bg-slate-900 text-white shadow-2xl border-none overflow-hidden relative group rounded-3xl">
         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-          <Utensils className="h-32 w-32 rotate-12" />
+          <Receipt className="h-32 w-32 rotate-12" />
         </div>
-        <CardContent className="p-8 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="text-center md:text-left space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-70">Accumulated Daily Expenditure</p>
-              <h3 className="text-5xl font-black tracking-tighter">{formatCurrency(totalCost)}</h3>
+        <CardContent className="p-10 relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="text-center md:text-left space-y-2">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] tracking-widest px-3">AUDITED EXPENDITURE</Badge>
+                <span className="text-[10px] font-black uppercase text-slate-500">{recordedItems.size} Confirmations</span>
+              </div>
+              <h3 className="text-6xl font-black tracking-tighter text-primary">{formatCurrency(totalCost)}</h3>
+              <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400">Total Validated Restaurant Outgoings</p>
             </div>
-            <div className="flex gap-3">
-              <Button 
-                variant="secondary" 
-                onClick={() => window.print()} 
-                className="h-12 px-8 font-black uppercase tracking-widest text-xs rounded-xl shadow-xl"
-              >
-                <Printer className="h-4 w-4 mr-2" /> Generate Report
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => window.print()} 
+              className="h-14 px-10 font-black uppercase tracking-widest text-xs rounded-2xl border-white/10 hover:bg-white hover:text-black transition-all shadow-2xl"
+            >
+              <Printer className="h-5 w-5 mr-3" /> Print Official Record
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -194,92 +232,112 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       {/* Search and Quick Add */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
         <div className="relative group">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="Search inventory..." 
+            placeholder="Filter current list..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-11 bg-background border-primary/10 rounded-xl"
+            className="pl-12 h-12 bg-muted/30 border-none rounded-2xl font-bold"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Input 
-            placeholder="Add new custom item (e.g. Napkins)..." 
+            placeholder="What else did you buy today?" 
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
-            className="h-11 bg-background border-primary/10 rounded-xl flex-1"
+            className="h-12 bg-muted/30 border-none rounded-2xl flex-1 font-bold pl-6"
           />
-          <Button onClick={handleAddCustomItem} className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]">
-            <Plus className="h-4 w-4 mr-2" /> Quick Add
+          <Button onClick={handleAddCustomItem} className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
+            <ListPlus className="h-4 w-4 mr-2" /> Add Item
           </Button>
         </div>
       </div>
 
       {/* Inventory Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 print:hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 print:hidden">
         {filteredInventory.map((item, index) => {
           const originalIndex = inventory.findIndex(i => i === item);
-          const hasData = item.quantity || item.price;
+          const isRecorded = recordedItems.has(originalIndex);
+          const canRecord = item.quantity && item.price;
           
           return (
-            <Card key={`${item.item}-${index}`} className={`overflow-hidden transition-all duration-500 border-l-4 group ${
-              hasData ? 'border-l-primary bg-primary/5 shadow-md scale-[1.02]' : 'border-l-muted hover:border-l-primary/40'
+            <Card key={`${item.item}-${index}`} className={`overflow-hidden transition-all duration-500 border-none group relative ${
+              isRecorded ? 'ring-2 ring-primary bg-primary/5 shadow-xl' : 'hover:shadow-lg bg-card'
             }`}>
-              <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between border-b pb-2 border-primary/5">
+              {isRecorded && (
+                <div className="absolute top-3 right-3 z-20">
+                  <CheckCircle className="h-5 w-5 text-primary fill-primary/10" />
+                </div>
+              )}
+              
+              <div className="p-5 space-y-5">
+                <div className="flex items-center justify-between border-b pb-3 border-primary/5">
                   <div className="flex items-center space-x-2 min-w-0">
-                    <Utensils className={`h-3.5 w-3.5 transition-colors ${hasData ? 'text-primary' : 'text-muted-foreground opacity-40'}`} />
-                    <h4 className="text-sm font-black truncate uppercase tracking-tight">{item.item}</h4>
+                    <Utensils className={`h-4 w-4 transition-colors ${isRecorded ? 'text-primary' : 'text-muted-foreground opacity-40'}`} />
+                    <h4 className={`text-sm font-black truncate uppercase tracking-tight ${isRecorded ? 'text-primary' : 'text-foreground'}`}>{item.item}</h4>
                   </div>
                   {!defaultItems.includes(item.item) && (
-                    <Button variant="ghost" size="icon" onClick={() => removeItem(originalIndex)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" onClick={() => removeItem(originalIndex)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10">
                       <X className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Quantity</label>
+                      <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Qty</label>
                       <div className="flex gap-1">
-                        <button onClick={() => adjustQuantity(originalIndex, -1)} className="h-4 w-4 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
-                          <Minus className="h-2 w-2" />
+                        <button onClick={() => adjustQuantity(originalIndex, -1)} className="h-5 w-5 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
+                          <Minus className="h-2.5 w-2.5" />
                         </button>
-                        <button onClick={() => adjustQuantity(originalIndex, 1)} className="h-4 w-4 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
-                          <Plus className="h-2 w-2" />
+                        <button onClick={() => adjustQuantity(originalIndex, 1)} className="h-5 w-5 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
+                          <Plus className="h-2.5 w-2.5" />
                         </button>
                       </div>
                     </div>
                     <Input
                       value={item.quantity}
                       onChange={(e) => handleChange(originalIndex, 'quantity', e.target.value)}
-                      className="h-9 text-xs font-black bg-background border-primary/5 shadow-sm text-center"
+                      className="h-10 text-xs font-black bg-muted/20 border-none text-center rounded-xl"
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black uppercase text-muted-foreground tracking-widest block">Unit Price</label>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block">Unit Price</label>
                     <div className="relative">
                       <Input
                         type="number"
                         value={item.price}
                         onChange={(e) => handleChange(originalIndex, 'price', e.target.value)}
-                        className="h-9 text-xs font-black text-success bg-background border-primary/5 shadow-sm pr-6"
+                        className="h-10 text-xs font-black text-success bg-muted/20 border-none pr-8 rounded-xl"
                         placeholder="0"
                       />
-                      <span className="absolute right-2 top-2.5 text-[8px] font-black text-success/40">KSH</span>
+                      <span className="absolute right-2 top-3 text-[8px] font-black text-success/40 uppercase">Ksh</span>
                     </div>
                   </div>
                 </div>
 
-                {parseFloat(item.quantity) > 0 && parseFloat(item.price) > 0 && (
-                  <div className="flex justify-between items-center pt-2 mt-1 border-t border-primary/5 animate-in fade-in slide-in-from-top-1">
-                    <span className="text-[8px] font-black text-muted-foreground uppercase">Subtotal</span>
-                    <span className="text-xs font-black text-primary">{formatCurrency(parseFloat(item.quantity) * parseFloat(item.price))}</span>
-                  </div>
-                )}
+                <div className="pt-2">
+                  {isRecorded ? (
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[9px] font-black text-primary uppercase">Subtotal</span>
+                      <span className="text-sm font-black text-primary">{formatCurrency(parseFloat(item.quantity) * parseFloat(item.price))}</span>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={() => handleRecordItem(originalIndex)}
+                      disabled={!canRecord}
+                      variant={canRecord ? "default" : "outline"}
+                      className={`w-full h-10 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all ${
+                        canRecord ? 'shadow-md shadow-primary/10' : 'opacity-40'
+                      }`}
+                    >
+                      {canRecord ? 'Confirm Entry' : 'Enter Details'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </Card>
           );
@@ -309,7 +367,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {inventory.filter(i => i.quantity || i.price).map((item, index) => (
+            {inventory.filter((_, idx) => recordedItems.has(idx)).map((item, index) => (
               <tr key={index}>
                 <td className="py-2 text-xs font-bold uppercase">{item.item}</td>
                 <td className="py-2 text-xs text-center">{item.quantity || '-'}</td>
@@ -322,7 +380,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-black font-black">
-              <td colSpan={3} className="py-4 text-right text-sm uppercase tracking-widest">Grand Total:</td>
+              <td colSpan={3} className="py-4 text-right text-sm uppercase tracking-widest">Confirmed Total Expenses:</td>
               <td className="py-4 text-right text-base text-primary">{formatCurrency(totalCost)}</td>
             </tr>
           </tfoot>
