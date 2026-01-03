@@ -25,13 +25,17 @@ interface DashboardStats {
     customers: number;
     events: number;
   };
+  revenueHistory: {
+    name: string;
+    value: number;
+  }[];
 }
 
 interface MinimalCustomer { id: string; service_status: string; }
 interface MinimalGymMember { status: string; expiry_date: string; }
-interface MinimalGymFinance { amount: number; transaction_type: string; }
-interface MinimalSaunaBooking { status: string; amount: number; }
-interface MinimalRestaurantSale { total_amount: number; }
+interface MinimalGymFinance { amount: number; transaction_type: string; created_at: string; date?: string; }
+interface MinimalSaunaBooking { status: string; amount: number; created_at: string; booking_date?: string; }
+interface MinimalRestaurantSale { total_amount: number; created_at: string; date?: string; }
 interface MinimalEventItem { id: string; }
 
 export const useDashboardStats = () => {
@@ -45,9 +49,9 @@ export const useDashboardStats = () => {
         const [customersRes, gymMembersRes, gymFinancesRes, saunaBookingsRes, restaurantRes, eventItemsRes] = await Promise.all([
           apiClient.get<{data: MinimalCustomer[]}>(`/api/customers?userId=${userId}&fields=id,service_status`).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalGymMember[]}>(`/api/gym?userId=${userId}&fields=status,expiry_date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalGymFinance[]}>(`/api/gym/finances?userId=${userId}&fields=amount,transaction_type`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalSaunaBooking[]}>(`/api/sauna?userId=${userId}&fields=status,amount`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalRestaurantSale[]}>(`/api/restaurant?userId=${userId}&fields=total_amount`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymFinance[]}>(`/api/gym/finances?userId=${userId}&fields=amount,transaction_type,created_at,date`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalSaunaBooking[]}>(`/api/sauna?userId=${userId}&fields=status,amount,created_at,booking_date`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalRestaurantSale[]}>(`/api/restaurant?userId=${userId}&fields=total_amount,created_at,date`).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalEventItem[]}>(`/api/event-items?userId=${userId}&fields=id`).catch(() => ({ data: [] }))
         ]);
 
@@ -89,6 +93,48 @@ export const useDashboardStats = () => {
         
         const totalRevenue = gymRevenue + saunaRevenue + restaurantRevenue;
 
+        // Calculate Revenue History (Last 6 Months)
+        const revenueHistoryMap = new Map<string, number>();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        // Initialize last 6 months with 0
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+          revenueHistoryMap.set(key, 0);
+        }
+
+        const addToHistory = (dateStr: string | undefined, amount: number) => {
+          if (!dateStr) return;
+          const date = new Date(dateStr);
+          const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+          if (revenueHistoryMap.has(key)) {
+            revenueHistoryMap.set(key, (revenueHistoryMap.get(key) || 0) + amount);
+          }
+        };
+
+        gymFinances.forEach(f => {
+          if (f.transaction_type === 'income' || f.transaction_type === 'membership') {
+            addToHistory(f.date || f.created_at, Number(f.amount || 0));
+          }
+        });
+
+        saunaBookings.forEach(b => {
+          if (b.status === 'completed') {
+            addToHistory(b.booking_date || b.created_at, Number(b.amount || 0));
+          }
+        });
+
+        restaurantSales.forEach(s => {
+          addToHistory(s.date || s.created_at, Number(s.total_amount || 0));
+        });
+
+        const revenueHistory = Array.from(revenueHistoryMap.entries()).map(([name, value]) => ({
+          name: name.split(' ')[0], // Just month name for cleaner chart
+          value
+        }));
+
         return {
           totalRevenue,
           totalCustomers,
@@ -110,7 +156,8 @@ export const useDashboardStats = () => {
             revenue: totalRevenue > 0 ? 23.5 : 0,
             customers: totalCustomers > 0 ? 12.3 : 0,
             events: eventItemsCount > 0 ? 8.7 : 0
-          }
+          },
+          revenueHistory
         };
       } catch (err) {
         logger.error('Dashboard stats calculation error:', err);
@@ -121,7 +168,8 @@ export const useDashboardStats = () => {
           expiringSoon: 0,
           moduleStats: { events: 0, gym: 0, sauna: 0, restaurant: 0 },
           revenueByUnit: { events: 0, gym: 0, sauna: 0, restaurant: 0 },
-          growthRates: { revenue: 0, customers: 0, events: 0 }
+          growthRates: { revenue: 0, customers: 0, events: 0 },
+          revenueHistory: []
         };
       }
     },

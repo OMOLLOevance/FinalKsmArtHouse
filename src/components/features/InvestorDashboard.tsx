@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
   Users, 
-  Calendar, 
   DollarSign,
   BarChart3,
   Sparkles,
@@ -18,6 +17,16 @@ import { Separator } from '@/components/ui/separator';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  TooltipProps
+} from 'recharts';
 
 interface MetricCardProps {
   title: string;
@@ -52,6 +61,20 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, trend, ic
     </Card>
   </motion.div>
 );
+
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background/90 backdrop-blur-md border border-border p-3 rounded-xl shadow-xl">
+        <p className="text-xs font-black uppercase tracking-widest mb-1 text-muted-foreground">{label}</p>
+        <p className="text-sm font-bold text-primary">
+          {formatCurrency(payload[0].value as number)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const InvestorDashboard: React.FC = () => {
   const { data: stats, isLoading: loading, error } = useDashboardStats();
@@ -149,6 +172,53 @@ const InvestorDashboard: React.FC = () => {
           <MetricCard key={metric.title} {...metric} />
         ))}
       </div>
+
+      {/* Revenue Trend Chart */}
+      <Card className="p-8 glass-card border-primary/5 shadow-2xl">
+        <div className="flex flex-col space-y-4 mb-6">
+          <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">
+            Revenue Trend
+          </h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+            6-Month Performance Overview
+          </p>
+        </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={stats.revenueHistory}>
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(value) => `$${value/1000}k`}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                fillOpacity={1} 
+                fill="url(#colorRevenue)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       {/* Business Units Performance */}
       <Card className="p-8 glass-card border-primary/5 shadow-2xl relative overflow-hidden">

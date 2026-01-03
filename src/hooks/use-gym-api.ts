@@ -6,12 +6,12 @@ import { logger } from '@/lib/logger';
 
 
 // Gym Members Hooks
-export const useGymMembersQuery = () => {
+export const useGymMembersQuery = (search?: string) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['gym', 'members', userId],
-    queryFn: () => gymService.getMembers(userId!).catch(err => {
+    queryKey: ['gym', 'members', userId, search],
+    queryFn: () => gymService.getMembers(userId!, search).catch(err => {
       logger.error('Gym members fetch error:', err);
       return [];
     }),

@@ -36,6 +36,11 @@ export async function GET(request: NextRequest) {
       query = query.eq('user_id', userId);
     }
 
+    const search = searchParams.get('search');
+    if (search) {
+      query = query.or(`member_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
+    }
+
     const { data, error } = await query;
 
     if (error) throw ApiError.fromSupabase(error);

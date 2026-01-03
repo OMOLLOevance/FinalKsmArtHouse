@@ -27,9 +27,10 @@ export type CreateGymFinanceRequest = z.infer<typeof GymFinanceSchema>;
 
 class GymService {
   // Members
-  async getMembers(userId: string): Promise<GymMember[]> {
+  async getMembers(userId: string, search?: string): Promise<GymMember[]> {
     try {
-      const response = await apiClient.get<{data: any[]}>(`/api/gym?userId=${userId}`);
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+      const response = await apiClient.get<{data: any[]}>(`/api/gym?userId=${userId}${searchParam}`);
       return (response?.data || []).map(this.mapDbMemberToFrontend);
     } catch (error) {
       logger.error('GymService.getMembers failed:', error);

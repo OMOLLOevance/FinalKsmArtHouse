@@ -16,6 +16,28 @@ import { calculateMembershipEndDate } from '@/utils/calculations';
 import { sanitizePhoneNumber, formatCurrency } from '@/utils/formatters';
 import { useFinanceSummary } from '@/hooks/use-finance';
 import { logger } from '@/lib/logger';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+const MemberSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phoneNumber: z.string().min(10, "Phone number must be valid"),
+  email: z.string().email("Invalid email address").optional().or(z.literal('')),
+  packageType: z.enum(['weekly', 'monthly', 'three-months']),
+  amountPaid: z.coerce.number().min(0, "Amount must be positive"),
+  startDate: z.string().min(1, "Start date is required"),
+});
+
+type MemberFormValues = z.infer<typeof MemberSchema>;
 
 interface GymManagementProps {
   onBack?: () => void;
@@ -25,12 +47,32 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
   const { data: finances, isLoading: financesLoading, refetch: refetchFinances } = useGymFinancesQuery();
   const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useGymMembersQuery();
-// ...
+  const [activeTab, setActiveTab] = useState<'finances' | 'members'>('finances');
+  const [isAdding, setIsAdding] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [displayCount, setDisplayCount] = useState(12);
+  const [editingFinance, setEditingFinance] = useState<GymFinance | null>(null);
+  const [editingMember, setEditingMember] = useState<GymMember | null>(null);
+  const [showQuickExpense, setShowQuickExpense] = useState(false);
+  const [quickExpenseAmount, setQuickExpenseAmount] = useState('');
+  const [quickExpenseDescription, setQuickExpenseDescription] = useState('');
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string; type: 'finance' | 'member'; name?: string }>({ isOpen: false, id: '', type: 'finance' });
 
   // Role Permissions
   const isStaff = user?.role === 'staff';
   const isManager = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'director';
+
+  const form = useForm<MemberFormValues>({
+    resolver: zodResolver(MemberSchema),
+    defaultValues: {
+      name: '',
+      phoneNumber: '',
+      email: '',
+      packageType: 'monthly',
+      amountPaid: 0,
+      startDate: new Date().toISOString().split('T')[0],
+    },
+  });
 
   const [financeFormData, setFinanceFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -121,11 +163,10 @@ Thank you for being part of our fitness community!`
     }
   };
 
-  const handleMemberSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const endDate = calculateMembershipEndDate(memberFormData.startDate, memberFormData.packageType);
+  const onMemberSubmit = async (data: MemberFormValues) => {
+    const endDate = calculateMembershipEndDate(data.startDate, data.packageType);
     const status = new Date(endDate) >= new Date() ? 'active' as const : 'expired' as const;
-    const memberData = { ...memberFormData, endDate, status };
+    const memberData = { ...data, endDate, status };
 
     try {
       if (editingMember) {
@@ -138,7 +179,7 @@ Thank you for being part of our fitness community!`
         setIsAdding(false);
       }
       await refetchMembers();
-      setMemberFormData({
+      form.reset({
         name: '', phoneNumber: '', email: '', packageType: 'monthly',
         amountPaid: 0, startDate: new Date().toISOString().split('T')[0],
       });
@@ -160,9 +201,13 @@ Thank you for being part of our fitness community!`
 
   const handleEditMember = (member: GymMember) => {
     setEditingMember(member);
-    setMemberFormData({
-      name: member.name, phoneNumber: member.phoneNumber, email: member.email,
-      packageType: member.packageType, amountPaid: member.amountPaid, startDate: member.startDate,
+    form.reset({
+      name: member.name,
+      phoneNumber: member.phoneNumber,
+      email: member.email || '',
+      packageType: member.packageType,
+      amountPaid: member.amountPaid,
+      startDate: member.startDate,
     });
   };
 
@@ -490,15 +535,101 @@ Thank you for being part of our fitness community!`
         <Card className="mb-6">
           <CardHeader><CardTitle className="text-lg font-semibold">{editingMember ? 'Edit Gym Member' : 'Add New Gym Member'}</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={handleMemberSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium mb-1">Full Name</label><Input type="text" value={memberFormData.name} onChange={(e) => setMemberFormData({ ...memberFormData, name: e.target.value })} required /></div>
-              <div><label className="block text-sm font-medium mb-1">Phone Number</label><Input type="tel" value={memberFormData.phoneNumber} onChange={(e) => setMemberFormData({ ...memberFormData, phoneNumber: e.target.value })} required /></div>
-              <div><label className="block text-sm font-medium mb-1">Email</label><Input type="email" value={memberFormData.email} onChange={(e) => setMemberFormData({ ...memberFormData, email: e.target.value })} required /></div>
-              <div><label className="block text-sm font-medium mb-1">Package</label><select value={memberFormData.packageType} onChange={(e) => setMemberFormData({ ...memberFormData, packageType: e.target.value as any })} className="w-full px-3 py-2 border rounded-md bg-background text-foreground" required><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="three-months">3 Months</option></select></div>
-              <div><label className="block text-sm font-medium mb-1">Amount Paid</label><Input type="number" value={memberFormData.amountPaid} onChange={(e) => setMemberFormData({ ...memberFormData, amountPaid: parseFloat(e.target.value) || 0 })} required /></div>
-              <div><label className="block text-sm font-medium mb-1">Start Date</label><Input type="date" value={memberFormData.startDate} onChange={(e) => setMemberFormData({ ...memberFormData, startDate: e.target.value })} required /></div>
-              <div className="md:col-span-2"><p className="text-sm text-muted-foreground mb-4 font-bold italic">Calculated End Date: {calculateMembershipEndDate(memberFormData.startDate, memberFormData.packageType)}</p><div className="flex justify-end space-x-2"><Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingMember(null); }}>Cancel</Button><Button type="submit"><Save className="h-4 w-4 mr-2" />{editingMember ? 'Update' : 'Save'}</Button></div></div>
-            </form>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onMemberSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0712345678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="john@example.com" type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="packageType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Package</FormLabel>
+                      <FormControl>
+                        <select {...field} className="w-full px-3 py-2 border rounded-md bg-background text-foreground h-10">
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="three-months">3 Months</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amountPaid"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount Paid</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="md:col-span-2">
+                  <p className="text-sm text-muted-foreground mb-4 font-bold italic">
+                    Calculated End Date: {calculateMembershipEndDate(form.watch('startDate'), form.watch('packageType'))}
+                  </p>
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingMember(null); }}>Cancel</Button>
+                    <Button type="submit"><Save className="h-4 w-4 mr-2" />{editingMember ? 'Update' : 'Save'}</Button>
+                  </div>
+                </div>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       )}

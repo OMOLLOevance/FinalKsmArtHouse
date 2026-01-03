@@ -7,6 +7,7 @@ import {
   useCreateSaunaBookingMutation, 
   useDeleteSaunaBookingMutation
 } from '@/hooks/use-sauna-api';
+import { SaunaBooking } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -17,15 +18,6 @@ import { logger } from '@/lib/logger';
 
 interface SaunaManagementProps {
   onBack?: () => void;
-}
-
-interface SaunaBooking {
-  id: string;
-  date: string;
-  time: string;
-  client: string;
-  amount: number;
-  status: 'booked' | 'completed';
 }
 
 const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {

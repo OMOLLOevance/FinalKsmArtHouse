@@ -5,8 +5,11 @@ import Sidebar from '@/components/layout/Sidebar';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { ToastProvider } from '@/components/ui/Toast';
 import { Toaster } from '@/components/ui/toaster';
+import { useRealtimeInvalidation } from '@/hooks/use-realtime-invalidation';
 
 const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useRealtimeInvalidation();
+
   return (
     <ToastProvider>
       <AuthGuard>

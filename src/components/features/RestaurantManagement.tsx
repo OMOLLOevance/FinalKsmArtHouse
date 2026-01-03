@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ArrowLeft, Save, Printer, Database, ChevronDown, ChevronUp, Calendar, Utensils, X } from 'lucide-react';
 import ItemServingsManager from './ItemServingsManager';
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
+import { InventoryItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -15,12 +16,6 @@ import { SkeletonCard } from '@/components/ui/LoadingSpinner';
 
 interface RestaurantManagementProps {
   onBack?: () => void;
-}
-
-interface InventoryItem {
-  item: string;
-  quantity: string;
-  price: string;
 }
 
 const defaultItems = [

@@ -7,3 +7,9 @@ export interface RestaurantSale {
   totalAmount: number;
   expenses?: number;
 }
+
+export interface InventoryItem {
+  item: string;
+  quantity: string;
+  price: string;
+}
