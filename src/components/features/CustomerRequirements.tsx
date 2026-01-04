@@ -98,8 +98,8 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
                   <h4 className="font-black text-xl text-primary leading-tight">{selectedCustomer?.name}</h4>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-background">{selectedCustomer?.eventType}</Badge>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">{selectedCustomer?.eventDate}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">• {selectedCustomer?.location}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Source: {(selectedCustomer as any)?.source || 'Core'}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">• {selectedCustomer?.eventDate}</span>
                   </div>
                 </div>
               </div>
@@ -157,15 +157,27 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
                   }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-muted group-hover:bg-primary/10 rounded-xl flex items-center justify-center transition-colors">
-                      <User className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${
+                      customer.source === 'gym' ? 'bg-orange-500/10 text-orange-600' :
+                      customer.source === 'sauna' ? 'bg-blue-500/10 text-blue-600' :
+                      customer.source === 'allocation' ? 'bg-purple-500/10 text-purple-600' :
+                      'bg-muted group-hover:bg-primary/10 text-muted-foreground group-hover:text-primary'
+                    }`}>
+                      <User className="h-5 w-5" />
                     </div>
                     <div>
                       <span className="font-black text-foreground group-hover:text-primary transition-colors uppercase tracking-tight block leading-none mb-1">{customer.name}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{customer.eventType}</span>
                         <span className="text-[9px] font-bold text-muted-foreground/40">•</span>
-                        <span className="text-[9px] font-bold text-muted-foreground/60">{customer.eventDate}</span>
+                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                          customer.source === 'gym' ? 'bg-orange-500/10 text-orange-600' :
+                          customer.source === 'sauna' ? 'bg-blue-500/10 text-blue-600' :
+                          customer.source === 'allocation' ? 'bg-purple-500/10 text-purple-600' :
+                          'bg-primary/10 text-primary'
+                        }`}>
+                          {customer.source}
+                        </span>
                       </div>
                     </div>
                   </div>
