@@ -23,6 +23,8 @@ import { logger } from '@/lib/logger';
 import { formatCurrency } from '@/utils/formatters';
 import { CateringItem } from '@/types';
 import { toast } from 'sonner';
+import { StaffSelector } from '@/components/shared/StaffSelector';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 
 interface CateringManagerProps {
   onBack: () => void;
@@ -35,10 +37,13 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
-  const { items: serviceItems, loading: servicesLoading, error: servicesError, addItem, updateItem, deleteItem, refetch: fetchServices } = useCateringItems();
+  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+
+  const { items: serviceItems, loading: servicesLoading, error: servicesError, addItem, updateItem, deleteItem, refetch: fetchServices } = useCateringItems(filterUserId);
   
   // Inventory Hooks
-  const { data: inventoryItems = [], isLoading: inventoryLoading, error: inventoryError } = useCateringInventoryQuery();
+  const { data: inventoryItems = [], isLoading: inventoryLoading, error: inventoryError } = useCateringInventoryQuery(filterUserId);
   const upsertInventory = useUpsertCateringInventoryMutation();
   const deleteInventory = useDeleteCateringInventoryMutation();
 
@@ -54,6 +59,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
   const categories = useMemo(() => {
     const dbCategories = [...new Set(inventoryItems.map(item => item.category))];
     const pendingCategories = [...new Set(pendingItems.map(item => item.category))];
+    // Combine with defaults but prioritize existing DB categories
     return [...new Set([...DEFAULT_CATEGORIES, ...dbCategories, ...pendingCategories])].sort();
   }, [inventoryItems, pendingItems]);
 
@@ -356,12 +362,21 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
           </Button>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
           <h2 className="text-3xl font-bold tracking-tight text-primary">Catering</h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {(isOperationsManager() || isDirectorOrInvestor()) && (
+            <div className="w-64">
+              <StaffSelector 
+                value={filterUserId} 
+                onChange={setFilterUserId} 
+                className="bg-background/50"
+              />
+            </div>
+          )}
           <Button onClick={() => setIsAdding(true)} size="sm"><Plus className="h-4 w-4 mr-2" /> Add Service Item</Button>
         </div>
       </div>

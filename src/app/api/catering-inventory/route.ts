@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const filterUserId = searchParams.get('filterUserId');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -39,12 +40,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await client
+    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
+    const role = userProfile?.role || 'staff';
+
+    let query = client
       .from('catering_inventory')
       .select('*')
-      .eq('user_id', userId)
       .order('category', { ascending: true })
       .order('particular', { ascending: true });
+
+    // RBAC Filtering Logic
+    if (role === 'staff') {
+      query = query.eq('user_id', user.id);
+    } else if (filterUserId) {
+      query = query.eq('user_id', filterUserId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         logger.error('Catering Inventory GET Database Error:', error);

@@ -12,13 +12,15 @@ export interface CateringInventoryItem {
   user_id: string;
 }
 
-export const useCateringInventoryQuery = () => {
+export const useCateringInventoryQuery = (filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['catering-inventory', userId],
+    queryKey: ['catering-inventory', userId, filterUserId],
     queryFn: async (): Promise<CateringInventoryItem[]> => {
-      const response = await apiClient.get<{ data: CateringInventoryItem[] }>(`/api/catering-inventory?userId=${userId}`);
+      let url = `/api/catering-inventory?userId=${userId}`;
+      if (filterUserId) url += `&filterUserId=${filterUserId}`;
+      const response = await apiClient.get<{ data: CateringInventoryItem[] }>(url);
       return response.data;
     },
     enabled: !!userId && isAuthenticated,

@@ -4,13 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CateringItem } from '../types';
 import { toast } from 'sonner';
 
-export const useCateringItemsQuery = () => {
+export const useCateringItemsQuery = (filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['catering-items', userId],
+    queryKey: ['catering-items', userId, filterUserId],
     queryFn: async (): Promise<CateringItem[]> => {
-      const response = await apiClient.get<{ data: CateringItem[] }>(`/api/catering?userId=${userId}`);
+      let url = `/api/catering?userId=${userId}`;
+      if (filterUserId) url += `&filterUserId=${filterUserId}`;
+      const response = await apiClient.get<{ data: CateringItem[] }>(url);
       return response.data;
     },
     enabled: !!userId && isAuthenticated,
@@ -70,8 +72,8 @@ export const useDeleteCateringItemMutation = () => {
 };
 
 // Legacy Wrapper for CateringManager
-export const useCateringItems = () => {
-  const query = useCateringItemsQuery();
+export const useCateringItems = (filterUserId?: string | null) => {
+  const query = useCateringItemsQuery(filterUserId);
   const createMutation = useCreateCateringItemMutation();
   const updateMutation = useUpdateCateringItemMutation();
   const deleteMutation = useDeleteCateringItemMutation();
