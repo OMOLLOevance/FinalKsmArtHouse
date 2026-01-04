@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { Select, SelectOption } from '@/components/ui/Select';
 import { useEventItemsQuery, useCreateEventItemMutation, useDeleteEventItemMutation } from '@/hooks/use-event-api';
 import { useEntertainmentItems } from '@/hooks/useEntertainmentItems';
 import { useSanitationItems } from '@/hooks/useSanitationItems';
@@ -26,6 +27,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
   const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [isNewItem, setIsNewItem] = useState(false);
 
   // Hook 1: General Event Items
   const eventItems = useEventItemsQuery(filterUserId);
@@ -101,6 +103,18 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
       refetch: source.refetch
     };
   }, [category, entertainment, sanitation, eventItems, createEventItem, deleteEventItem]);
+
+  const itemOptions: SelectOption[] = useMemo(() => {
+    const names = [...new Set(currentData.items.map((item: any) => String(item.name || '')))].sort();
+    return names.filter(Boolean).map(name => ({ value: String(name), label: String(name) }));
+  }, [currentData.items]);
+
+  const itemsWithNew: SelectOption[] = useMemo(() => {
+    return [
+      { value: "ADD_NEW_ITEM", label: "➕ ADD NEW ITEM..." },
+      ...itemOptions
+    ];
+  }, [itemOptions]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -200,7 +214,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
               />
             </div>
           )}
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button onClick={() => { setIsNewItem(false); setShowAddDialog(true); }}>
             <Plus className="h-4 w-4 mr-2" /> Add Item
           </Button>
         </div>
@@ -273,12 +287,47 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
           <form onSubmit={handleAddItem} className="space-y-4 pt-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Item Name</label>
-              <Input 
-                placeholder="e.g. Hand Sanitizer" 
-                value={formData.name} 
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
-                required 
-              />
+              
+              {!isNewItem ? (
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.name}
+                    onValueChange={(val) => {
+                      if (val === "ADD_NEW_ITEM") {
+                        setIsNewItem(true);
+                        setFormData({ ...formData, name: '' });
+                      } else {
+                        setFormData({ ...formData, name: val });
+                      }
+                    }}
+                    placeholder="Select Item"
+                    options={itemsWithNew}
+                    className="flex-1 rounded-xl"
+                  />
+                </div>
+              ) : (
+                <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
+                  <Input 
+                    placeholder="Enter new item name..." 
+                    value={formData.name} 
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="font-black h-11 border-primary/20 focus:border-primary uppercase rounded-xl flex-1"
+                    autoFocus
+                  />
+                  <Button 
+                    type="button"
+                    variant="ghost" 
+                    onClick={() => setIsNewItem(false)}
+                    className="h-11 w-11 p-0 rounded-xl hover:bg-muted"
+                    title="Back to List"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <p className="text-[8px] text-muted-foreground ml-1">
+                {!isNewItem ? "Choose from existing list or select 'ADD NEW' to create" : "Manual entry mode active."}
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
