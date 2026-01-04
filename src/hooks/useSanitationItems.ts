@@ -1,34 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { SanitationItem } from '../types';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext';
+import { useRoleGuard } from './useRoleGuard';
 
-export const useSanitationItems = () => {
-  const { user, userId, isAuthenticated, isLoading: authLoading } = useAuth();
+export const useSanitationItems = (filterUserId?: string | null) => {
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isStaff } = useRoleGuard();
   const [items, setItems] = useState<SanitationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
-    if (authLoading) return; // Don't fetch if auth is still loading
+    if (authLoading || !isAuthenticated || !userId) return;
 
     try {
       setLoading(true);
-      if (!isAuthenticated || !userId) {
-        setItems([]);
-        setError('User not authenticated');
-        return;
-      }
-
-      const userIsAdmin = user?.role === 'director' || user?.role === 'investor';
 
       let query = supabase
         .from('sanitation_items')
-        .select('*')
+        .select('*, users(first_name, last_name, email, role)')
         .order('created_at', { ascending: false });
 
-      if (!userIsAdmin) {
-        query.eq('user_id', userId);
+      // RBAC Filtering Logic
+      if (isStaff()) {
+        query = query.eq('user_id', userId);
+      } else if (filterUserId) {
+        query = query.eq('user_id', filterUserId);
       }
 
       const { data, error: fetchError } = await query;
@@ -39,17 +37,15 @@ export const useSanitationItems = () => {
       setError(null);
     } catch (err: any) {
       console.error('Error fetching sanitation items:', err);
-      setError(err.message);
+      setError(err?.message || 'Failed to fetch items');
     } finally {
       setLoading(false);
     }
-  }, [userId, isAuthenticated, user, authLoading]);
+  }, [userId, isAuthenticated, authLoading, filterUserId, isStaff]);
 
   useEffect(() => {
-    if (!authLoading) {
-      fetchItems();
-    }
-  }, [fetchItems, authLoading]);
+    fetchItems();
+  }, [fetchItems]);
 
   useEffect(() => {
     if (!authLoading && userId) {
@@ -77,8 +73,6 @@ export const useSanitationItems = () => {
         .single();
 
       if (error) throw error;
-
-      // setItems(prev => [data, ...prev]); // Realtime subscription will handle this
       return data;
     } catch (err: any) {
       console.error('Error adding sanitation item:', err);
@@ -94,13 +88,10 @@ export const useSanitationItems = () => {
         .from('sanitation_items')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', userId)
         .select()
         .single();
 
       if (error) throw error;
-
-      // setItems(prev => prev.map(item => item.id === id ? data : item)); // Realtime subscription will handle this
       return data;
     } catch (err: any) {
       console.error('Error updating sanitation item:', err);
@@ -115,19 +106,14 @@ export const useSanitationItems = () => {
       const { error } = await supabase
         .from('sanitation_items')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
 
       if (error) throw error;
-
-      // setItems(prev => prev.filter(item => item.id !== id)); // Realtime subscription will handle this
     } catch (err: any) {
       console.error('Error deleting sanitation item:', err);
       throw err;
     }
   }, [userId]);
 
-  const combinedLoading = loading || authLoading;
-
-  return { items, loading: combinedLoading, error, addItem, updateItem, deleteItem, refetch: fetchItems };
+  return { items, loading: loading || authLoading, error, addItem, updateItem, deleteItem, refetch: fetchItems };
 };

@@ -23,15 +23,12 @@ export const useCateringItemsQuery = () => {
   });
 };
 // ...
-export const useEventItemsQuery = () => {
+export const useEventItemsQuery = (filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['event-items', userId],
-    queryFn: () => eventItemsService.getEventItems(userId!).catch(err => {
-      logger.error('Event items fetch error:', err);
-      return [];
-    }),
+    queryKey: ['event-items', userId, filterUserId],
+    queryFn: () => eventItemsService.getEventItems(userId!, filterUserId),
     enabled: !!userId && isAuthenticated,
     retry: 3,
     staleTime: 5 * 60 * 1000,

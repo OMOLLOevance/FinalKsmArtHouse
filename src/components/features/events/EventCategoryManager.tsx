@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Plus, Database, Trash2, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, Plus, Database, Trash2, X, User, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { useEventItemsQuery, useCreateEventItemMutation, useDeleteEventItemMutation } from '@/hooks/use-event-api';
+import { useEntertainmentItems } from '@/hooks/useEntertainmentItems';
+import { useSanitationItems } from '@/hooks/useSanitationItems';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
+import { StaffSelector } from '@/components/shared/StaffSelector';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
@@ -19,20 +23,92 @@ interface ManagerProps {
 }
 
 const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title }) => {
-  const { data: items, isLoading, refetch } = useEventItemsQuery();
-  const createItemMutation = useCreateEventItemMutation();
-  const deleteItemMutation = useDeleteEventItemMutation();
+  const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+
+  // Hook 1: General Event Items
+  const eventItems = useEventItemsQuery(filterUserId);
+  const createEventItem = useCreateEventItemMutation();
+  const deleteEventItem = useDeleteEventItemMutation();
+
+  // Hook 2: Entertainment Equipment
+  const entertainment = useEntertainmentItems(filterUserId);
+
+  // Hook 3: Sanitation Items
+  const sanitation = useSanitationItems(filterUserId);
+
+  // Determine which data source to use
+  const isSpecialCategory = category === 'entertainment' || category === 'sanitation';
   
+  const currentData = useMemo(() => {
+    if (category === 'entertainment') {
+      return {
+        items: entertainment.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity_available,
+          price: item.price,
+          unit: 'unit',
+          status: 'available',
+          users: (item as any).users
+        })),
+        loading: entertainment.loading,
+        error: entertainment.error,
+        addItem: entertainment.addItem,
+        deleteItem: entertainment.deleteItem,
+        refetch: entertainment.refetch
+      };
+    }
+    if (category === 'sanitation') {
+      return {
+        items: sanitation.items.map(item => ({
+          id: item.id,
+          name: (item as any).name || (item as any).item_name || 'Item',
+          quantity: item.quantity,
+          price: item.price,
+          unit: item.unit,
+          status: item.status,
+          users: (item as any).users
+        })),
+        loading: sanitation.loading,
+        error: sanitation.error,
+        addItem: sanitation.addItem,
+        deleteItem: sanitation.deleteItem,
+        refetch: sanitation.refetch
+      };
+    }
+    // Default: event_items table
+    return {
+      items: (eventItems.data || []).filter(item => item.category === category).map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantityAvailable,
+        price: item.price,
+        unit: item.unit,
+        status: item.status,
+        users: (item as any).users
+      })),
+      loading: eventItems.isLoading,
+      error: eventItems.error?.message,
+      addItem: createEventItem.mutateAsync,
+      deleteItem: deleteEventItem.mutateAsync,
+      refetch: eventItems.refetch
+    };
+  }, [category, entertainment, sanitation, eventItems, createEventItem, deleteEventItem]);
+
   const [formData, setFormData] = useState({
     name: '',
     quantityAvailable: 0,
     price: 0,
-    unit: 'pieces',
-    status: 'available'
+    unit: 'pieces'
   });
 
-  const filteredItems = items?.filter(item => item.category === category) || [];
+  useEffect(() => {
+    if (currentData.error) {
+      toast.error(`Error: ${currentData.error}`);
+    }
+  }, [currentData.error]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,59 +118,99 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
     }
 
     try {
-      const payload = {
-        name: formData.name.trim(),
-        category: category,
-        quantityAvailable: Number(formData.quantityAvailable) || 0,
-        price: Number(formData.price) || 0,
-        unit: formData.unit || 'pieces',
-        status: 'available'
-      };
-
-      await createItemMutation.mutateAsync(payload);
+      if (category === 'entertainment') {
+        await entertainment.addItem({
+          name: formData.name.trim(),
+          category: 'entertainment',
+          quantity_available: Number(formData.quantityAvailable) || 0,
+          price: Number(formData.price) || 0
+        });
+      } else if (category === 'sanitation') {
+        await sanitation.addItem({
+          name: formData.name.trim(),
+          category: 'sanitation',
+          quantity: Number(formData.quantityAvailable) || 0,
+          unit: formData.unit || 'pieces',
+          price: Number(formData.price) || 0,
+          status: 'in-store'
+        });
+      } else {
+        await createEventItem.mutateAsync({
+          name: formData.name.trim(),
+          category: category,
+          quantityAvailable: Number(formData.quantityAvailable) || 0,
+          price: Number(formData.price) || 0,
+          unit: formData.unit || 'pieces',
+          status: 'available'
+        });
+      }
+      
       setShowAddDialog(false);
-      setFormData({ name: '', quantityAvailable: 0, price: 0, unit: 'pieces', status: 'available' });
-      await refetch();
+      setFormData({ name: '', quantityAvailable: 0, price: 0, unit: 'pieces' });
+      await currentData.refetch();
+      toast.success('Item added successfully');
     } catch (error) {
-      // Handled by mutation
+      console.error(error);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
-        await deleteItemMutation.mutateAsync(id);
-        await refetch();
-      } catch (error) {}
+        await currentData.deleteItem(id);
+        await currentData.refetch();
+        toast.success('Item deleted');
+      } catch (error) {
+        console.error(error);
+      }
     }
   };
 
-  if (isLoading) return <LoadingSpinner text={`Loading ${title}...`} />;
+  const getStaffName = (item: any) => {
+    if (!item.users) return 'Me';
+    const { first_name, last_name, email } = item.users;
+    if (first_name || last_name) return `${first_name || ''} ${last_name || ''}`.trim();
+    return email || 'Unknown';
+  };
+
+  if (currentData.loading) return <LoadingSpinner text={`Loading ${title}...`} />;
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Add Item
-        </Button>
+
+        <div className="flex items-center gap-3">
+          {(isOperationsManager() || isDirectorOrInvestor()) && (
+            <div className="w-64">
+              <StaffSelector 
+                value={filterUserId} 
+                onChange={setFilterUserId} 
+                className="bg-background/50"
+              />
+            </div>
+          )}
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Add Item
+          </Button>
+        </div>
       </div>
 
       <Card className="border-none shadow-none bg-transparent">
         <CardHeader className="px-0 pb-4">
           <CardTitle className="text-xl font-bold text-primary">Inventory List</CardTitle>
           <CardDescription className="text-xs uppercase tracking-widest font-black opacity-70">
-            Manage your {category} items and availability
+            Manage your {category} items from {isSpecialCategory ? `the specialized ${category} table` : 'the event items table'}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredItems.map((item) => (
+            {currentData.items.map((item) => (
               <Card key={item.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 hover:shadow-md border-l-4 border-l-primary/40">
                 <div className="p-4 space-y-4">
                   <div className="flex justify-between items-start gap-2">
@@ -102,19 +218,27 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
                       <h4 className="font-bold text-base truncate" title={item.name}>
                         {item.name}
                       </h4>
-                      <Badge variant={item.status === 'available' ? 'success' : 'secondary'} className="text-[9px] h-4 font-black uppercase tracking-tighter">
-                        {item.status}
-                      </Badge>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={item.status === 'available' || item.status === 'in-store' ? 'success' : 'secondary'} className="text-[9px] h-4 font-black uppercase tracking-tighter">
+                          {item.status}
+                        </Badge>
+                        <div className="flex items-center text-[10px] text-muted-foreground font-medium">
+                          <User className="h-2.5 w-2.5 mr-1" />
+                          {getStaffName(item)}
+                        </div>
+                      </div>
                     </div>
-                    <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {canDeleteTransaction() && (
+                      <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 bg-muted/30 p-2 rounded-lg border">
                     <div className="space-y-0.5">
                       <label className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Stock</label>
-                      <p className="text-xs font-bold">{item.quantityAvailable} {item.unit}</p>
+                      <p className="text-xs font-bold">{item.quantity} {item.unit}</p>
                     </div>
                     <div className="space-y-0.5">
                       <label className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Unit Price</label>
@@ -124,7 +248,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
                 </div>
               </Card>
             ))}
-            {filteredItems.length === 0 && (
+            {currentData.items.length === 0 && (
               <div className="col-span-full py-16 text-center text-muted-foreground bg-muted/5 border-2 border-dashed rounded-2xl">
                 <Database className="h-12 w-12 mx-auto mb-4 opacity-20" />
                 <p className="text-lg font-medium">No items found in this category.</p>
@@ -183,8 +307,8 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
             </div>
             <DialogFooter className="pt-6">
               <Button variant="outline" type="button" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={createItemMutation.isPending}>
-                {createItemMutation.isPending ? 'Saving...' : 'Add Item'}
+              <Button type="submit">
+                Add Item
               </Button>
             </DialogFooter>
           </form>

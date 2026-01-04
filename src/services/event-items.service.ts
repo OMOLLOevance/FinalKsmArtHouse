@@ -16,8 +16,11 @@ export type CreateEventItemRequest = z.infer<typeof EventItemSchema>;
 
 class EventItemsService {
   // Get all event items for user
-  async getEventItems(userId: string): Promise<any[]> {
-    const response = await apiClient.get<{ data: any[] }>(`/api/event-items?userId=${userId}`);
+  async getEventItems(userId: string, filterUserId?: string | null): Promise<any[]> {
+    let url = `/api/event-items?userId=${userId}`;
+    if (filterUserId) url += `&filterUserId=${filterUserId}`;
+    
+    const response = await apiClient.get<{ data: any[] }>(url);
     return response.data.map(this.mapDbToFrontend);
   }
 
