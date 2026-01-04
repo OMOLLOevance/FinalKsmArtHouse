@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useDecorAllocationsQuery, useUpsertDecorAllocationMutation } from '@/hooks/useDecorAllocations';
 import MonthlyAllocationTable from './MonthlyAllocationTable';
 import { toast } from 'sonner';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
+import { StaffSelector } from '@/components/shared/StaffSelector';
 
 interface DecorItem {
   id: string;
@@ -46,6 +48,9 @@ interface AdvancedCustomerManagementProps {
 }
 
 const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({ onBack }) => {
+  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
@@ -81,7 +86,7 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
     african_lampshades: 0
   });
   
-  const { data: decorData } = useDecorAllocationsQuery(currentMonth, currentYear);
+  const { data: decorData } = useDecorAllocationsQuery(currentMonth, currentYear, filterUserId);
   const upsertDecorMutation = useUpsertDecorAllocationMutation();
   const [decorItems, setDecorItems] = useState<DecorItem[]>([]);
 
@@ -198,7 +203,7 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           {onBack && (
             <Button variant="outline" size="sm" onClick={onBack} className="flex items-center">
@@ -208,18 +213,30 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
           )}
           <span className="text-lg font-medium">Week of {currentYear}-{String(currentMonth + 1).padStart(2, '0')}</span>
         </div>
-        <div className="flex space-x-1">
-          {monthNames.map((month, index) => (
-            <Button
-              key={month}
-              variant={index === currentMonth ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setCurrentMonth(index)}
-              className="text-xs"
-            >
-              {month}
-            </Button>
-          ))}
+
+        <div className="flex items-center gap-3">
+          {(isOperationsManager() || isDirectorOrInvestor()) && (
+            <div className="w-64">
+              <StaffSelector 
+                value={filterUserId} 
+                onChange={setFilterUserId} 
+                className="bg-background/50"
+              />
+            </div>
+          )}
+          <div className="flex space-x-1">
+            {monthNames.map((month, index) => (
+              <Button
+                key={month}
+                variant={index === currentMonth ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCurrentMonth(index)}
+                className="text-xs"
+              >
+                {month}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
