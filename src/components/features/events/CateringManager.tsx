@@ -259,38 +259,47 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
               <tbody className="divide-y divide-primary/5">
                 {/* Pending New Items */}
                 {categoryPendingItems.map((item) => (
-                  <tr key={item.id} className="bg-primary/[0.03] animate-in fade-in slide-in-from-left-2 duration-300">
+                  <tr key={item.id} className="bg-warning/[0.05] animate-in fade-in slide-in-from-left-2 duration-300 border-l-4 border-l-warning">
                     <td className="px-6 py-3">
-                      <Input
-                        value={item.particular}
-                        onChange={(e) => handleInventoryFieldChange(item.id, 'particular', e.target.value, true)}
-                        className="h-10 text-sm font-black bg-background border-primary/20 shadow-inner rounded-xl"
-                        placeholder="New Item Name..."
-                        autoFocus
-                      />
+                      <div className="space-y-1">
+                        <Input
+                          value={item.particular}
+                          onChange={(e) => handleInventoryFieldChange(item.id, 'particular', e.target.value, true)}
+                          className="h-9 text-sm font-bold bg-background border-warning/20 shadow-sm rounded-lg focus-visible:ring-warning"
+                          placeholder="New Item Name..."
+                          autoFocus
+                        />
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[9px] h-4 bg-warning/10 text-warning border-warning/20">DRAFT ENTRY</Badge>
+                          <div className="h-1 w-24 bg-warning/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-warning animate-pulse w-[60%]" />
+                          </div>
+                          <span className="text-[9px] text-muted-foreground font-medium">Pending Approval</span>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-6 py-3 align-top">
                       <Input
                         type="number"
                         value={item.good_condition}
                         onChange={(e) => handleInventoryFieldChange(item.id, 'good_condition', e.target.value, true)}
-                        className="h-10 text-sm text-center font-black bg-background border-primary/20 rounded-xl"
+                        className="h-9 text-sm text-center font-bold bg-background border-warning/20 rounded-lg"
                       />
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-6 py-3 align-top">
                       <Input
                         type="number"
                         value={item.repair_needed}
                         onChange={(e) => handleInventoryFieldChange(item.id, 'repair_needed', e.target.value, true)}
-                        className="h-10 text-sm text-center font-black bg-background border-primary/20 rounded-xl text-destructive"
+                        className="h-9 text-sm text-center font-bold bg-background border-warning/20 rounded-lg text-destructive"
                       />
                     </td>
-                    <td className="px-6 py-3 text-right">
+                    <td className="px-6 py-3 text-right align-top">
                       <div className="flex items-center justify-end space-x-2">
-                        <Button size="sm" onClick={() => handleSaveItem(item, true)} className="h-9 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20">
-                          <Save className="h-3.5 w-3.5 mr-2" /> Save
+                        <Button size="sm" onClick={() => handleSaveItem(item, true)} className="h-9 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg bg-green-600 hover:bg-green-700 text-white transition-all hover:scale-105">
+                          <CheckCircle className="h-3.5 w-3.5 mr-2" /> Approve
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl" onClick={() => setPendingItems(prev => prev.filter(p => p.id !== item.id))}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/10" onClick={() => setPendingItems(prev => prev.filter(p => p.id !== item.id))}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
