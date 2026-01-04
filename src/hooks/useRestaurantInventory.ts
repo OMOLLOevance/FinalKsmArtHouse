@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoleGuard } from './useRoleGuard';
 import { logger } from '@/lib/logger';
 
 interface RestaurantInventoryItem {
@@ -11,10 +12,17 @@ interface RestaurantInventoryItem {
   total_amount: number;
   sale_date: string;
   expenses: number;
+  users?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    role: string;
+  };
 }
 
-export const useRestaurantInventory = (month: string) => {
+export const useRestaurantInventory = (month: string, filterUserId?: string | null) => {
   const { userId, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isStaff } = useRoleGuard();
   const [inventory, setInventory] = useState<RestaurantInventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,13 +32,25 @@ export const useRestaurantInventory = (month: string) => {
 
     try {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
+      
+      let query = supabase
         .from('restaurant_sales')
-        .select('*')
-        .eq('user_id', userId)
+        .select('*, users(first_name, last_name, email, role)')
         .gte('sale_date', `${month}-01`)
         .lte('sale_date', `${month}-31`)
         .order('sale_date', { ascending: false });
+
+      // RBAC Filtering Logic
+      if (isStaff()) {
+        // Staff can ONLY see their own records
+        query = query.eq('user_id', userId);
+      } else if (filterUserId) {
+        // Managers/Directors can see all, but filter if requested
+        query = query.eq('user_id', filterUserId);
+      }
+      // If Manager/Director and no filterUserId, query returns all (RLS allows it)
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
       setInventory(data || []);
@@ -41,7 +61,7 @@ export const useRestaurantInventory = (month: string) => {
     } finally {
       setLoading(false);
     }
-  }, [userId, isAuthenticated, authLoading, month]);
+  }, [userId, isAuthenticated, authLoading, month, filterUserId, isStaff]);
 
   useEffect(() => {
     fetchInventory();

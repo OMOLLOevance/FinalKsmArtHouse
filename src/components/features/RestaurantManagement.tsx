@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt, Trash2, Edit2, Check } from 'lucide-react';
+import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt, Trash2, Edit2, Check, Cloud, User } from 'lucide-react';
 import ItemServingsManager from './ItemServingsManager';
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
+import { StaffSelector } from '@/components/shared/StaffSelector';
 import { InventoryItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -48,9 +50,14 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   const [newItemName, setNewItemName] = useState('');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [editingLedgerId, setEditingLedgerId] = useState<string | null>(null);
-  const { showSuccess } = useToast();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const { loading } = useRestaurantInventory(selectedMonth);
+  const { showSuccess, showError } = useToast();
+  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  
+  // Pass filterUserId to the hook
+  const { inventory: dbRecords, loading: dbLoading, addInventoryItem, refetch } = useRestaurantInventory(selectedMonth, filterUserId);
 
   // Load Inventory & Ledger from LocalStorage
   useEffect(() => {
@@ -92,6 +99,38 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
     return () => clearTimeout(timer);
   }, [inventory, ledger, selectedDate]);
+
+  // Sync to Cloud
+  const handleSyncToCloud = async () => {
+    if (ledger.length === 0) return;
+    
+    try {
+      setIsSyncing(true);
+      let successCount = 0;
+
+      for (const entry of ledger) {
+        await addInventoryItem({
+          sale_date: selectedDate,
+          name: entry.item,
+          quantity: parseFloat(entry.quantity) || 0,
+          unitPrice: parseFloat(entry.price) || 0,
+          totalValue: (parseFloat(entry.quantity) || 0) * (parseFloat(entry.price) || 0),
+          expenses: (parseFloat(entry.quantity) || 0) * (parseFloat(entry.price) || 0) // Treating as expense
+        });
+        successCount++;
+      }
+
+      showSuccess('Synced', `Successfully saved ${successCount} records to cloud`);
+      setLedger([]); // Clear local ledger after sync
+      localStorage.removeItem(`restaurant_ledger_${selectedDate}`);
+      refetch(); // Refresh DB records
+    } catch (error) {
+      console.error(error);
+      showError('Sync Failed', 'Could not save all records to cloud');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleChange = useCallback((index: number, field: 'quantity' | 'price', value: string) => {
     setInventory(prev => {
@@ -164,7 +203,14 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
     return inventory.filter(i => i.item.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [inventory, searchTerm]);
 
-  if (loading) {
+  const getStaffName = (record: any) => {
+    if (!record.users) return 'Me';
+    const { first_name, last_name, email, role } = record.users;
+    if (first_name && last_name) return `${first_name} ${last_name}`;
+    return email || 'Unknown';
+  };
+
+  if (dbLoading && !inventory.length) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -199,26 +245,39 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-muted/20 p-2 rounded-2xl border border-primary/5">
-          <div className="flex items-center gap-2 px-3 border-r border-primary/10">
-            <Calendar className="h-4 w-4 text-primary opacity-70" />
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent border-none font-bold h-8 w-32 focus-visible:ring-0 shadow-none p-0 text-xs"
-            />
-          </div>
-          <div className="flex items-center gap-2 px-2">
-            {isAutoSaving ? (
-              <span className="flex items-center text-[9px] font-black text-primary animate-pulse uppercase tracking-widest">
-                <Save className="h-3 w-3 mr-1" /> Cloud Syncing...
-              </span>
-            ) : (
-              <span className="flex items-center text-[9px] font-black text-success uppercase tracking-widest">
-                <CheckCircle2 className="h-3 w-3 mr-1" /> All Records Secure
-              </span>
-            )}
+        <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
+          {/* RBAC Staff Filter */}
+          {(isOperationsManager() || isDirectorOrInvestor()) && (
+            <div className="w-64">
+              <StaffSelector 
+                value={filterUserId} 
+                onChange={setFilterUserId} 
+                className="w-full bg-background/50 backdrop-blur-sm"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 bg-muted/20 p-2 rounded-2xl border border-primary/5">
+            <div className="flex items-center gap-2 px-3 border-r border-primary/10">
+              <Calendar className="h-4 w-4 text-primary opacity-70" />
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent border-none font-bold h-8 w-32 focus-visible:ring-0 shadow-none p-0 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-2 px-2">
+              {isAutoSaving ? (
+                <span className="flex items-center text-[9px] font-black text-primary animate-pulse uppercase tracking-widest">
+                  <Save className="h-3 w-3 mr-1" /> Saving Local...
+                </span>
+              ) : (
+                <span className="flex items-center text-[9px] font-black text-success uppercase tracking-widest">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Local Saved
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -232,19 +291,37 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-center md:text-left space-y-2">
               <div className="flex items-center gap-2 justify-center md:justify-start">
-                <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] tracking-widest px-3">AUDITED EXPENDITURE</Badge>
-                <span className="text-[10px] font-black uppercase text-slate-500">{ledger.length} Verified Entries</span>
+                <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] tracking-widest px-3">PENDING SYNC</Badge>
+                <span className="text-[10px] font-black uppercase text-slate-500">{ledger.length} Unsynced Entries</span>
               </div>
               <h3 className="text-6xl font-black tracking-tighter text-primary">{formatCurrency(totalCost)}</h3>
-              <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400">Total Ledger Validated Restaurant Outgoings</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400">Total Local Ledger Value</p>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => window.print()} 
-              className="h-14 px-10 font-black uppercase tracking-widest text-xs rounded-xl border-white/10 hover:bg-white hover:text-black transition-all shadow-2xl"
-            >
-              <Printer className="h-5 w-5 mr-3" /> Print Official Record
-            </Button>
+            <div className="flex gap-4">
+              <Button 
+                variant="default" 
+                onClick={handleSyncToCloud}
+                disabled={ledger.length === 0 || isSyncing}
+                className="h-14 px-10 font-black uppercase tracking-widest text-xs rounded-xl shadow-2xl bg-green-600 hover:bg-green-700"
+              >
+                {isSyncing ? (
+                  <>
+                    <Cloud className="h-5 w-5 mr-3 animate-pulse" /> Syncing...
+                  </>
+                ) : (
+                  <>
+                    <Cloud className="h-5 w-5 mr-3" /> Sync to Cloud
+                  </>
+                )}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.print()} 
+                className="h-14 px-10 font-black uppercase tracking-widest text-xs rounded-xl border-white/10 hover:bg-white hover:text-black transition-all shadow-2xl"
+              >
+                <Printer className="h-5 w-5 mr-3" /> Print
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -360,17 +437,17 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                   <Receipt className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-black uppercase tracking-tight text-primary">Purchase Ledger</CardTitle>
-                  <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Verified Records for {selectedDate}</CardDescription>
+                  <CardTitle className="text-2xl font-black uppercase tracking-tight text-primary">Local Daily Ledger</CardTitle>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Pending Sync for {selectedDate}</CardDescription>
                 </div>
               </div>
               <Badge className="bg-success text-success-foreground border-none font-black px-6 py-1.5 rounded-xl shadow-lg shadow-success/20 tracking-widest text-[10px]">
-                {ledger.length} ENTRIES VERIFIED
+                {ledger.length} ENTRIES PENDING
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Desktop Table View */}
+            {/* ... (Existing Table Logic) ... */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -474,8 +551,8 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                 </tfoot>
               </table>
             </div>
-
-            {/* Mobile List View */}
+            
+            {/* Mobile View Omitted for Brevity in this specific block, assuming it's preserved by 'replace' if I used it, but here I am rewriting. I'll include it. */}
             <div className="md:hidden divide-y divide-primary/5">
               {ledger.map((item) => {
                 const isEditing = editingLedgerId === item.id;
@@ -487,7 +564,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                         <h4 className="font-black text-lg text-foreground uppercase">{item.item}</h4>
                       </div>
                       <div className="flex gap-2">
-                        {isEditing ? (
+                         {isEditing ? (
                           <Button size="icon" variant="ghost" className="h-10 w-10 bg-success/10 text-success rounded-full" onClick={() => setEditingLedgerId(null)}>
                             <Check className="h-5 w-5" />
                           </Button>
@@ -501,7 +578,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                         </Button>
                       </div>
                     </div>
-                    
+                    {/* ... (Mobile fields same as before) ... */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400">Qty</label>
@@ -517,7 +594,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400">Price</label>
-                        {isEditing ? (
+                         {isEditing ? (
                           <Input 
                             type="number"
                             value={item.price}
@@ -529,37 +606,83 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                         )}
                       </div>
                     </div>
-
-                    <div className="flex justify-between items-center bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                     <div className="flex justify-between items-center bg-primary/5 p-4 rounded-2xl border border-primary/5">
                       <p className="text-[9px] font-black text-primary uppercase tracking-tighter">Verified Total</p>
                       <p className="text-sm font-black text-primary">{formatCurrency(Number(item.price) * Number(item.quantity))}</p>
                     </div>
                   </div>
                 );
               })}
-              <div className="p-8 bg-primary/5 text-center space-y-2">
-                <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Total Expenditure</p>
-                <p className="text-4xl font-black text-primary tracking-tighter">{formatCurrency(totalCost)}</p>
-              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Empty State */}
-      {filteredInventory.length === 0 && (
-        <div className="py-20 text-center space-y-4 print:hidden">
-          <div className="p-6 bg-muted/10 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
-            <Search className="h-10 w-12 text-muted-foreground/20" />
+      {/* Cloud History Section (New for RBAC) */}
+      <Card className="border-none shadow-xl bg-card/50 backdrop-blur">
+        <CardHeader className="border-b border-primary/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Cloud className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold">Cloud Records</CardTitle>
+                <CardDescription>Synced transactions for {selectedMonth}</CardDescription>
+              </div>
+            </div>
           </div>
-          <p className="text-xl font-bold text-muted-foreground">No matching items found</p>
-          <Button variant="outline" onClick={() => setSearchTerm('')}>Clear Filters</Button>
-        </div>
-      )}
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-6 py-4 font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Date</th>
+                  <th className="px-6 py-4 font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Staff Member</th>
+                  <th className="px-6 py-4 font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Item</th>
+                  <th className="px-6 py-4 font-bold uppercase text-[10px] tracking-wider text-muted-foreground text-right">Cost</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {dbLoading ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-muted-foreground">Loading records...</td>
+                  </tr>
+                ) : dbRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-muted-foreground">No synced records found for this period.</td>
+                  </tr>
+                ) : (
+                  dbRecords.map((record) => (
+                    <tr key={record.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-6 py-4 font-medium">{record.sale_date}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <User className="h-3 w-3 text-muted-foreground" />
+                          <span className="font-medium text-foreground">{getStaffName(record)}</span>
+                          {record.users?.role && (
+                             <Badge variant="outline" className="text-[10px] h-4 px-1">{record.users.role}</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">{record.item_name}</td>
+                      <td className="px-6 py-4 text-right font-mono font-medium">
+                        {formatCurrency(record.total_amount)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Print Only Inventory Table */}
       <div className="hidden print:block">
-        <table className="min-w-full border-collapse">
+         {/* ... (Keep existing print table) ... */}
+         <table className="min-w-full border-collapse">
           <thead>
             <tr className="bg-muted/50 border-b-2 border-black">
               <th className="py-2 text-left text-xs font-black uppercase">Item Particulars</th>
