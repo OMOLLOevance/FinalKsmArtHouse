@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Printer, Calendar, Save, Trash2, Edit3, Check, X, AlertCircle, Download, FileText } from 'lucide-react';
+import { Plus, Printer, Calendar, Save, Trash2, Edit3, Check, X, AlertCircle, Download, FileText, CheckCircle, Clock, User, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/utils/formatters';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 
 interface MonthlyAllocation {
   id: string;
@@ -36,7 +37,7 @@ interface MonthlyAllocation {
   // Table totals
   table_total: number;
   round_table: number;
-  long_table: number;
+ long_table: number;
   bridal_table: number;
   // Seat totals
   seat_total: number;
@@ -56,27 +57,38 @@ interface MonthlyAllocation {
   created_at: string;
   updated_at: string;
   user_id: string;
+  users?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    role: string;
+  };
 }
 
 interface MonthlyAllocationTableProps {
   month: number;
   year: number;
   onAddCustomer: () => void;
+  filterUserId?: string | null;
 }
 
 const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({ 
   month, 
   year, 
-  onAddCustomer 
+  onAddCustomer,
+  filterUserId
 }) => {
   const { user } = useAuth();
+  const { isStaff, canDeleteTransaction } = useRoleGuard();
   const [allocations, setAllocations] = useState<MonthlyAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{id: string, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [showAddDialog, setShowAddDialog] = useState(false);
+  
   const [newCustomer, setNewCustomer] = useState({
     customer_name: '',
     date: '',
@@ -100,12 +112,20 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('monthly_allocations')
-        .select('*')
+        .select('*, users(first_name, last_name, email, role)')
         .eq('month', month + 1)
-        .eq('year', year)
-        .order('date', { ascending: true });
+        .eq('year', year);
+
+      // RBAC Filtering Logic
+      if (isStaff()) {
+        query = query.eq('user_id', user?.id);
+      } else if (filterUserId) {
+        query = query.eq('user_id', filterUserId);
+      }
+      
+      const { data, error } = await query.order('date', { ascending: true });
       
       if (error) throw error;
 
@@ -132,7 +152,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [month, year]);
+  }, [month, year, user, filterUserId, isStaff]);
 
   useEffect(() => {
     fetchAllocations();
@@ -199,6 +219,10 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
   };
 
   const handleCellEdit = (id: string, field: keyof MonthlyAllocation, currentValue: string | number) => {
+    // RBAC: Staff cannot edit others' data
+    const allocation = allocations.find(a => a.id === id);
+    if (isStaff() && allocation?.user_id !== user?.id) return;
+
     setEditingCell({ id, field });
     setEditValue(currentValue?.toString() || '');
   };
@@ -252,6 +276,10 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
 
   const handleDeleteSelected = async () => {
     if (selectedRows.size === 0) return;
+    if (!canDeleteTransaction()) {
+      toast.error('Forbidden: Only Directors can delete allocations');
+      return;
+    }
 
     try {
       setSaving(true);
@@ -275,6 +303,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
+      setUpdatingId(id);
       const { error } = await supabase
         .from('monthly_allocations')
         .update({ 
@@ -286,16 +315,50 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       if (error) throw error;
 
       await fetchAllocations();
-      toast.success('Status updated successfully');
+      toast.success(`Job marked as ${status}`);
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  const renderEditableCell = (allocation: MonthlyAllocation, field: string, className = '') => {
-    const value = allocation[field as keyof MonthlyAllocation];
+  const getStatusPercentage = (status: string) => {
+    switch (status) {
+      case 'pending': return 25;
+      case 'confirmed': return 60;
+      case 'completed': return 100;
+      case 'cancelled': return 0;
+      default: return 0;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-warning';
+      case 'confirmed': return 'bg-blue-500';
+      case 'completed': return 'bg-success';
+      case 'cancelled': return 'bg-destructive';
+      default: return 'bg-muted';
+    }
+  };
+
+  const getStaffName = (allocation: MonthlyAllocation) => {
+    if (!allocation.users) return 'Me';
+    const { first_name, last_name, email } = allocation.users;
+    if (first_name || last_name) return `${first_name || ''} ${last_name || ''}`.trim();
+    return email || 'Unknown';
+  };
+
+  const renderEditableCell = (allocation: MonthlyAllocation, field: keyof MonthlyAllocation, className = '') => {
+    const value = allocation[field];
+    
+    // Only allow editing if the value is a string or number
+    if (typeof value !== 'string' && typeof value !== 'number') return null;
+
     const isEditing = editingCell?.id === allocation.id && editingCell?.field === field;
+    const isReadOnly = isStaff() && allocation.user_id !== user?.id;
     
     if (isEditing) {
       return (
@@ -313,117 +376,12 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     
     return (
       <div 
-        className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className}`}
-        onClick={() => handleCellEdit(allocation.id, field as keyof MonthlyAllocation, value)}
+        className={`p-1 min-h-[24px] flex items-center text-xs ${className} ${!isReadOnly ? 'cursor-pointer hover:bg-muted/50' : 'opacity-80'}`}
+        onClick={() => !isReadOnly && handleCellEdit(allocation.id, field, value)}
       >
-        {value || <span className="text-muted-foreground/50 italic text-[10px]">Click to edit</span>}
+        {value || <span className="text-muted-foreground/50 italic text-[10px]">0</span>}
       </div>
     );
-  };
-
-  const getStatusBadge = (status: string) => {
-    return <StatusBadge status={status} />;
-  };
-
-  const handleExportData = () => {
-    const csvData = allocations.map(allocation => ({
-      Date: allocation.date,
-      Customer: allocation.customer_name,
-      Location: allocation.location,
-      Phone: allocation.phone_number,
-      Status: allocation.status,
-      Tents: allocation.tent_total,
-      Tables: allocation.table_total,
-      Seats: allocation.seat_total,
-      'Total KSH': allocation.total_ksh,
-      'Deposit Paid': allocation.deposit_paid,
-      'Balance Due': allocation.balance_due
-    }));
-    
-    const csvContent = [
-      Object.keys(csvData[0] || {}).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `allocations-${monthNames[month]}-${year}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
-  const handlePrint = () => {
-    const printContent = `
-      <html>
-        <head>
-          <title>Monthly Allocations - ${monthNames[month]} ${year}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f5f5f5; font-weight: bold; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .summary { display: flex; justify-content: space-around; margin: 20px 0; }
-            .summary div { text-align: center; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Monthly Customer Allocations</h1>
-            <h2>${monthNames[month]} ${year}</h2>
-          </div>
-          <div class="summary">
-            <div><strong>Total Events:</strong> ${allocations.length}</div>
-            <div><strong>Total Revenue:</strong> KSH ${totalRevenue.toLocaleString()}</div>
-            <div><strong>Deposits Paid:</strong> KSH ${totalDeposits.toLocaleString()}</div>
-            <div><strong>Balance Due:</strong> KSH ${totalBalance.toLocaleString()}</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Location</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Tents</th>
-                <th>Tables</th>
-                <th>Seats</th>
-                <th>Total KSH</th>
-                <th>Deposit</th>
-                <th>Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${allocations.map(allocation => `
-                <tr>
-                  <td>${allocation.date}</td>
-                  <td>${allocation.customer_name}</td>
-                  <td>${allocation.location || '-'}</td>
-                  <td>${allocation.phone_number || '-'}</td>
-                  <td>${allocation.status}</td>
-                  <td>${allocation.tent_total}</td>
-                  <td>${allocation.table_total}</td>
-                  <td>${allocation.seat_total}</td>
-                  <td>${allocation.total_ksh.toLocaleString()}</td>
-                  <td>${allocation.deposit_paid.toLocaleString()}</td>
-                  <td>${allocation.balance_due.toLocaleString()}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-    }
   };
 
   const totalRevenue = allocations.reduce((sum, allocation) => sum + (allocation.total_ksh || 0), 0);
@@ -434,7 +392,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading allocations...</p>
         </div>
       </div>
@@ -444,172 +402,164 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
   return (
     <div className="space-y-6">
       {/* Header with Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-xl font-bold tracking-tight text-primary">Monthly Customer Allocation</h3>
-          <p className="text-xs text-muted-foreground">{monthNames[month]} {year} • {allocations.length} allocations found</p>
+          <h3 className="text-xl font-bold tracking-tight text-primary uppercase">Weekly Customer Allocations</h3>
+          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest opacity-60">
+            {monthNames[month]} {year} • {allocations.length} records found
+          </p>
         </div>
         <div className="flex items-center space-x-2">
-          {selectedRows.size > 0 && (
-            <Button variant="destructive" size="sm" onClick={handleDeleteSelected} disabled={saving}>
+          {selectedRows.size > 0 && canDeleteTransaction() && (
+            <Button variant="destructive" size="sm" onClick={handleDeleteSelected} disabled={saving} className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl">
               <Trash2 className="h-4 w-4 mr-2" />
               Delete ({selectedRows.size})
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handleExportData}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button onClick={handleAddCustomer} disabled={saving} size="sm">
+          <Button onClick={handleAddCustomer} disabled={saving} size="sm" className="h-9 px-6 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20">
             <Plus className="h-4 w-4 mr-2" />
-            Add Customer
+            New Allocation
           </Button>
         </div>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-muted/20 border-none shadow-none">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold">{allocations.length}</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Events</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/20 border-none shadow-none">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold text-green-600">KSH {totalRevenue.toLocaleString()}</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Revenue</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/20 border-none shadow-none">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold text-blue-600">KSH {totalDeposits.toLocaleString()}</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Deposits Paid</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/20 border-none shadow-none">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold text-red-600">KSH {totalBalance.toLocaleString()}</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Balance Due</div>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { label: 'Total Events', value: allocations.length, color: 'text-foreground' },
+          { label: 'Total Revenue', value: formatCurrency(totalRevenue), color: 'text-success' },
+          { label: 'Deposits Paid', value: formatCurrency(totalDeposits), color: 'text-blue-600' },
+          { label: 'Balance Due', value: formatCurrency(totalBalance), color: 'text-destructive' }
+        ].map(stat => (
+          <Card key={stat.label} className="bg-muted/20 border-none shadow-none overflow-hidden relative">
+            <CardContent className="p-4 text-center">
+              <div className={`text-xl font-black ${stat.color} tracking-tighter`}>{stat.value}</div>
+              <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-black opacity-60">{stat.label}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Allocation Form List */}
       <div className="space-y-4">
         {allocations.map((allocation) => (
-          <Card key={allocation.id} className="overflow-hidden border-l-4 border-l-primary/40 hover:shadow-md transition-all">
-            <div className="p-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
-                <div className="flex items-center space-x-3">
+          <Card key={allocation.id} className="overflow-hidden border-l-4 border-l-primary/40 hover-lift glow-primary glass-card transition-all duration-500">
+            <div className="p-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div className="flex items-center space-x-4">
                   <input
                     type="checkbox"
                     checked={selectedRows.has(allocation.id)}
                     onChange={(e) => {
                       const newSelected = new Set(selectedRows);
-                      if (e.target.checked) {
-                        newSelected.add(allocation.id);
-                      } else {
-                        newSelected.delete(allocation.id);
-                      }
+                      if (e.target.checked) newSelected.add(allocation.id);
+                      else newSelected.delete(allocation.id);
                       setSelectedRows(newSelected);
                     }}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-5 w-5 rounded-lg border-primary/20 text-primary focus:ring-primary"
                   />
                   <div>
-                    <h4 className="font-bold text-lg text-primary">{allocation.customer_name}</h4>
-                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{allocation.event_type || 'General Event'}</p>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-black text-xl text-foreground tracking-tight uppercase">{allocation.customer_name}</h4>
+                      <Badge variant="outline" className="text-[9px] h-4 font-black uppercase tracking-tighter">{allocation.event_type || 'General'}</Badge>
+                    </div>
+                    <div className="flex items-center text-[10px] text-muted-foreground font-medium mt-1">
+                      <User className="h-2.5 w-2.5 mr-1" />
+                      Assigned to: <span className="text-primary font-bold ml-1">{getStaffName(allocation)}</span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Select
-                    value={allocation.status}
-                    onValueChange={(value) => handleStatusChange(allocation.id, value)}
-                    className="w-32 h-8 text-xs font-bold"
-                    options={[
-                      { value: 'pending', label: 'Pending' },
-                      { value: 'confirmed', label: 'Confirmed' },
-                      { value: 'completed', label: 'Completed' },
-                      { value: 'cancelled', label: 'Cancelled' }
-                    ]}
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="xs" 
-                    className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                    onClick={() => {
-                      setSelectedRows(new Set([allocation.id]));
-                      handleDeleteSelected();
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={allocation.status}
+                      onValueChange={(value) => handleStatusChange(allocation.id, value)}
+                      className="w-36 h-9 text-xs font-black uppercase tracking-widest bg-background/50"
+                      options={[
+                        { value: 'pending', label: 'PENDING' },
+                        { value: 'confirmed', label: 'CONFIRMED' },
+                        { value: 'completed', label: 'COMPLETED' },
+                        { value: 'cancelled', label: 'CANCELLED' }
+                      ]}
+                    />
+                    {allocation.status === 'pending' && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleStatusChange(allocation.id, 'confirmed')} 
+                        disabled={updatingId === allocation.id}
+                        className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-green-600/20"
+                      >
+                        {updatingId === allocation.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1.5" />}
+                        Approve
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Job Status Bar */}
+                  <div className="w-48 space-y-1.5">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Progress</span>
+                      <span className="text-[10px] font-black text-primary">{getStatusPercentage(allocation.status)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-1000 ease-out ${getStatusColor(allocation.status)}`} 
+                        style={{ width: `${getStatusPercentage(allocation.status)}%` }} 
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Event Info */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest ml-1">Event Details</label>
-                  <div className="bg-muted/10 rounded-lg border p-2 space-y-2">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">Logistics Details</label>
+                  <div className="bg-muted/20 rounded-2xl border border-primary/5 p-3 space-y-2 shadow-inner">
                     <div className="flex items-center text-xs">
-                      <Calendar className="h-3 w-3 mr-2 text-muted-foreground" />
-                      <div className="flex-1">{renderEditableCell(allocation, 'date', 'font-medium')}</div>
+                      <Calendar className="h-3.5 w-3.5 mr-2 text-primary opacity-50" />
+                      <div className="flex-1 font-bold">{renderEditableCell(allocation, 'date')}</div>
                     </div>
                     <div className="flex items-center text-xs">
-                      <FileText className="h-3 w-3 mr-2 text-muted-foreground" />
-                      <div className="flex-1">{renderEditableCell(allocation, 'location', 'italic')}</div>
-                    </div>
-                    <div className="flex items-center text-xs">
-                      <Check className="h-3 w-3 mr-2 text-muted-foreground" />
-                      <div className="flex-1">{renderEditableCell(allocation, 'phone_number')}</div>
+                      <FileText className="h-3.5 w-3.5 mr-2 text-primary opacity-50" />
+                      <div className="flex-1 font-medium italic">{renderEditableCell(allocation, 'location')}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Equipment Summary */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest ml-1">Equipment Totals</label>
-                  <div className="bg-muted/10 rounded-lg border p-2 grid grid-cols-3 gap-2">
-                    <div className="text-center p-1 bg-background rounded border">
-                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Tents</p>
-                      <p className="text-sm font-black text-primary">{allocation.tent_total}</p>
-                    </div>
-                    <div className="text-center p-1 bg-background rounded border">
-                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Tables</p>
-                      <p className="text-sm font-black text-primary">{allocation.table_total}</p>
-                    </div>
-                    <div className="text-center p-1 bg-background rounded border">
-                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Seats</p>
-                      <p className="text-sm font-black text-primary">{allocation.seat_total}</p>
-                    </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">Asset Allocation</label>
+                  <div className="bg-muted/20 rounded-2xl border border-primary/5 p-3 grid grid-cols-3 gap-2 shadow-inner">
+                    {[
+                      { label: 'Tents', val: allocation.tent_total },
+                      { label: 'Tables', val: allocation.table_total },
+                      { label: 'Seats', val: allocation.seat_total }
+                    ].map(asset => (
+                      <div key={asset.label} className="text-center p-2 bg-background rounded-xl border border-primary/5 shadow-sm">
+                        <p className="text-[8px] font-black text-muted-foreground uppercase tracking-tighter">{asset.label}</p>
+                        <p className="text-base font-black text-primary tracking-tighter">{asset.val}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 {/* Financial Details */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest ml-1">Financial Status</label>
-                  <div className="bg-muted/10 rounded-lg border p-2 space-y-2">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">Revenue Audit</label>
+                  <div className="bg-muted/20 rounded-2xl border border-primary/5 p-3 space-y-2 shadow-inner">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">Total:</span>
-                      <div className="w-24 text-right font-black">{renderEditableCell(allocation, 'total_ksh', 'text-right')}</div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Quote</span>
+                      <div className="w-24 text-right font-black">{renderEditableCell(allocation, 'total_ksh', 'text-right text-foreground')}</div>
                     </div>
-                    <div className="flex justify-between items-center text-xs border-t pt-1">
-                      <span className="text-muted-foreground">Paid:</span>
-                      <div className="w-24 text-right font-bold text-blue-600">{renderEditableCell(allocation, 'deposit_paid', 'text-right')}</div>
+                    <div className="flex justify-between items-center text-xs border-t border-primary/5 pt-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Remitted</span>
+                      <div className="w-24 text-right font-black text-blue-600">{renderEditableCell(allocation, 'deposit_paid', 'text-right')}</div>
                     </div>
-                    <div className="flex justify-between items-center text-xs border-t pt-1">
-                      <span className="font-bold text-primary">Balance:</span>
-                      <span className={`font-black ${allocation.balance_due > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <div className="flex justify-between items-center text-xs border-t border-primary/5 pt-1.5">
+                      <span className="text-[10px] font-black text-primary uppercase">Outstanding</span>
+                      <span className={`font-black text-sm ${allocation.balance_due > 0 ? 'text-destructive' : 'text-success'}`}>
                         {formatCurrency(allocation.balance_due)}
                       </span>
                     </div>
@@ -621,10 +571,11 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
         ))}
 
         {allocations.length === 0 && (
-          <div className="text-center py-16 bg-muted/10 rounded-xl border-2 border-dashed">
-            <AlertCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">No allocations for {monthNames[month]} {year}</h3>
-            <Button onClick={handleAddCustomer} variant="outline" size="sm">
+          <div className="text-center py-20 bg-muted/10 rounded-3xl border-2 border-dashed border-primary/10">
+            <AlertCircle className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-muted-foreground mb-2 uppercase tracking-tight">No allocations registered</h3>
+            <p className="text-sm text-muted-foreground/60 mb-6 max-w-xs mx-auto">Start by adding your first client event allocation for this month.</p>
+            <Button onClick={handleAddCustomer} variant="outline" className="h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest border-primary/20">
               <Plus className="h-4 w-4 mr-2" />
               Add First Allocation
             </Button>

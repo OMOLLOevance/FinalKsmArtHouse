@@ -45,17 +45,30 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const filterUserId = searchParams.get('filterUserId');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // RBAC: Check current user role
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data, error } = await client
-      .from('quotations')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
+    const role = userProfile?.role || 'staff';
+
+    let query = client.from('quotations').select('*').order('created_at', { ascending: false });
+
+    // RBAC Filtering Logic
+    if (role === 'staff') {
+      query = query.eq('user_id', user.id);
+    } else if (filterUserId) {
+      query = query.eq('user_id', filterUserId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         logger.error('Quotations GET Database Error:', error);

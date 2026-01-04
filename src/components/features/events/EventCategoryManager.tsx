@@ -215,7 +215,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
         </CardHeader>
         <CardContent className="px-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {currentData.items.map((item) => (
+            {currentData.items.map((item: any) => (
               <Card key={item.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 hover:shadow-md border-l-4 border-l-primary/40">
                 <div className="p-4 space-y-4">
                   <div className="flex justify-between items-start gap-2">

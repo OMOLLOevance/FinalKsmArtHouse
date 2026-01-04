@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, Plus, Search, FileText, Edit, Trash2, Printer, X, Loader, Database, ChevronDown, ChevronUp, Sparkles, Download, FileDown } from 'lucide-react';
+import { ArrowLeft, Plus, Search, FileText, Edit, Trash2, Printer, X, Loader, Database, ChevronDown, ChevronUp, Sparkles, Download, FileDown, CheckCircle, Clock } from 'lucide-react';
 import { useQuotations } from '@/hooks/useQuotations';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
@@ -13,6 +15,8 @@ import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
+import { StaffSelector } from '@/components/shared/StaffSelector';
 
 interface QuotationManagerProps {
   onBack: () => void;
@@ -79,7 +83,10 @@ const FOOD_TEMPLATE: QuotationSection[] = [
 
 const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const { userId } = useAuth();
-  const { quotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations();
+  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+
+  const { quotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations(filterUserId);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
@@ -92,6 +99,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
@@ -314,10 +322,34 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
   const handleUpdateStatus = async (id: string, status: Quotation['status']) => {
     try {
+      if (status === 'approved') setApprovingId(id);
       await updateQuotation(id, { status });
       await fetchQuotations();
+      if (status === 'approved') toast.success('Quotation Approved Successfully!');
     } catch (error) {
       logger.error('Status update failed:', error);
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const getStatusPercentage = (status: Quotation['status']) => {
+    switch (status) {
+      case 'draft': return 25;
+      case 'sent': return 60;
+      case 'approved': return 100;
+      case 'rejected': return 0;
+      default: return 0;
+    }
+  };
+
+  const getStatusColor = (status: Quotation['status']) => {
+    switch (status) {
+      case 'draft': return 'bg-slate-400';
+      case 'sent': return 'bg-blue-500';
+      case 'approved': return 'bg-green-500';
+      case 'rejected': return 'bg-destructive';
+      default: return 'bg-muted';
     }
   };
 
@@ -448,7 +480,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                     ))}
                   </div>
 
-                  {/* Print-only Table view */}
+                  {/* Print-only Table view */} 
                   <table className="min-w-full border-collapse hidden print:table">
                     <thead>
                       <tr className="bg-muted/50 border-b text-xs font-bold">
@@ -546,7 +578,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           /* 4. Hide all UI overhead */
           div[data-state="open"] > div:first-child,
           button,
-          .print\\:hidden,
+          .print\:hidden,
           [data-radix-collection],
           .DialogHeader {
             display: none !important;
@@ -569,22 +601,33 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           }
         }
       `}} />
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
+          <Button variant="outline" size="sm" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+          </Button>
           <h2 className="text-2xl font-bold tracking-tight">Quotations</h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {(isOperationsManager() || isDirectorOrInvestor()) && (
+            <div className="w-64">
+              <StaffSelector 
+                value={filterUserId} 
+                onChange={setFilterUserId} 
+                className="bg-background/50"
+              />
+            </div>
+          )}
           <Button onClick={() => setShowForm(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] h-9"><Plus className="h-4 w-4 mr-2" /> New Quotation</Button>
         </div>
       </div>
 
       <div className="grid gap-4 print:hidden">
         {filteredQuotations.map((q) => (
-          <Card key={q.id} className="hover-lift border-l-4 border-l-primary/40">
+          <Card key={q.id} className="hover-lift border-l-4 border-l-primary/40 overflow-hidden relative">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div className="space-y-2">
+                <div className="space-y-3 flex-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <span className="font-black text-lg tracking-tight">{q.quotationNumber}</span>
                     <Badge variant={
@@ -598,6 +641,21 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                     <p className="text-sm font-bold text-foreground">{q.customerName}</p>
                     <p className="text-[10px] uppercase font-black text-muted-foreground opacity-60 tracking-widest">{q.eventType} • {q.eventDate}</p>
                   </div>
+                  
+                  {/* Job Status Bar */} 
+                  <div className="space-y-1.5 max-w-xs">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Job Status</span>
+                      <span className="text-[10px] font-bold text-primary">{getStatusPercentage(q.status)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-1000 ease-out ${getStatusColor(q.status)}`}
+                        style={{ width: `${getStatusPercentage(q.status)}%` }}
+                      />
+                    </div>
+                  </div>
+
                   <p className="text-lg font-black text-primary tracking-tighter">{formatCurrency(q.grandTotal)}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border border-primary/5">
@@ -610,10 +668,27 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                 </div>
               </div>
               
-              {q.status === 'draft' && (
+              {q.status !== 'approved' && (
                 <div className="mt-4 pt-4 border-t border-primary/5 flex gap-2">
-                  <Button size="xs" variant="outline" className="h-7 text-[9px] font-black uppercase" onClick={() => handleUpdateStatus(q.id, 'sent')}>Mark as Sent</Button>
-                  <Button size="xs" variant="outline" className="h-7 text-[9px] font-black uppercase border-green-600/30 text-green-600 hover:bg-green-50" onClick={() => handleUpdateStatus(q.id, 'approved')}>Quick Approve</Button>
+                  {q.status === 'draft' && (
+                    <Button size="xs" variant="outline" className="h-7 text-[9px] font-black uppercase" onClick={() => handleUpdateStatus(q.id, 'sent')}> 
+                      <Clock className="h-3 w-3 mr-1" /> Mark as Sent
+                    </Button>
+                  )}
+                  {(isOperationsManager() || isDirectorOrInvestor()) && (
+                    <Button 
+                      size="xs" 
+                      className="h-7 text-[9px] font-black uppercase bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20" 
+                      onClick={() => handleUpdateStatus(q.id, 'approved')}
+                      disabled={approvingId === q.id}
+                    >
+                      {approvingId === q.id ? (
+                        <><Loader className="h-3 w-3 mr-1 animate-spin" /> Approving...</>
+                      ) : (
+                        <><CheckCircle className="h-3 w-3 mr-1" /> Approve Proposal</>
+                      )}
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -629,7 +704,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
         )}
       </div>
 
-      {/* Professional View/Print Dialog */}
+      {/* Professional View/Print Dialog */} 
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
         <DialogContent id="printable-quotation-container" className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl bg-slate-100">
           <DialogHeader className="p-6 border-b bg-white print:hidden">

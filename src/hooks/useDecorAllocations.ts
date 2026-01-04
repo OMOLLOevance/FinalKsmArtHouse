@@ -39,15 +39,15 @@ export interface DecorAllocation {
   user_id: string;
 }
 
-export const useDecorAllocationsQuery = (month: number, year: number) => {
+export const useDecorAllocationsQuery = (month: number, year: number, filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['decor-allocations', month, year, userId],
+    queryKey: ['decor-allocations', month, year, userId, filterUserId],
     queryFn: async () => {
-      const response = await apiClient.get<{ data: DecorAllocation[] }>(
-        `/api/decor-allocations?userId=${userId}&month=${month}&year=${year}`
-      );
+      let url = `/api/decor-allocations?userId=${userId}&month=${month}&year=${year}`;
+      if (filterUserId) url += `&filterUserId=${filterUserId}`;
+      const response = await apiClient.get<{ data: DecorAllocation[] }>(url);
       return response.data;
     },
     enabled: !!userId && isAuthenticated,

@@ -246,7 +246,12 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
         </p>
       </div>
 
-      <MonthlyAllocationTable month={currentMonth} year={currentYear} onAddCustomer={() => {}} />
+      <MonthlyAllocationTable 
+        month={currentMonth} 
+        year={currentYear} 
+        onAddCustomer={() => {}} 
+        filterUserId={filterUserId}
+      />
 
       <Card className="border-primary/10 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-6">

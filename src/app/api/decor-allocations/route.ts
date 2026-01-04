@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const filterUserId = searchParams.get('filterUserId');
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
@@ -49,8 +50,23 @@ export async function GET(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     const client = token ? createAuthenticatedClient(token) : supabase;
+    
+    // RBAC: Check current user role
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    let query = client.from('decor_allocations').select('*').eq('user_id', userId);
+    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
+    const role = userProfile?.role || 'staff';
+
+    let query = client.from('decor_allocations').select('*');
+
+    // RBAC Filtering Logic
+    if (role === 'staff') {
+      query = query.eq('user_id', user.id);
+    } else if (filterUserId) {
+      query = query.eq('user_id', filterUserId);
+    }
+    // If manager and no filter, RLS handles the broad view
     
     if (monthStr) {
       const month = parseInt(monthStr);
