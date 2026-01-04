@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+
+// Initialize Admin Client if Service Role Key is available
+const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  : null;
 
 const CateringInventorySchema = z.object({
   id: z.string().uuid().optional(),
@@ -32,16 +47,22 @@ export async function GET(request: NextRequest) {
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Default to authenticated client
+    let client = token ? createAuthenticatedClient(token) : supabase;
+    let isManager = false;
 
-    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
-    const role = userProfile?.role || 'staff';
+    // RBAC: Check current user role and escalate if management
+    if (token && adminSupabase) {
+      const authClient = createAuthenticatedClient(token);
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const role = await getUserRole(user.id, authClient);
+        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
+        if (isManager) {
+          client = adminSupabase;
+        }
+      }
+    }
 
     let query = client
       .from('catering_inventory')
@@ -50,10 +71,10 @@ export async function GET(request: NextRequest) {
       .order('particular', { ascending: true });
 
     // RBAC Filtering Logic
-    if (role === 'staff') {
-      query = query.eq('user_id', user.id);
-    } else if (filterUserId) {
+    if (filterUserId) {
       query = query.eq('user_id', filterUserId);
+    } else if (!isManager && userId) {
+      query = query.eq('user_id', userId);
     }
 
     const { data, error } = await query;

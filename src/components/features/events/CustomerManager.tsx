@@ -6,6 +6,7 @@ import { useCustomersQuery, useCreateCustomerMutation, useDeleteCustomerMutation
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Customer } from '@/types';
 
@@ -143,39 +144,61 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ onBack }) => {
 
       <Card className="border-none shadow-none bg-transparent">
         <CardContent className="px-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {customers?.map((customer: Customer) => (
-              <Card key={customer.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 hover:shadow-md border-l-4 border-l-primary/40">
-                <div className="p-4 space-y-4">
-                  <div className="flex justify-between items-start gap-2">
+              <Card key={customer.id} className="overflow-hidden border-none hover-lift glow-primary glass-card transition-all duration-500 rounded-3xl group relative">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                  <Users className="h-24 w-24 -rotate-12" />
+                </div>
+                
+                <div className="p-6 space-y-5 relative z-10">
+                  <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-lg truncate" title={customer.name}>
+                      <h4 className="font-black text-xl text-foreground uppercase tracking-tight truncate leading-none mb-2" title={customer.name}>
                         {customer.name}
                       </h4>
-                      <div className="flex items-center text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                        <Calendar className="h-3 w-3 mr-1 opacity-70" />
-                        {customer.eventDate}
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-primary/5 text-primary border-primary/10">
+                          {customer.eventType || 'Event'}
+                        </Badge>
+                        <div className="flex items-center text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-60">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {customer.eventDate}
+                        </div>
                       </div>
                     </div>
                     <Button 
                       variant="ghost" 
-                      size="xs" 
+                      size="icon" 
                       onClick={() => handleDelete(customer.id)} 
-                      className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                      className="h-9 w-9 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 bg-muted/30 p-2 rounded-lg border">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground uppercase tracking-tighter font-bold text-[9px]">Contact</span>
-                      <span className="font-medium">{customer.contact || 'N/A'}</span>
+                  <div className="grid grid-cols-1 gap-3 bg-muted/20 p-4 rounded-2xl border border-primary/5 shadow-inner">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1">Contact Details</label>
+                      <div className="bg-background/50 backdrop-blur-sm px-3 py-2 rounded-xl border border-primary/5 text-sm font-bold truncate">
+                        {customer.contact || 'Not Provided'}
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs border-t pt-1 border-muted">
-                      <span className="text-muted-foreground uppercase tracking-tighter font-bold text-[9px]">Location</span>
-                      <span className="font-medium truncate max-w-[120px]">{customer.location || 'N/A'}</span>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1">Venue Location</label>
+                      <div className="bg-background/50 backdrop-blur-sm px-3 py-2 rounded-xl border border-primary/5 text-sm font-bold truncate">
+                        {customer.location || 'Pending Selection'}
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="pt-2 flex gap-2">
+                    <Button variant="outline" className="flex-1 h-10 rounded-xl font-black uppercase tracking-widest text-[9px] border-primary/10 hover:bg-primary hover:text-white transition-all">
+                      View Details
+                    </Button>
+                    <Button className="h-10 w-10 p-0 rounded-xl shadow-lg shadow-primary/10">
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </Card>

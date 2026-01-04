@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+
+// Initialize Admin Client if Service Role Key is available
+const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  : null;
 
 const QuotationItemSchema = z.object({
   id: z.string(),
@@ -41,6 +56,16 @@ const QuotationSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+// Helper function to get user role
+async function getUserRole(userId: string, client: any): Promise<string> {
+  const { data } = await client
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role || 'staff';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -50,22 +75,30 @@ export async function GET(request: NextRequest) {
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // RBAC: Check current user role
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Default to authenticated client
+    let client = token ? createAuthenticatedClient(token) : supabase;
+    let isManager = false;
 
-    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
-    const role = userProfile?.role || 'staff';
+    // RBAC: Check current user role and escalate if management
+    if (token && adminSupabase) {
+      const authClient = createAuthenticatedClient(token);
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const role = await getUserRole(user.id, authClient);
+        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
+        if (isManager) {
+          client = adminSupabase;
+        }
+      }
+    }
 
     let query = client.from('quotations').select('*').order('created_at', { ascending: false });
 
     // RBAC Filtering Logic
-    if (role === 'staff') {
-      query = query.eq('user_id', user.id);
-    } else if (filterUserId) {
+    if (filterUserId) {
       query = query.eq('user_id', filterUserId);
+    } else if (!isManager && userId) {
+      query = query.eq('user_id', userId);
     }
 
     const { data, error } = await query;

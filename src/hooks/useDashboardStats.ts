@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { logger } from '@/lib/logger';
 
 interface DashboardStats {
@@ -41,20 +42,26 @@ interface MinimalQuotation { total_amount: number; status: string; created_at: s
 
 export const useDashboardStats = () => {
   const { userId, isAuthenticated } = useAuth();
+  const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
 
   return useQuery<DashboardStats>({
     queryKey: ['dashboard-stats', userId],
     enabled: !!userId && isAuthenticated,
     queryFn: async () => {
       try {
+        const isManagement = isDirectorOrInvestor() || isOperationsManager();
+        // Omit userId filter for management to get global stats
+        const filter = isManagement ? '' : `userId=${userId}`;
+        const discovery = isManagement ? '&discovery=true' : '';
+
         const [customersRes, gymMembersRes, gymFinancesRes, saunaBookingsRes, restaurantRes, eventItemsRes, quotationsRes] = await Promise.all([
-          apiClient.get<{data: MinimalCustomer[]}>(`/api/customers?userId=${userId}&fields=id,service_status`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalGymMember[]}>(`/api/gym?userId=${userId}&fields=status,expiry_date,payment_amount,created_at,start_date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalGymFinance[]}>(`/api/gym/finances?userId=${userId}&fields=amount,transaction_type,created_at,date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalSaunaBooking[]}>(`/api/sauna?userId=${userId}&fields=status,amount,created_at,booking_date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalRestaurantSale[]}>(`/api/restaurant?userId=${userId}&fields=total_amount,created_at,sale_date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalEventItem[]}>(`/api/event-items?userId=${userId}&fields=id`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalQuotation[]}>(`/api/quotations?userId=${userId}`).catch(() => ({ data: [] }))
+          apiClient.get<{data: MinimalCustomer[]}>(`/api/customers?${filter}${discovery}&fields=id,service_status`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymMember[]}>(`/api/gym?${filter}&fields=status,expiry_date,payment_amount,created_at,start_date`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymFinance[]}>(`/api/gym/finances?${filter}&fields=amount,transaction_type,created_at,date`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalSaunaBooking[]}>(`/api/sauna?${filter}&fields=status,amount,created_at,booking_date`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalRestaurantSale[]}>(`/api/restaurant?${filter}&fields=total_amount,created_at,sale_date`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalEventItem[]}>(`/api/event-items?${filter}&fields=id`).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalQuotation[]}>(`/api/quotations?${filter}`).catch(() => ({ data: [] }))
         ]);
 
         const customers = customersRes?.data || [];

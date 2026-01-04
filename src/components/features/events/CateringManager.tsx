@@ -558,31 +558,66 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
           <CardDescription className="text-xs font-black uppercase tracking-widest opacity-70">Client billing items</CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {serviceItems.map((item: CateringItem) => {
               const parsed = parseDescription(item.description);
               const isServed = item.description?.includes('Status: served');
               return (
-                <Card key={item.id} className={`overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${isServed ? 'border-l-success' : 'border-l-warning'}`}>
-                  <div className="p-4 space-y-4">
+                <Card key={item.id} className={`overflow-hidden border-none hover-lift glow-primary glass-card transition-all duration-500 rounded-3xl group relative ${isServed ? 'border-l-4 border-l-success' : 'border-l-4 border-l-warning'}`}>
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                    <Utensils className="h-24 w-24 rotate-12" />
+                  </div>
+                  
+                  <div className="p-6 space-y-5 relative z-10">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-bold text-lg text-primary">{item.name}</h4>
-                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{item.category}</span>
+                        <h4 className="font-black text-xl text-primary uppercase tracking-tight leading-none mb-2">{item.name}</h4>
+                        <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-muted/50 border-none">
+                          {item.category}
+                        </Badge>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <Badge variant={isServed ? 'success' : 'warning'} className="text-[10px] h-5">{isServed ? 'SERVED' : 'PENDING'}</Badge>
-                        <Button variant="ghost" size="xs" onClick={() => handleEdit(item)} className="h-7 w-7 p-0"><Edit className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="xs" onClick={() => deleteItem(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Badge variant={isServed ? 'success' : 'warning'} className="text-[9px] h-5 font-black uppercase tracking-widest">
+                          {isServed ? 'SERVED' : 'PENDING'}
+                        </Badge>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)} className="h-8 w-8 rounded-xl hover:bg-primary/10 transition-all"><Edit className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteItem(item.id)} className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10 transition-all"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 bg-muted/10 p-3 rounded-lg border">
-                      <div className="space-y-0.5"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Quantity</label><p className="text-sm font-bold">{item.min_order}</p></div>
-                      <div className="space-y-0.5"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Unit Price</label><p className="text-sm font-bold">{formatCurrency(item.price_per_plate)}</p></div>
-                      <div className="space-y-0.5"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Budget</label><p className="text-sm font-bold text-primary">{formatCurrency(parsed.budget)}</p></div>
-                      <div className="space-y-0.5"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">Paid</label><p className="text-sm font-bold text-success">{formatCurrency(parsed.paid)}</p></div>
+
+                    <div className="grid grid-cols-2 gap-3 bg-muted/20 p-4 rounded-2xl border border-primary/5 shadow-inner">
+                      <div className="space-y-0.5">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-widest">Quantity</label>
+                        <p className="text-base font-black">{item.min_order} pax</p>
+                      </div>
+                      <div className="space-y-0.5 text-right">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-widest">Unit Price</label>
+                        <p className="text-base font-black text-success">{formatCurrency(item.price_per_plate)}</p>
+                      </div>
+                      <div className="space-y-0.5 col-span-2 border-t border-primary/5 pt-2 mt-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-widest">Paid / Budget</label>
+                          <p className="text-sm font-black">
+                            <span className="text-success">{formatCurrency(parsed.paid)}</span>
+                            <span className="mx-1 opacity-20">/</span>
+                            <span className="text-primary">{formatCurrency(parsed.budget)}</span>
+                          </p>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted rounded-full mt-2 overflow-hidden">
+                          <div 
+                            className="h-full bg-success transition-all duration-1000" 
+                            style={{ width: `${Math.min(100, (parsed.paid / (parsed.budget || 1)) * 100)}%` }} 
+                          />
+                        </div>
+                      </div>
                     </div>
-                    {parsed.notes && <div className="px-1"><label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block mb-1">Notes</label><p className="text-xs text-muted-foreground line-clamp-2 italic">&quot;{parsed.notes}&quot;</p></div>}
+
+                    {parsed.notes && (
+                      <div className="px-1">
+                        <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-widest block mb-1">Operational Notes</label>
+                        <p className="text-xs text-muted-foreground font-medium italic line-clamp-2">&quot;{parsed.notes}&quot;</p>
+                      </div>
+                    )}
                   </div>
                 </Card>
               );
