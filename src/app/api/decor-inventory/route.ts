@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
           .eq('id', user.id)
           .single();
           
-        const isManager = profile && ['director', 'investor', 'operations_manager'].includes(profile.role);
+        const isManager = !!(profile && ['director', 'investor', 'operations_manager'].includes(profile.role));
         
         if (isManager) {
           client = adminSupabase;

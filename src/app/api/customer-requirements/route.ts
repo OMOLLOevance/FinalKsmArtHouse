@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+
+// Initialize Admin Client if Service Role Key is available
+const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  : null;
 
 const RequirementSchema = z.object({
   user_id: z.string().uuid(),
@@ -22,16 +37,32 @@ export async function GET(request: NextRequest) {
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    // Default to authenticated client
+    let client = token ? createAuthenticatedClient(token) : supabase;
+    let isManager = false;
+
+    // RBAC: Check current user role and escalate if management
+    if (token && adminSupabase) {
+      const authClient = createAuthenticatedClient(token);
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const { data: profile } = await authClient.from('users').select('role').eq('id', user.id).single();
+        const role = profile?.role || 'staff';
+        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
+        if (isManager) {
+          client = adminSupabase;
+        }
+      }
+    }
 
     // 1. Fetch requirements
-    let query = client
-      .from('customer_requirements')
-      .select('*')
-      .eq('user_id', userId);
+    let query = client.from('customer_requirements').select('*');
 
+    // Filtering Logic
     if (customerId) {
       query = query.eq('customer_id', customerId);
+    } else if (!isManager) {
+      query = query.eq('user_id', userId);
     }
 
     const { data: requirements, error: reqError } = await query.order('created_at', { ascending: false });

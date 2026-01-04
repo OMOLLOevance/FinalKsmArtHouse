@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+
+// Initialize Admin Client if Service Role Key is available
+const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  : null;
 
 const DecorAllocationSchema = z.object({
   id: z.string().uuid().optional(),
@@ -49,24 +64,32 @@ export async function GET(request: NextRequest) {
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // RBAC: Check current user role
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Default client
+    let client = token ? createAuthenticatedClient(token) : supabase;
+    let isManager = false;
 
-    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
-    const role = userProfile?.role || 'staff';
+    // RBAC: Check current user role and escalate if management
+    if (token && adminSupabase) {
+      const authClient = createAuthenticatedClient(token);
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const { data: userProfile } = await authClient.from('users').select('role').eq('id', user.id).single();
+        const role = userProfile?.role || 'staff';
+        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
+        if (isManager) {
+          client = adminSupabase;
+        }
+      }
+    }
 
     let query = client.from('decor_allocations').select('*');
 
     // RBAC Filtering Logic
-    if (role === 'staff') {
-      query = query.eq('user_id', user.id);
-    } else if (filterUserId) {
+    if (filterUserId) {
       query = query.eq('user_id', filterUserId);
+    } else if (!isManager) {
+      query = query.eq('user_id', userId);
     }
-    // If manager and no filter, RLS handles the broad view
     
     if (monthStr) {
       const month = parseInt(monthStr);

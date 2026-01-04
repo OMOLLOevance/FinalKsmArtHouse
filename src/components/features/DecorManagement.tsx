@@ -15,6 +15,7 @@ import { useCustomersQuery } from '@/hooks/use-customer-api';
 import { useAddItemToCustomerMutation } from '@/hooks/useCustomerRequirements';
 import { StaffSelector } from '@/components/shared/StaffSelector';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
+import { Customer } from '@/types';
 import { Select } from '@/components/ui/Select';
 import { toast } from 'sonner';
 import { 
@@ -616,12 +617,12 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between h-11 rounded-xl">
-                    <span className="truncate">{selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : 'Select Customer'}</span>
+                    <span className="truncate">{selectedCustomerId ? customers.find((c: Customer) => c.id === selectedCustomerId)?.name : 'Select Customer'}</span>
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[350px] max-h-[300px] overflow-y-auto rounded-xl">
-                  {customers.map(customer => (
+                  {customers.map((customer: Customer) => (
                     <DropdownMenuItem key={customer.id} onClick={() => setSelectedCustomerId(customer.id)} className="flex flex-col items-start p-3">
                       <span className="font-bold">{customer.name}</span>
                       <span className="text-[10px] opacity-60 uppercase">{customer.eventType} • {customer.eventDate}</span>

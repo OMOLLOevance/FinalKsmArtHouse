@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+
+// Initialize Admin Client if Service Role Key is available
+const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  : null;
 
 const GymMemberSchema = z.object({
   user_id: z.string().uuid(),
@@ -38,14 +53,22 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // RBAC: Check current user role
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Default to authenticated client
+    let client = token ? createAuthenticatedClient(token) : supabase;
+    let isManager = false;
 
-    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
-    const role = userProfile?.role || 'staff';
+    // RBAC: Check current user role and escalate if management
+    if (token && adminSupabase) {
+      const authClient = createAuthenticatedClient(token);
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const role = await getUserRole(user.id, authClient);
+        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
+        if (isManager) {
+          client = adminSupabase;
+        }
+      }
+    }
 
     let query = client
       .from('gym_members')
@@ -54,10 +77,13 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     // RBAC Filtering Logic
-    if (role === 'staff') {
-      query = query.eq('user_id', user.id);
-    } else if (filterUserId) {
+    // 1. If filterUserId is explicitly provided, filter by it.
+    // 2. If no filter but staff role, only show own.
+    // 3. If no filter and manager role, show all.
+    if (filterUserId) {
       query = query.eq('user_id', filterUserId);
+    } else if (!isManager && userId) {
+      query = query.eq('user_id', userId);
     }
 
     const search = searchParams.get('search');

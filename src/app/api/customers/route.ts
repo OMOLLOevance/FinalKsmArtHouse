@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+
+// Initialize Admin Client if Service Role Key is available
+const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  : null;
 
 const CustomerSchema = z.object({
   user_id: z.string().uuid(),
@@ -34,22 +49,85 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const discovery = searchParams.get('discovery') === 'true';
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Default client
+    let client = token ? createAuthenticatedClient(token) : supabase;
+    let isManager = false;
+
+    // Check for management privileges
+    if (token && adminSupabase) {
+      const authClient = createAuthenticatedClient(token);
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const { data: profile } = await authClient
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        isManager = !!(profile && ['director', 'investor', 'operations_manager'].includes(profile.role));
+        if (isManager) {
+          client = adminSupabase;
+        }
+      }
     }
 
+    // DISCOVERY MODE: Cross-table customer search for Management
+    if (discovery && isManager) {
+      const [customersRes, allocationsRes, gymRes, saunaRes] = await Promise.all([
+        client.from('customers').select('*').order('name'),
+        client.from('monthly_allocations').select('*').order('customer_name'),
+        client.from('gym_members').select('*').order('member_name'),
+        client.from('sauna_bookings').select('*').order('client_name')
+      ]);
+
+      const combined = [
+        ...(customersRes.data || []).map(c => ({
+          id: c.id,
+          name: c.name,
+          eventType: c.event_type || 'General',
+          eventDate: c.event_date || '-',
+          source: 'core'
+        })),
+        ...(allocationsRes.data || []).map(a => ({
+          id: a.id,
+          name: a.customer_name,
+          eventType: a.event_type || 'Event',
+          eventDate: a.event_date || '-',
+          source: 'allocation'
+        })),
+        ...(gymRes.data || []).map(g => ({
+          id: g.id,
+          name: g.member_name || g.name,
+          eventType: `Gym (${g.membership_type || 'Member'})`,
+          eventDate: g.start_date || '-',
+          source: 'gym'
+        })),
+        ...(saunaRes.data || []).map(s => ({
+          id: s.id,
+          name: s.client_name || s.client,
+          eventType: 'Sauna Session',
+          eventDate: s.booking_date || s.date || '-',
+          source: 'sauna'
+        }))
+      ];
+
+      // De-duplicate by ID
+      const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+      return NextResponse.json({ data: unique.sort((a, b) => a.name.localeCompare(b.name)) });
+    }
+
+    // Standard Query
     let query = client.from('customers').select(fields).order('created_at', { ascending: false });
     
-    if (userId) {
+    if (userId && !isManager) {
+      query = query.eq('user_id', userId);
+    } else if (userId && isManager && !discovery) {
       query = query.eq('user_id', userId);
     }
 

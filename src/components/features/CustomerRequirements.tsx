@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
 import { useCustomersQuery } from '@/hooks/use-customer-api';
+import { Customer } from '@/types';
 import { 
   useCustomerRequirementsQuery, 
   useUpdateCustomerRequirementMutation,
@@ -42,13 +43,13 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
 
   const filteredCustomers = useMemo(() => {
-    return customers.filter(c => 
+    return customers.filter((c: Customer) => 
       c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
       c.eventType?.toLowerCase().includes(customerSearch.toLowerCase())
     );
   }, [customers, customerSearch]);
 
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+  const selectedCustomer = customers.find((c: Customer) => c.id === selectedCustomerId);
   const totalValue = requirements.reduce((sum, req) => sum + (req.item_price || 0) * req.quantity_required, 0);
 
   if (isLoading) return <LoadingSpinner text="Loading Customer Requirements..." />;
@@ -146,7 +147,7 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
                 <p className="font-bold">No customers match your search</p>
               </div>
             ) : (
-              filteredCustomers.map(customer => (
+              filteredCustomers.map((customer: Customer) => (
                 <div
                   key={customer.id}
                   className="flex items-center justify-between p-4 mx-2 rounded-2xl hover:bg-primary/5 cursor-pointer transition-all group border border-transparent hover:border-primary/10"

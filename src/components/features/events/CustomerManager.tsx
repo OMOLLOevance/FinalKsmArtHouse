@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/AuthContext';
+import { Customer } from '@/types';
 
 interface CustomerManagerProps {
   onBack?: () => void;
@@ -143,7 +144,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ onBack }) => {
       <Card className="border-none shadow-none bg-transparent">
         <CardContent className="px-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {customers?.map((customer) => (
+            {customers?.map((customer: Customer) => (
               <Card key={customer.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 hover:shadow-md border-l-4 border-l-primary/40">
                 <div className="p-4 space-y-4">
                   <div className="flex justify-between items-start gap-2">

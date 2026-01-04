@@ -12,4 +12,5 @@ export interface Customer {
   serviceStatus: 'pending' | 'served';
   notes: string;
   requirements?: Record<string, number>;
+  source?: 'core' | 'gym' | 'sauna' | 'allocation';
 }
