@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Trash2, Edit, Package } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ArrowLeft, Trash2, Edit, Package, Search, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
@@ -36,6 +37,16 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
     }
   };
 
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [isCustomerListOpen, setIsCustomerListOpen] = useState(false);
+
+  const filteredCustomers = useMemo(() => {
+    return customers.filter(c => 
+      c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+      c.eventType?.toLowerCase().includes(customerSearch.toLowerCase())
+    );
+  }, [customers, customerSearch]);
+
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
   const totalValue = requirements.reduce((sum, req) => sum + (req.item_price || 0) * req.quantity_required, 0);
 
@@ -53,43 +64,77 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
       </div>
 
       {/* Customer Selection */}
-      <Card>
+      <Card className="overflow-visible z-10 relative">
         <CardHeader>
           <CardTitle>Select Customer</CardTitle>
           <CardDescription>Choose a customer to view their decor requirements</CardDescription>
         </CardHeader>
         <CardContent>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-start">
-                <Package className="h-4 w-4 mr-2" />
-                {selectedCustomer ? 
-                  `${selectedCustomer.name} - ${selectedCustomer.eventType}` : 
-                  'Select Customer'
-                }
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full">
-              {customers.map(customer => (
-                <DropdownMenuItem 
-                  key={customer.id} 
-                  onClick={() => setSelectedCustomerId(customer.id)}
-                >
-                  <div>
-                    <div className="font-medium">{customer.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {customer.eventType} - {customer.eventDate} - {customer.location}
+          {!selectedCustomerId ? (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or event type..."
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  className="pl-9 h-11"
+                  onFocus={() => setIsCustomerListOpen(true)}
+                />
+              </div>
+              
+              {/* Dropdown List */}
+              {(isCustomerListOpen || customerSearch) && (
+                <div className="absolute w-[calc(100%-3rem)] z-50 bg-popover text-popover-foreground rounded-md border shadow-md max-h-[300px] overflow-auto mt-1">
+                  {filteredCustomers.length === 0 ? (
+                    <div className="p-4 text-sm text-center text-muted-foreground">No customers found.</div>
+                  ) : (
+                    <div className="p-1">
+                      {filteredCustomers.map(customer => (
+                        <div
+                          key={customer.id}
+                          className="flex flex-col px-3 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
+                          onClick={() => {
+                            setSelectedCustomerId(customer.id);
+                            setIsCustomerListOpen(false);
+                            setCustomerSearch('');
+                          }}
+                        >
+                          <span className="font-bold">{customer.name}</span>
+                          <span className="text-xs text-muted-foreground flex justify-between">
+                            <span>{customer.eventType}</span>
+                            <span>{customer.eventDate}</span>
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-              {customers.length === 0 && (
-                <DropdownMenuItem disabled>
-                  No customers available
-                </DropdownMenuItem>
+                  )}
+                </div>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-4 border rounded-xl bg-accent/10 border-primary/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-full">
+                  <Package className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg">{selectedCustomer?.name}</h4>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                    {selectedCustomer?.eventType} • {selectedCustomer?.eventDate} • {selectedCustomer?.location}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSelectedCustomerId('')}
+                className="hover:bg-destructive/10 hover:text-destructive"
+              >
+                <X className="h-4 w-4 mr-2" /> Change
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
