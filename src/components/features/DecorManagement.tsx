@@ -467,8 +467,9 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
 
       {/* Add Item Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-none shadow-2xl">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary to-blue-600" />
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
               Initialize Decor Asset
             </DialogTitle>
@@ -477,92 +478,97 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 pt-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-1.5">
+          <div className="px-6 py-4 space-y-6">
+            <div className="space-y-4">
+              {/* Asset Classification */}
+              <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Classification</label>
-                <div className="relative group">
-                  <Input 
-                    placeholder="Search or type category..." 
-                    value={newItem.category} 
-                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value.toUpperCase() })}
-                    className="font-black h-11 border-primary/10 focus:border-primary uppercase"
-                    list="decor-categories"
-                  />
-                  <datalist id="decor-categories">
-                    {categories.map(cat => (
-                      <option key={cat} value={cat} />
-                    ))}
-                  </datalist>
-                  <p className="text-[8px] text-muted-foreground mt-1 ml-1">Click to see standard list or type to create new</p>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative group">
+                    <Input 
+                      placeholder="Category name..." 
+                      value={newItem.category} 
+                      onChange={(e) => setNewItem({ ...newItem, category: e.target.value.toUpperCase() })}
+                      className="font-black h-11 border-primary/10 focus:border-primary uppercase rounded-xl pr-10"
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="absolute right-3 top-3.5 text-muted-foreground hover:text-primary transition-colors">
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[200px] max-h-[300px] overflow-y-auto">
+                        <div className="p-2 text-[9px] font-black text-muted-foreground uppercase border-b mb-1">Standard Categories</div>
+                        {categories.map(cat => (
+                          <DropdownMenuItem key={cat} onClick={() => setNewItem({ ...newItem, category: cat })}>
+                            {cat}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
+                <p className="text-[8px] text-muted-foreground ml-1">Type to create new or use the dropdown to select existing</p>
               </div>
 
-              <div className="space-y-1.5">
+              {/* Asset Name */}
+              <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Name / Particulars</label>
                 <div className="relative group">
                   <Input 
-                    placeholder={newItem.category ? `Select or type item in ${newItem.category}...` : "e.g. Gold Satin Runner"} 
+                    placeholder="e.g. Gold Satin Runner" 
                     value={newItem.item_name} 
                     onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
-                    className="font-bold h-11 border-primary/10 focus:border-primary pr-10"
-                    list="decor-items-suggestions"
+                    className="font-bold h-11 border-primary/10 focus:border-primary rounded-xl"
                   />
-                  <div className="absolute right-3 top-3.5 opacity-30 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
-                  <datalist id="decor-items-suggestions">
-                    {items
-                      .filter(item => item.category === newItem.category)
-                      .map(item => (
-                        <option key={item.id} value={item.item_name} />
-                      ))}
-                  </datalist>
-                  <p className="text-[8px] text-muted-foreground mt-1 ml-1">Double-click or type to see existing items in this category</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Initial Stock</label>
                   <Input 
                     type="number" 
                     placeholder="0" 
                     value={newItem.in_store || ''} 
                     onChange={(e) => setNewItem({ ...newItem, in_store: parseInt(e.target.value) || 0 })}
-                    className="font-black h-11 text-center bg-muted/20 border-none"
+                    className="font-black h-11 text-center bg-muted/20 border-none rounded-xl"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Unit Price (KSH)</label>
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={newItem.price || ''} 
-                    onChange={(e) => setNewItem({ ...newItem, price: parseFloat(e.target.value) || 0 })}
-                    className="font-black h-11 text-right text-success bg-muted/20 border-none"
-                  />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-success">Unit Price (KSH)</label>
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      placeholder="0.00" 
+                      value={newItem.price || ''} 
+                      onChange={(e) => setNewItem({ ...newItem, price: parseFloat(e.target.value) || 0 })}
+                      className="font-black h-11 text-right text-success bg-muted/20 border-none rounded-xl pr-10"
+                    />
+                    <span className="absolute right-3 top-3.5 text-[8px] font-black text-success/40">KSH</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-6 gap-2 sm:gap-0">
+          <div className="p-6 pt-2 flex flex-col sm:flex-row gap-3">
             <Button 
               variant="outline" 
               onClick={() => setShowAddDialog(false)}
-              className="flex-1 sm:flex-none h-11 px-8 font-black uppercase tracking-widest text-[10px]"
+              className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] rounded-xl border-primary/10"
             >
               Cancel
             </Button>
             <Button 
               onClick={handleAddItem}
               disabled={!newItem.category || !newItem.item_name || addItemMutation.isPending}
-              className="flex-1 sm:flex-none h-11 px-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+              className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl"
             >
               {addItemMutation.isPending ? 'Processing...' : 'Register Asset'}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

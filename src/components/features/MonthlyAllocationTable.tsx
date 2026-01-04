@@ -585,8 +585,9 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
 
       {/* Add Customer Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-none shadow-2xl">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary to-orange-600" />
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
               Initialize Allocation
             </DialogTitle>
@@ -595,15 +596,15 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="px-6 py-4 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Customer Name</label>
                 <Input 
                   placeholder="Enter customer name" 
                   value={newCustomer.customer_name} 
                   onChange={(e) => setNewCustomer({ ...newCustomer, customer_name: e.target.value })}
-                  className="font-bold h-11"
+                  className="font-bold h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-1.5">
@@ -612,7 +613,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                   type="date"
                   value={newCustomer.date} 
                   onChange={(e) => setNewCustomer({ ...newCustomer, date: e.target.value })}
-                  className="font-bold h-11"
+                  className="font-bold h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-1.5">
@@ -621,7 +622,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                   placeholder="Event location" 
                   value={newCustomer.location} 
                   onChange={(e) => setNewCustomer({ ...newCustomer, location: e.target.value })}
-                  className="font-bold h-11"
+                  className="font-bold h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-1.5">
@@ -630,7 +631,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                   placeholder="Contact number" 
                   value={newCustomer.phone_number} 
                   onChange={(e) => setNewCustomer({ ...newCustomer, phone_number: e.target.value })}
-                  className="font-bold h-11"
+                  className="font-bold h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-1.5">
@@ -638,7 +639,7 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                 <select
                   value={newCustomer.event_type}
                   onChange={(e) => setNewCustomer({ ...newCustomer, event_type: e.target.value })}
-                  className="w-full h-11 px-3 py-2 border border-input bg-background rounded-md text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                  className="w-full h-11 px-3 py-2 border border-input bg-background rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                 >
                   <option value="Wedding">Wedding</option>
                   <option value="Corporate">Corporate</option>
@@ -648,56 +649,56 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Total Quote (KSH)</label>
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-success">Total Quote (KSH)</label>
                 <Input 
                   type="number" 
                   placeholder="0.00" 
                   value={newCustomer.total_ksh || ''} 
                   onChange={(e) => setNewCustomer({ ...newCustomer, total_ksh: parseInt(e.target.value) || 0 })}
-                  className="font-black h-11 text-success"
+                  className="font-black h-11 text-success rounded-xl"
                 />
               </div>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-4">Initial Equipment</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 ml-1">Initial Equipment Allocation</h4>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Double Tents</label>
-                  <Input type="number" value={newCustomer.double_tent || ''} onChange={(e) => setNewCustomer({...newCustomer, double_tent: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Double Tents</label>
+                  <Input type="number" value={newCustomer.double_tent || ''} onChange={(e) => setNewCustomer({...newCustomer, double_tent: parseInt(e.target.value) || 0})} className="h-10 text-center rounded-xl font-bold" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Single Tents</label>
-                  <Input type="number" value={newCustomer.single_tent || ''} onChange={(e) => setNewCustomer({...newCustomer, single_tent: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Single Tents</label>
+                  <Input type="number" value={newCustomer.single_tent || ''} onChange={(e) => setNewCustomer({...newCustomer, single_tent: parseInt(e.target.value) || 0})} className="h-10 text-center rounded-xl font-bold" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Round Tables</label>
-                  <Input type="number" value={newCustomer.round_table || ''} onChange={(e) => setNewCustomer({...newCustomer, round_table: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Round Tables</label>
+                  <Input type="number" value={newCustomer.round_table || ''} onChange={(e) => setNewCustomer({...newCustomer, round_table: parseInt(e.target.value) || 0})} className="h-10 text-center rounded-xl font-bold" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase">Chavari Seats</label>
-                  <Input type="number" value={newCustomer.chavari_seats || ''} onChange={(e) => setNewCustomer({...newCustomer, chavari_seats: parseInt(e.target.value) || 0})} className="h-9 text-center" />
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Chavari Seats</label>
+                  <Input type="number" value={newCustomer.chavari_seats || ''} onChange={(e) => setNewCustomer({...newCustomer, chavari_seats: parseInt(e.target.value) || 0})} className="h-10 text-center rounded-xl font-bold" />
                 </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-6 gap-2 sm:gap-0">
+          <div className="p-6 pt-2 flex flex-col sm:flex-row gap-3">
             <Button 
               variant="outline" 
               onClick={() => setShowAddDialog(false)}
-              className="flex-1 sm:flex-none h-11 px-8 font-black uppercase tracking-widest text-[10px]"
+              className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] rounded-xl"
             >
               Cancel
             </Button>
             <Button 
               onClick={handleSaveCustomer}
               disabled={saving}
-              className="flex-1 sm:flex-none h-11 px-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+              className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl"
             >
               {saving ? 'Processing...' : 'Add Allocation'}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

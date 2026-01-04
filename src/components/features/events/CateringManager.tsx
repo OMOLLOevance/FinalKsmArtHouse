@@ -427,8 +427,9 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-none shadow-2xl">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary to-green-600" />
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
               {editingItem ? 'Update' : 'Initialize'} Service Item
             </DialogTitle>
@@ -437,47 +438,47 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+          <form onSubmit={handleSubmit} className="px-6 py-4 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Item Particulars</label>
-                <Input placeholder="e.g. Premium Buffet" value={formData.item} onChange={(e) => setFormData({ ...formData, item: e.target.value })} required className="font-bold" />
+                <Input placeholder="e.g. Premium Buffet" value={formData.item} onChange={(e) => setFormData({ ...formData, item: e.target.value })} required className="font-bold rounded-xl h-11" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Classification</label>
-                <Input placeholder="e.g. Catering" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} required className="font-bold" />
+                <Input placeholder="e.g. Catering" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} required className="font-bold rounded-xl h-11" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Quantity / Servings</label>
-                <Input type="number" placeholder="0" value={formData.quantity || ''} onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })} required className="font-bold" />
+                <Input type="number" placeholder="0" value={formData.quantity || ''} onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })} required className="font-bold rounded-xl h-11" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Unit Price (KSH)</label>
-                <Input type="number" placeholder="0.00" value={formData.unitPrice || ''} onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })} required className="font-bold text-success" />
+                <Input type="number" placeholder="0.00" value={formData.unitPrice || ''} onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })} required className="font-bold text-success rounded-xl h-11" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Allocated Budget (KSH)</label>
-                <Input type="number" placeholder="0.00" value={formData.eventBudget || ''} onChange={(e) => setFormData({ ...formData, eventBudget: Number(e.target.value) })} className="font-bold text-primary" />
+                <Input type="number" placeholder="0.00" value={formData.eventBudget || ''} onChange={(e) => setFormData({ ...formData, eventBudget: Number(e.target.value) })} className="font-bold text-primary rounded-xl h-11" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Amount Remitted (KSH)</label>
-                <Input type="number" placeholder="0.00" value={formData.amountPaid || ''} onChange={(e) => setFormData({ ...formData, amountPaid: Number(e.target.value) })} className="font-bold text-success" />
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-success">Amount Remitted (KSH)</label>
+                <Input type="number" placeholder="0.00" value={formData.amountPaid || ''} onChange={(e) => setFormData({ ...formData, amountPaid: Number(e.target.value) })} className="font-bold text-success rounded-xl h-11" />
               </div>
             </div>
 
-            <div className="space-y-1.5 pt-2">
+            <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Operational Notes</label>
-              <Input placeholder="Enter any specific requirements or details..." value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="font-medium" />
+              <Input placeholder="Enter details..." value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="font-medium rounded-xl h-11" />
             </div>
 
-            <DialogFooter className="pt-6 gap-2 sm:gap-0">
-              <Button type="button" variant="outline" className="flex-1 sm:flex-none h-11 px-8 font-black uppercase tracking-widest text-[10px]" onClick={() => { setIsAdding(false); setEditingItem(null); }}>
+            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+              <Button type="button" variant="outline" className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] rounded-xl" onClick={() => { setIsAdding(false); setEditingItem(null); }}>
                 Cancel
               </Button>
-              <Button type="submit" className="flex-1 sm:flex-none h-11 px-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
+              <Button type="submit" className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl">
                 {editingItem ? 'Update Entry' : 'Register Item'}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
