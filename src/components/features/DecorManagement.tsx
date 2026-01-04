@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, Package, TrendingUp, TrendingDown, AlertTriangle, Users, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, Package, TrendingUp, TrendingDown, AlertTriangle, Users, ChevronDown, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -15,6 +15,8 @@ import { useCustomersQuery } from '@/hooks/use-customer-api';
 import { useAddItemToCustomerMutation } from '@/hooks/useCustomerRequirements';
 import { StaffSelector } from '@/components/shared/StaffSelector';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
+import { Select } from '@/components/ui/Select';
+import { toast } from 'sonner';
 import { 
   useDecorInventoryQuery, 
   useDecorCategoriesQuery, 
@@ -49,6 +51,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [isNewCategory, setIsNewCategory] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DecorInventoryItem | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -66,6 +69,17 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   const categories = useMemo(() => {
     return [...new Set([...DEFAULT_DECOR_CATEGORIES, ...dbCategories])].sort();
   }, [dbCategories]);
+
+  const categoryOptions = useMemo(() => {
+    return categories.map(cat => ({ value: cat, label: cat }));
+  }, [categories]);
+
+  const categoriesWithNew = useMemo(() => {
+    return [
+      { value: "NEW_CATEGORY", label: "➕ ADD NEW CATEGORY..." },
+      ...categoryOptions
+    ];
+  }, [categoryOptions]);
 
   const filteredItems = items.filter(item => {
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
@@ -117,7 +131,6 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     const value = item[field as keyof DecorInventoryItem];
     const isEditing = editingCell?.id === item.id && editingCell?.field === field;
     
-    // Disable editing if filtering by another user and not a manager
     const isReadOnly = filterUserId !== null && !isOperationsManager() && !isDirectorOrInvestor();
 
     if (isEditing) {
@@ -178,17 +191,20 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   };
 
   const handleAddItem = () => {
-    if (!newItem.category || !newItem.item_name) return;
+    if (!newItem.category || !newItem.item_name) {
+      toast.error('Category and Item Name are required');
+      return;
+    }
     
     addItemMutation.mutate(newItem, {
       onSuccess: () => {
         setShowAddDialog(false);
         setNewItem({ category: '', item_name: '', in_store: 0, price: 0 });
+        setIsNewCategory(false);
       }
     });
   };
 
-  // Calculate overview metrics
   const totalInStore = items.reduce((sum, item) => sum + item.in_store, 0);
   const totalHired = items.reduce((sum, item) => sum + item.hired, 0);
   const totalDamaged = items.reduce((sum, item) => sum + item.damaged, 0);
@@ -203,7 +219,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           <Button variant="outline" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight">Decor Management</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-primary">Decor Management</h2>
         </div>
         <div className="flex items-center gap-2">
           {(isOperationsManager() || isDirectorOrInvestor()) && (
@@ -215,52 +231,42 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               />
             </div>
           )}
-          <Button onClick={() => setShowAddDialog(true)} size="sm">
+          <Button onClick={() => { setIsNewCategory(false); setShowAddDialog(true); }} size="sm">
             <Plus className="h-4 w-4 mr-2" /> Add Item
           </Button>
         </div>
       </div>
 
-      {/* Overview Cards - Refactored to match MonthlyAllocationTable style */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-muted/20">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold">{totalItems}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Total Items</div>
-            </div>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3 text-center">
+            <div className="text-xl font-bold">{totalItems}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Total Assets</div>
           </CardContent>
         </Card>
         
-        <Card className="bg-muted/20">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold text-primary">{totalInStore}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">In Store</div>
-            </div>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3 text-center">
+            <div className="text-xl font-bold text-primary">{totalInStore}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">In Store</div>
           </CardContent>
         </Card>
         
-        <Card className="bg-muted/20">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold text-secondary">{totalHired}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Currently Hired</div>
-            </div>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3 text-center">
+            <div className="text-xl font-bold text-secondary">{totalHired}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">On Hire</div>
           </CardContent>
         </Card>
         
-        <Card className="bg-muted/20">
-          <CardContent className="p-3">
-            <div className="text-center">
-              <div className="text-xl font-bold text-destructive">{totalDamaged}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Damaged</div>
-            </div>
+        <Card className="bg-muted/20 border-none shadow-none">
+          <CardContent className="p-3 text-center">
+            <div className="text-xl font-bold text-destructive">{totalDamaged}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Damaged</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Search */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex space-x-4 w-full md:w-auto">
           <DropdownMenu>
@@ -285,7 +291,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
             placeholder="Search items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm h-9"
+            className="max-w-sm h-9 bg-muted/20 border-none rounded-xl"
           />
         </div>
         <p className="text-xs text-muted-foreground italic">
@@ -293,7 +299,6 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
         </p>
       </div>
 
-      {/* Inventory Form List */}
       <div className="space-y-4">
         {filteredItems.map((item) => (
           <Card key={item.id} className="overflow-hidden border-l-4 border-l-primary/40 hover-lift glow-primary glass-card transition-all duration-500">
@@ -304,7 +309,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                     <Package className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-foreground tracking-tight leading-none mb-1">
+                    <h3 className="text-xl font-black text-foreground tracking-tight leading-none mb-1 uppercase">
                       {item.item_name}
                     </h3>
                     <Badge variant="secondary" className="text-[8px] font-black uppercase tracking-widest px-2 py-0 border-none bg-muted/50">
@@ -370,7 +375,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1 text-secondary">Currently Hired</label>
+                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1 text-secondary">Hired</label>
                   <div className="bg-background rounded-xl border border-primary/5 shadow-sm">
                     {renderEditableCell(item, 'hired', 'text-center font-black text-xl text-secondary')}
                   </div>
@@ -382,7 +387,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1 text-green-600">Price (KSH)</label>
+                  <label className="text-[9px] font-black uppercase text-muted-foreground/70 tracking-[0.2em] block ml-1 text-green-600">Rate (KSH)</label>
                   <div className="bg-background rounded-xl border border-primary/5 shadow-sm">
                     {renderEditableCell(item, 'price', 'text-right font-black text-xl text-green-600')}
                   </div>
@@ -391,79 +396,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
             </div>
           </Card>
         ))}
-
-        {filteredItems.length === 0 && (
-          <Card className="p-12 text-center text-muted-foreground bg-muted/10">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-20" />
-            <p className="text-lg font-medium">No items found matching your criteria.</p>
-            <Button variant="link" onClick={() => {setSearchTerm(''); setSelectedCategory('all');}}>
-              Clear all filters
-            </Button>
-          </Card>
-        )}
       </div>
-
-      {/* Customer Selection Dialog */}
-      <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Item to Customer Requirements</DialogTitle>
-            <DialogDescription>Assign this asset to a specific customer event for tracking.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">
-                Selected Item: <span className="font-medium">{selectedItem?.item_name}</span>
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Select Customer:</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Users className="h-4 w-4 mr-2" />
-                    {selectedCustomerId ? 
-                      customers.find(c => c.id === selectedCustomerId)?.name || 'Select Customer' : 
-                      'Select Customer'
-                    }
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  {customers.map(customer => (
-                    <DropdownMenuItem 
-                      key={customer.id} 
-                      onClick={() => setSelectedCustomerId(customer.id)}
-                    >
-                      <div>
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {customer.eventType} - {customer.eventDate}
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                  {customers.length === 0 && (
-                    <DropdownMenuItem disabled>
-                      No customers available
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCustomerDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleAddToCustomer}
-              disabled={!selectedCustomerId || addToCustomerMutation.isPending}
-            >
-              {addToCustomerMutation.isPending ? 'Adding...' : 'Add to Requirements'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Add Item Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -483,45 +416,57 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               {/* Asset Classification */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Classification</label>
-                <div className="flex gap-2">
-                  <div className="flex-1 relative group">
+                
+                {!isNewCategory ? (
+                  <div className="flex gap-2">
+                    <Select
+                      value={newItem.category}
+                      onValueChange={(val) => {
+                        if (val === "NEW_CATEGORY") {
+                          setIsNewCategory(true);
+                          setNewItem({ ...newItem, category: '' });
+                        } else {
+                          setNewItem({ ...newItem, category: val });
+                        }
+                      }}
+                      placeholder="Select Category"
+                      options={categoriesWithNew}
+                      className="flex-1 rounded-xl"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
                     <Input 
-                      placeholder="Category name..." 
+                      placeholder="Enter new category name..." 
                       value={newItem.category} 
                       onChange={(e) => setNewItem({ ...newItem, category: e.target.value.toUpperCase() })}
-                      className="font-black h-11 border-primary/10 focus:border-primary uppercase rounded-xl pr-10"
+                      className="font-black h-11 border-primary/20 focus:border-primary uppercase rounded-xl flex-1"
+                      autoFocus
                     />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="absolute right-3 top-3.5 text-muted-foreground hover:text-primary transition-colors">
-                          <ChevronDown className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[200px] max-h-[300px] overflow-y-auto">
-                        <div className="p-2 text-[9px] font-black text-muted-foreground uppercase border-b mb-1">Standard Categories</div>
-                        {categories.map(cat => (
-                          <DropdownMenuItem key={cat} onClick={() => setNewItem({ ...newItem, category: cat })}>
-                            {cat}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setIsNewCategory(false)}
+                      className="h-11 w-11 p-0 rounded-xl hover:bg-muted"
+                      title="Back to List"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-                <p className="text-[8px] text-muted-foreground ml-1">Type to create new or use the dropdown to select existing</p>
+                )}
+                <p className="text-[8px] text-muted-foreground ml-1">
+                  {!isNewCategory ? "Choose from existing list or select 'ADD NEW' to create" : "Manual entry mode active. Enter name then register asset."}
+                </p>
               </div>
 
               {/* Asset Name */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Name / Particulars</label>
-                <div className="relative group">
-                  <Input 
-                    placeholder="e.g. Gold Satin Runner" 
-                    value={newItem.item_name} 
-                    onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
-                    className="font-bold h-11 border-primary/10 focus:border-primary rounded-xl"
-                  />
-                </div>
+                <Input 
+                  placeholder="e.g. Gold Satin Runner" 
+                  value={newItem.item_name} 
+                  onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
+                  className="font-bold h-11 border-primary/10 focus:border-primary rounded-xl"
+                />
               </div>
 
               {/* Stats Grid */}
@@ -569,6 +514,45 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               {addItemMutation.isPending ? 'Processing...' : 'Register Asset'}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Selection Dialog */}
+      <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+        <DialogContent className="w-[95vw] max-w-[400px] rounded-3xl p-6 border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase">Assign Asset</DialogTitle>
+            <DialogDescription className="text-xs font-medium">Assign this item to a specific customer for event tracking.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1 font-bold uppercase">Item Selected</p>
+              <p className="text-lg font-black text-primary">{selectedItem?.item_name}</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest">Target Customer</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between h-11 rounded-xl">
+                    <span className="truncate">{selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : 'Select Customer'}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[350px] max-h-[300px] overflow-y-auto rounded-xl">
+                  {customers.map(customer => (
+                    <DropdownMenuItem key={customer.id} onClick={() => setSelectedCustomerId(customer.id)} className="flex flex-col items-start p-3">
+                      <span className="font-bold">{customer.name}</span>
+                      <span className="text-[10px] opacity-60 uppercase">{customer.eventType} • {customer.eventDate}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCustomerDialog(false)} className="rounded-xl flex-1">Cancel</Button>
+            <Button onClick={handleAddToCustomer} disabled={!selectedCustomerId || addToCustomerMutation.isPending} className="rounded-xl flex-1">Assign</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
