@@ -79,11 +79,13 @@ export async function GET(request: NextRequest) {
 
     // DISCOVERY MODE: Cross-table customer search for Management
     if (discovery && isManager) {
-      const [customersRes, allocationsRes, gymRes, saunaRes] = await Promise.all([
-        client.from('customers').select('*').order('name'),
-        client.from('monthly_allocations').select('*').order('customer_name'),
-        client.from('gym_members').select('*').order('member_name'),
-        client.from('sauna_bookings').select('*').order('client_name')
+      const [customersRes, monthlyRes, decorRes, gymRes, saunaRes, quotationsRes] = await Promise.all([
+        client.from('customers').select('*'),
+        client.from('monthly_allocations').select('*'),
+        client.from('decor_allocations').select('*'),
+        client.from('gym_members').select('*'),
+        client.from('sauna_bookings').select('*'),
+        client.from('quotations').select('*')
       ]);
 
       const combined = [
@@ -94,12 +96,19 @@ export async function GET(request: NextRequest) {
           eventDate: c.event_date || '-',
           source: 'core'
         })),
-        ...(allocationsRes.data || []).map(a => ({
+        ...(monthlyRes.data || []).map(a => ({
           id: a.id,
           name: a.customer_name,
-          eventType: a.event_type || 'Event',
+          eventType: a.event_type || 'Equipment',
           eventDate: a.event_date || '-',
           source: 'allocation'
+        })),
+        ...(decorRes.data || []).map(d => ({
+          id: d.id,
+          name: d.customer_name,
+          eventType: 'Decor Setup',
+          eventDate: `${d.year}-${String(d.month).padStart(2, '0')}`,
+          source: 'decor'
         })),
         ...(gymRes.data || []).map(g => ({
           id: g.id,
@@ -114,6 +123,13 @@ export async function GET(request: NextRequest) {
           eventType: 'Sauna Session',
           eventDate: s.booking_date || s.date || '-',
           source: 'sauna'
+        })),
+        ...(quotationsRes.data || []).map(q => ({
+          id: q.id,
+          name: q.customer_name,
+          eventType: `Quotation (${q.quotation_type})`,
+          eventDate: q.event_date || '-',
+          source: 'quotation'
         }))
       ];
 

@@ -75,20 +75,24 @@ export async function GET(request: NextRequest) {
     const itemIds = [...new Set(requirements.map(r => r.decor_item_id))];
 
     // 3. Fetch from ALL possible customer sources and the inventory
-    const [customersRes, allocationsRes, gymRes, saunaRes, itemsRes] = await Promise.all([
+    const [customersRes, monthlyRes, decorRes, gymRes, saunaRes, quotationsRes, itemsRes] = await Promise.all([
         client.from('customers').select('id, name').in('id', targetIds),
         client.from('monthly_allocations').select('id, customer_name').in('id', targetIds),
+        client.from('decor_allocations').select('id, customer_name').in('id', targetIds),
         client.from('gym_members').select('id, name').in('id', targetIds),
-        client.from('sauna_bookings').select('id, client').in('id', targetIds),
+        client.from('sauna_bookings').select('id, client_name').in('id', targetIds),
+        client.from('quotations').select('id, customer_name').in('id', targetIds),
         client.from('decor_inventory').select('id, item_name, category, price').in('id', itemIds)
     ]);
 
-    // 4. Create a unified customer map (checking all four sources)
+    // 4. Create a unified customer map (checking all six sources)
     const customersMap = new Map();
     customersRes.data?.forEach(c => customersMap.set(c.id, { name: c.name }));
-    allocationsRes.data?.forEach(a => customersMap.set(a.id, { name: a.customer_name }));
+    monthlyRes.data?.forEach(a => customersMap.set(a.id, { name: a.customer_name }));
+    decorRes.data?.forEach(d => customersMap.set(d.id, { name: d.customer_name }));
     gymRes.data?.forEach(g => customersMap.set(g.id, { name: g.name }));
-    saunaRes.data?.forEach(s => customersMap.set(s.id, { name: s.client }));
+    saunaRes.data?.forEach(s => customersMap.set(s.id, { name: s.client_name }));
+    quotationsRes.data?.forEach(q => customersMap.set(q.id, { name: q.customer_name }));
     
     const itemsMap = new Map(itemsRes.data?.map(i => [i.id, i]) || []);
 

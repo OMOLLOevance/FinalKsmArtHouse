@@ -92,15 +92,22 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
           ) : (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 border-2 rounded-2xl bg-primary/[0.03] border-primary/20 gap-4">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-2xl">
-                  <Package className="h-6 w-6 text-primary" />
+                <div className={`p-3 rounded-2xl ${
+                  (selectedCustomer as any)?.source === 'gym' ? 'bg-orange-500/10 text-orange-600' :
+                  (selectedCustomer as any)?.source === 'sauna' ? 'bg-blue-500/10 text-blue-600' :
+                  (selectedCustomer as any)?.source === 'allocation' ? 'bg-purple-500/10 text-purple-600' :
+                  (selectedCustomer as any)?.source === 'decor' ? 'bg-emerald-500/10 text-emerald-600' :
+                  (selectedCustomer as any)?.source === 'quotation' ? 'bg-amber-500/10 text-amber-600' :
+                  'bg-primary/10 text-primary'
+                }`}>
+                  <Package className="h-6 w-6" />
                 </div>
                 <div>
-                  <h4 className="font-black text-xl text-primary leading-tight">{selectedCustomer?.name}</h4>
+                  <h4 className="font-black text-xl leading-tight">{(selectedCustomer as any)?.name}</h4>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-background">{selectedCustomer?.eventType}</Badge>
+                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-background">{(selectedCustomer as any)?.eventType}</Badge>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Source: {(selectedCustomer as any)?.source || 'Core'}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">• {selectedCustomer?.eventDate}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">• {(selectedCustomer as any)?.eventDate}</span>
                   </div>
                 </div>
               </div>
@@ -162,6 +169,8 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
                       customer.source === 'gym' ? 'bg-orange-500/10 text-orange-600' :
                       customer.source === 'sauna' ? 'bg-blue-500/10 text-blue-600' :
                       customer.source === 'allocation' ? 'bg-purple-500/10 text-purple-600' :
+                      customer.source === 'decor' ? 'bg-emerald-500/10 text-emerald-600' :
+                      customer.source === 'quotation' ? 'bg-amber-500/10 text-amber-600' :
                       'bg-muted group-hover:bg-primary/10 text-muted-foreground group-hover:text-primary'
                     }`}>
                       <User className="h-5 w-5" />
@@ -175,6 +184,8 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
                           customer.source === 'gym' ? 'bg-orange-500/10 text-orange-600' :
                           customer.source === 'sauna' ? 'bg-blue-500/10 text-blue-600' :
                           customer.source === 'allocation' ? 'bg-purple-500/10 text-purple-600' :
+                          customer.source === 'decor' ? 'bg-emerald-500/10 text-emerald-600' :
+                          customer.source === 'quotation' ? 'bg-amber-500/10 text-amber-600' :
                           'bg-primary/10 text-primary'
                         }`}>
                           {customer.source}
