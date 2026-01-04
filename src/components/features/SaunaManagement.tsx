@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Plus, Edit, Trash2, ArrowLeft, Save, Waves, X } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, Waves, X, Search, Calendar } from 'lucide-react';
 import { 
   useSaunaBookingsQuery, 
   useCreateSaunaBookingMutation, 
@@ -32,6 +32,10 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   // RBAC
   const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
   const { 
     data: bookings, 
@@ -58,6 +62,15 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
     amount: 0,
     status: 'booked' as 'booked' | 'completed',
   });
+
+  const filteredBookings = useMemo(() => {
+    if (!bookings) return [];
+    return bookings.filter((booking: any) => {
+      const matchesSearch = booking.client.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDate = booking.date.startsWith(selectedMonth);
+      return matchesSearch && matchesDate;
+    });
+  }, [bookings, searchTerm, selectedMonth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,21 +133,46 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* RBAC Staff Filter */}
-        {(isOperationsManager() || isDirectorOrInvestor()) && (
-          <div className="w-64">
-            <StaffSelector 
-              value={filterUserId} 
-              onChange={setFilterUserId} 
-              className="w-full bg-background/50 backdrop-blur-sm"
-            />
-          </div>
-        )}
+        <div className="flex flex-col md:flex-row gap-3 items-end md:items-center">
+          {(isOperationsManager() || isDirectorOrInvestor()) && (
+            <div className="w-64">
+              <StaffSelector 
+                value={filterUserId} 
+                onChange={setFilterUserId} 
+                className="w-full bg-background/50 backdrop-blur-sm"
+              />
+            </div>
+          )}
 
-        <Button onClick={() => setIsAdding(true)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Booking
-        </Button>
+          <Button onClick={() => setIsAdding(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Booking
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4">
+         <div className="flex-1 relative group">
+          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder="Search clients..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-12 h-11 bg-muted/30 border-none rounded-2xl font-bold"
+          />
+        </div>
+        <div className="flex items-center gap-2 bg-muted/20 p-1.5 rounded-2xl border border-primary/5">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <Calendar className="h-4 w-4 text-primary opacity-70" />
+          </div>
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="bg-transparent border-none font-bold h-8 text-sm focus:outline-none w-32"
+          />
+        </div>
       </div>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
@@ -215,7 +253,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
         <Card className="bg-muted/20 border-none shadow-none">
           <CardContent className="p-3">
             <div className="text-center">
-              <div className="text-xl font-bold">{bookings?.length || 0}</div>
+              <div className="text-xl font-bold">{filteredBookings?.length || 0}</div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Bookings</div>
             </div>
           </CardContent>
@@ -224,7 +262,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-success">
-                {formatCurrency(bookings?.reduce((sum: number, b: any) => sum + Number(b.amount), 0) || 0)}
+                {formatCurrency(filteredBookings?.reduce((sum: number, b: any) => sum + Number(b.amount), 0) || 0)}
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Revenue</div>
             </div>
@@ -234,7 +272,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           <CardContent className="p-3">
             <div className="text-center">
               <div className="text-xl font-bold text-primary">
-                {bookings?.filter((b: any) => b.status === 'booked').length || 0}
+                {filteredBookings?.filter((b: any) => b.status === 'booked').length || 0}
               </div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Upcoming</div>
             </div>
@@ -249,7 +287,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {bookings?.map((item: any) => (
+            {filteredBookings?.map((item: any) => (
               <Card key={item.id} className={`overflow-hidden border-l-4 ${item.status === 'completed' ? 'border-l-success' : 'border-l-warning'} hover-lift glass-card transition-all duration-300`}>
                 <div className="p-4 space-y-4">
                   <div className="flex justify-between items-start">
@@ -279,10 +317,10 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                 </div>
               </Card>
             ))}
-            {bookings?.length === 0 && (
+            {filteredBookings?.length === 0 && (
               <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
                 <Waves className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-medium opacity-50">No bookings recorded yet.</p>
+                <p className="text-lg font-medium opacity-50">No bookings found matching filters.</p>
               </div>
             )}
           </div>

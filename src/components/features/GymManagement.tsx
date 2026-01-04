@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Plus, Edit, Trash2, ArrowLeft, Save, DollarSign, Users, TrendingUp, Calendar, Mail, AlertTriangle, MessageCircle, Send, Waves, X } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, DollarSign, Users, TrendingUp, Calendar, Mail, AlertTriangle, MessageCircle, Send, Waves, X, Search } from 'lucide-react';
 import { GymFinance, GymMember } from '@/types';
 import { useGymMembersQuery, useCreateGymMemberMutation, useUpdateGymMemberMutation, useDeleteGymMemberMutation, useGymFinancesQuery, useCreateGymFinanceMutation, useUpdateGymFinanceMutation, useDeleteGymFinanceMutation } from '@/hooks/use-gym-api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
@@ -53,6 +53,9 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   // RBAC
   const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { 
     data: finances, 
@@ -129,6 +132,22 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
     finances?.filter(finance => finance.date.startsWith(selectedMonth)) || [],
     [finances, selectedMonth]
   );
+  
+  const filteredFinances = useMemo(() => {
+    if (!searchTerm) return monthlyFinances;
+    return monthlyFinances.filter(finance => 
+      finance.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [monthlyFinances, searchTerm]);
+
+  const filteredMembers = useMemo(() => {
+    if (!members) return [];
+    if (!searchTerm) return members;
+    return members.filter(member => 
+      member.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      member.phoneNumber.includes(searchTerm)
+    );
+  }, [members, searchTerm]);
 
   const { income, expenses, profit } = useFinanceSummary(monthlyFinances);
 
@@ -300,7 +319,7 @@ Thank you for being part of our fitness community!`
 
   const renderFinanceCards = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-      {monthlyFinances.map((finance) => (
+      {filteredFinances.map((finance) => (
         <Card key={finance.id} className={`overflow-hidden border-l-4 ${finance.type === 'income' ? 'border-l-success' : 'border-l-destructive'} hover-lift glass-card transition-all duration-300`}>
           <div className="p-4 space-y-3">
             <div className="flex justify-between items-start">
@@ -327,10 +346,10 @@ Thank you for being part of our fitness community!`
           </div>
         </Card>
       ))}
-      {monthlyFinances.length === 0 && (
+      {filteredFinances.length === 0 && (
         <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-2xl bg-muted/5">
           <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-10" />
-          <p className="text-lg font-medium opacity-50">No finance records for this month.</p>
+          <p className="text-lg font-medium opacity-50">No finance records matching filter.</p>
         </div>
       )}
     </div>
@@ -338,7 +357,7 @@ Thank you for being part of our fitness community!`
 
   const renderMemberCards = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-      {members?.slice(0, displayCount).map((member) => {
+      {filteredMembers.slice(0, displayCount).map((member) => {
         const isExpired = new Date(member.endDate) < new Date();
         return (
           <Card key={member.id} className={`overflow-hidden border-l-4 ${isExpired ? 'border-l-destructive' : 'border-l-primary'} hover-lift glass-card transition-all duration-300`}>
@@ -379,10 +398,10 @@ Thank you for being part of our fitness community!`
           </Card>
         );
       })}
-      {members?.length === 0 && (
+      {filteredMembers.length === 0 && (
         <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-2xl bg-muted/5">
           <Users className="h-12 w-12 mx-auto mb-4 opacity-10" />
-          <p className="text-lg font-medium opacity-50">No gym members found.</p>
+          <p className="text-lg font-medium opacity-50">No gym members matching filter.</p>
         </div>
       )}
     </div>
@@ -439,8 +458,8 @@ Thank you for being part of our fitness community!`
         </Button>
       </div>
 
-      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-        <div className="flex-1">
+      <div className="mb-4 sm:mb-6 flex flex-col md:flex-row gap-4 items-start md:items-end">
+        <div className="flex-1 w-full md:w-auto">
           <label className="block text-xs sm:text-sm font-medium text-muted-foreground mb-2">
             Select Month
           </label>
@@ -448,14 +467,25 @@ Thank you for being part of our fitness community!`
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm w-full h-10"
+            className="px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm w-full h-11"
           />
         </div>
+        
+        <div className="flex-1 w-full md:w-auto relative group">
+          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder={activeTab === 'finances' ? "Search transactions..." : "Search members..."}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-12 h-11 bg-muted/30 border-none rounded-xl font-bold w-full"
+          />
+        </div>
+
         <Button
           onClick={() => setShowQuickExpense(!showQuickExpense)}
           variant="destructive"
           size="sm"
-          className="flex items-center h-10 px-6 font-bold"
+          className="flex items-center h-11 px-6 font-bold w-full md:w-auto"
         >
           <DollarSign className="h-4 w-4 mr-2" />
           Quick Expense
