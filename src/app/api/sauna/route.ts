@@ -29,6 +29,7 @@ async function getUserRole(userId: string, client: any): Promise<string> {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
+  const filterUserId = searchParams.get('filterUserId');
   const fields = searchParams.get('fields') || '*';
   const limit = parseInt(searchParams.get('limit') || '100');
   const offset = parseInt(searchParams.get('offset') || '0');
@@ -37,13 +38,12 @@ export async function GET(request: NextRequest) {
   try {
     const client = token ? createAuthenticatedClient(token) : supabase;
     
-    // Get current user from session
+    // RBAC: Check current user role
     const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const userRole = await getUserRole(user.id, client);
+    const { data: userProfile } = await client.from('users').select('role').eq('id', user.id).single();
+    const role = userProfile?.role || 'staff';
 
     // RLS policies will handle the filtering based on user role
     let query = client
@@ -52,9 +52,11 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Only filter by userId if specified AND user is staff
-    if (userId && userRole === 'staff') {
-      query = query.eq('user_id', userId);
+    // RBAC Filtering Logic
+    if (role === 'staff') {
+      query = query.eq('user_id', user.id);
+    } else if (filterUserId) {
+      query = query.eq('user_id', filterUserId);
     }
 
     const { data, error } = await query;
