@@ -13,6 +13,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
 import { useCustomersQuery } from '@/hooks/use-customer-api';
 import { useAddItemToCustomerMutation } from '@/hooks/useCustomerRequirements';
+import { StaffSelector } from '@/components/shared/StaffSelector';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { 
   useDecorInventoryQuery, 
   useDecorCategoriesQuery, 
@@ -34,7 +36,10 @@ const DEFAULT_DECOR_CATEGORIES = [
 ];
 
 const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
-  const { data: items = [], isLoading } = useDecorInventoryQuery();
+  const { isOperationsManager, isDirectorOrInvestor, canDeleteTransaction } = useRoleGuard();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+
+  const { data: items = [], isLoading } = useDecorInventoryQuery(filterUserId);
   const { data: dbCategories = [] } = useDecorCategoriesQuery();
   const { data: customers = [] } = useCustomersQuery();
   const actionMutation = useDecorActionMutation();
@@ -112,6 +117,9 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     const value = item[field as keyof DecorInventoryItem];
     const isEditing = editingCell?.id === item.id && editingCell?.field === field;
     
+    // Disable editing if filtering by another user and not a manager
+    const isReadOnly = filterUserId !== null && !isOperationsManager() && !isDirectorOrInvestor();
+
     if (isEditing) {
       return (
         <Input
@@ -128,8 +136,8 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     
     return (
       <div 
-        className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className}`}
-        onClick={() => handleCellEdit(item.id, field, value)}
+        className={`cursor-pointer hover:bg-muted/50 p-1 min-h-[24px] flex items-center text-xs ${className} ${isReadOnly ? 'pointer-events-none opacity-80' : ''}`}
+        onClick={() => !isReadOnly && handleCellEdit(item.id, field, value)}
       >
         {value || <span className="text-muted-foreground/50 italic">0</span>}
       </div>
@@ -190,14 +198,23 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <h2 className="text-3xl font-bold tracking-tight">Decor Management</h2>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex items-center gap-2">
+          {(isOperationsManager() || isDirectorOrInvestor()) && (
+            <div className="w-64">
+              <StaffSelector 
+                value={filterUserId} 
+                onChange={setFilterUserId} 
+                className="bg-background/50"
+              />
+            </div>
+          )}
           <Button onClick={() => setShowAddDialog(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" /> Add Item
           </Button>

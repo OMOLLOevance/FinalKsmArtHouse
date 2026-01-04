@@ -15,13 +15,15 @@ export interface DecorInventoryItem {
   updated_at: string;
 }
 
-export const useDecorInventoryQuery = () => {
+export const useDecorInventoryQuery = (filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['decor-inventory', userId],
+    queryKey: ['decor-inventory', userId, filterUserId],
     queryFn: async (): Promise<DecorInventoryItem[]> => {
-      const response = await apiClient.get<{ data: DecorInventoryItem[] }>(`/api/decor-inventory?userId=${userId}`);
+      let url = `/api/decor-inventory?userId=${userId}`;
+      if (filterUserId) url += `&filterUserId=${filterUserId}`;
+      const response = await apiClient.get<{ data: DecorInventoryItem[] }>(url);
       return response.data;
     },
     enabled: isAuthenticated,
