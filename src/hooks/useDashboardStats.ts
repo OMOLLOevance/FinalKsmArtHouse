@@ -50,18 +50,30 @@ export const useDashboardStats = () => {
     queryFn: async () => {
       try {
         const isManagement = isDirectorOrInvestor() || isOperationsManager();
-        // Omit userId filter for management to get global stats
-        const filter = isManagement ? '' : `userId=${userId}`;
-        const discovery = isManagement ? '&discovery=true' : '';
+        
+        // Construct clean query parameters
+        const params = new URLSearchParams();
+        if (!isManagement && userId) {
+          params.append('userId', userId);
+        }
+        if (isManagement) {
+          params.append('discovery', 'true');
+        }
+
+        const buildUrl = (base: string, extraFields?: string) => {
+          const p = new URLSearchParams(params);
+          if (extraFields) p.append('fields', extraFields);
+          return `${base}?${p.toString()}`;
+        };
 
         const [customersRes, gymMembersRes, gymFinancesRes, saunaBookingsRes, restaurantRes, eventItemsRes, quotationsRes] = await Promise.all([
-          apiClient.get<{data: MinimalCustomer[]}>(`/api/customers?${filter}${discovery}&fields=id,service_status`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalGymMember[]}>(`/api/gym?${filter}&fields=status,expiry_date,payment_amount,created_at,start_date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalGymFinance[]}>(`/api/gym/finances?${filter}&fields=amount,transaction_type,created_at,date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalSaunaBooking[]}>(`/api/sauna?${filter}&fields=status,amount,created_at,booking_date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalRestaurantSale[]}>(`/api/restaurant?${filter}&fields=total_amount,created_at,sale_date`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalEventItem[]}>(`/api/event-items?${filter}&fields=id`).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalQuotation[]}>(`/api/quotations?${filter}`).catch(() => ({ data: [] }))
+          apiClient.get<{data: MinimalCustomer[]}>(buildUrl('/api/customers', 'id,service_status')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymMember[]}>(buildUrl('/api/gym', 'status,expiry_date,payment_amount,created_at,start_date')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalGymFinance[]}>(buildUrl('/api/gym/finances', 'amount,transaction_type,created_at,date')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalSaunaBooking[]}>(buildUrl('/api/sauna', 'status,amount,created_at,booking_date')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalRestaurantSale[]}>(buildUrl('/api/restaurant', 'total_amount,created_at,sale_date')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalEventItem[]}>(buildUrl('/api/event-items', 'id')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalQuotation[]}>(buildUrl('/api/quotations')).catch(() => ({ data: [] }))
         ]);
 
         const customers = customersRes?.data || [];
@@ -100,8 +112,8 @@ export const useDashboardStats = () => {
         
         const gymRevenue = gymDirectRevenue + gymFinanceRevenue;
         
+        // Sum ALL sauna bookings that have an amount (both booked and completed)
         const saunaRevenue = saunaBookings
-          .filter(b => b.status === 'completed')
           .reduce((sum, b) => sum + Number(b.amount || 0), 0);
         
         const restaurantRevenue = restaurantSales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0);
@@ -144,9 +156,8 @@ export const useDashboardStats = () => {
         });
 
         saunaBookings.forEach(b => {
-          if (b.status === 'completed') {
-            addToHistory(b.booking_date || b.created_at, Number(b.amount || 0));
-          }
+          // Include both booked and completed in history chart
+          addToHistory(b.booking_date || b.created_at, Number(b.amount || 0));
         });
 
         restaurantSales.forEach(s => {
