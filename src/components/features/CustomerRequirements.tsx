@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Trash2, Edit, Package, Search, X } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Package, Search, X, ChevronRight, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency } from '@/utils/formatters';
@@ -38,7 +39,7 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
   };
 
   const [customerSearch, setCustomerSearch] = useState('');
-  const [isCustomerListOpen, setIsCustomerListOpen] = useState(false);
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => 
@@ -63,80 +64,118 @@ const CustomerRequirements: React.FC<CustomerRequirementsProps> = ({ onBack }) =
         </div>
       </div>
 
-      {/* Customer Selection */}
-      <Card className="overflow-visible z-10 relative">
-        <CardHeader>
-          <CardTitle>Select Customer</CardTitle>
-          <CardDescription>Choose a customer to view their decor requirements</CardDescription>
+      {/* Customer Selection Card */}
+      <Card className="border-primary/10 shadow-lg overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-primary to-blue-600" />
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-black uppercase tracking-tight">Requirement Tracking</CardTitle>
+          <CardDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+            Monitor and manage physical asset allocations per client.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {!selectedCustomerId ? (
-            <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name or event type..."
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  className="pl-9 h-11"
-                  onFocus={() => setIsCustomerListOpen(true)}
-                />
-              </div>
-              
-              {/* Dropdown List */}
-              {(isCustomerListOpen || customerSearch) && (
-                <div className="absolute w-[calc(100%-3rem)] z-50 bg-popover text-popover-foreground rounded-md border shadow-md max-h-[300px] overflow-auto mt-1">
-                  {filteredCustomers.length === 0 ? (
-                    <div className="p-4 text-sm text-center text-muted-foreground">No customers found.</div>
-                  ) : (
-                    <div className="p-1">
-                      {filteredCustomers.map(customer => (
-                        <div
-                          key={customer.id}
-                          className="flex flex-col px-3 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-                          onClick={() => {
-                            setSelectedCustomerId(customer.id);
-                            setIsCustomerListOpen(false);
-                            setCustomerSearch('');
-                          }}
-                        >
-                          <span className="font-bold">{customer.name}</span>
-                          <span className="text-xs text-muted-foreground flex justify-between">
-                            <span>{customer.eventType}</span>
-                            <span>{customer.eventDate}</span>
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center justify-between p-4 border rounded-xl bg-accent/10 border-primary/20">
+            <Button 
+              variant="outline" 
+              className="w-full h-14 justify-between px-6 border-dashed border-2 hover:border-primary hover:bg-primary/5 group transition-all rounded-2xl"
+              onClick={() => setIsSearchDialogOpen(true)}
+            >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-full">
-                  <Package className="h-5 w-5 text-primary" />
+                <div className="p-2 bg-muted group-hover:bg-primary/10 rounded-full transition-colors">
+                  <User className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                </div>
+                <span className="font-bold text-muted-foreground group-hover:text-foreground">Select Customer to View Requirements</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+            </Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 border-2 rounded-2xl bg-primary/[0.03] border-primary/20 gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-2xl">
+                  <Package className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-lg">{selectedCustomer?.name}</h4>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {selectedCustomer?.eventType} • {selectedCustomer?.eventDate} • {selectedCustomer?.location}
-                  </p>
+                  <h4 className="font-black text-xl text-primary leading-tight">{selectedCustomer?.name}</h4>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-background">{selectedCustomer?.eventType}</Badge>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">{selectedCustomer?.eventDate}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">• {selectedCustomer?.location}</span>
+                  </div>
                 </div>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setSelectedCustomerId('')}
-                className="hover:bg-destructive/10 hover:text-destructive"
+                className="hover:bg-destructive/10 hover:text-destructive font-black uppercase tracking-widest text-[10px] h-10 px-4 rounded-xl"
               >
-                <X className="h-4 w-4 mr-2" /> Change
+                <X className="h-4 w-4 mr-2" /> Switch Client
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Search Dialog */}
+      <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[85vh] overflow-hidden flex flex-col p-0 rounded-3xl border-none shadow-2xl">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">Find Customer</DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              Search by name or event classification
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="px-6 pb-4">
+            <div className="relative group">
+              <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Input
+                placeholder="Type to search..."
+                value={customerSearch}
+                onChange={(e) => setCustomerSearch(e.target.value)}
+                className="pl-12 h-12 bg-muted/30 border-none rounded-2xl font-bold text-lg focus-visible:ring-2 focus-visible:ring-primary/20"
+                autoFocus
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-2 pb-6 space-y-1">
+            {filteredCustomers.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <Search className="h-12 w-12 mx-auto mb-4 opacity-10" />
+                <p className="font-bold">No customers match your search</p>
+              </div>
+            ) : (
+              filteredCustomers.map(customer => (
+                <div
+                  key={customer.id}
+                  className="flex items-center justify-between p-4 mx-2 rounded-2xl hover:bg-primary/5 cursor-pointer transition-all group border border-transparent hover:border-primary/10"
+                  onClick={() => {
+                    setSelectedCustomerId(customer.id);
+                    setIsSearchDialogOpen(false);
+                    setCustomerSearch('');
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-muted group-hover:bg-primary/10 rounded-xl flex items-center justify-center transition-colors">
+                      <User className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                    </div>
+                    <div>
+                      <span className="font-black text-foreground group-hover:text-primary transition-colors uppercase tracking-tight block leading-none mb-1">{customer.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{customer.eventType}</span>
+                        <span className="text-[9px] font-bold text-muted-foreground/40">•</span>
+                        <span className="text-[9px] font-bold text-muted-foreground/60">{customer.eventDate}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Requirements Card Grid */}
       {selectedCustomerId && (
