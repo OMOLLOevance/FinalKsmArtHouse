@@ -55,6 +55,15 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
   const [selectedItem, setSelectedItem] = useState<DecorInventoryItem | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  
+  // Transaction State
+  const [transactionDialog, setTransactionDialog] = useState<{
+    isOpen: boolean;
+    type: 'hire' | 'return' | 'damage' | 'repair' | null;
+    item: DecorInventoryItem | null;
+  }>({ isOpen: false, type: null, item: null });
+  const [transactionQty, setTransactionQty] = useState<number>(1);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCell, setEditingCell] = useState<{id: string, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -178,13 +187,18 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     });
   };
 
-  const handleAction = (id: string, action: 'hire' | 'return' | 'damage' | 'repair') => {
-    handleActionSilent(id, action);
+  const openTransactionDialog = (item: DecorInventoryItem, type: 'hire' | 'return' | 'damage' | 'repair') => {
+    setTransactionDialog({ isOpen: true, type, item });
+    setTransactionQty(1);
   };
 
-  const handleActionSilent = async (id: string, action: 'hire' | 'return' | 'damage' | 'repair') => {
+  const handleTransactionSubmit = async () => {
+    const { item, type } = transactionDialog;
+    if (!item || !type) return;
+
     try {
-      await actionMutation.mutateAsync({ id, action });
+      await actionMutation.mutateAsync({ id: item.id, action: type, quantity: transactionQty });
+      setTransactionDialog({ isOpen: false, type: null, item: null });
     } catch (error) {
       console.error('Action failed:', error);
     }
@@ -321,7 +335,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                   <Button
                     size="xs"
                     variant="ghost"
-                    onClick={() => handleAction(item.id, 'hire')}
+                    onClick={() => openTransactionDialog(item, 'hire')}
                     disabled={item.in_store === 0 || actionMutation.isPending}
                     className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white rounded-lg transition-all"
                   >
@@ -330,7 +344,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                   <Button
                     size="xs"
                     variant="ghost"
-                    onClick={() => handleAction(item.id, 'return')}
+                    onClick={() => openTransactionDialog(item, 'return')}
                     disabled={item.hired === 0 || actionMutation.isPending}
                     className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-secondary hover:text-white rounded-lg transition-all"
                   >
@@ -339,7 +353,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                   <Button
                     size="xs"
                     variant="ghost"
-                    onClick={() => handleAction(item.id, 'damage')}
+                    onClick={() => openTransactionDialog(item, 'damage')}
                     disabled={item.in_store === 0 || actionMutation.isPending}
                     className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-destructive hover:text-white rounded-lg transition-all"
                   >
@@ -348,7 +362,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                   <Button
                     size="xs"
                     variant="ghost"
-                    onClick={() => handleAction(item.id, 'repair')}
+                    onClick={() => openTransactionDialog(item, 'repair')}
                     disabled={item.damaged === 0 || actionMutation.isPending}
                     className="h-8 px-4 font-bold text-[10px] uppercase tracking-widest hover:bg-green-600 hover:text-white rounded-lg transition-all"
                   >
@@ -397,6 +411,74 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           </Card>
         ))}
       </div>
+      
+      {/* Transaction Dialog */}
+      <Dialog 
+        open={transactionDialog.isOpen} 
+        onOpenChange={(open) => { 
+          if (!open) setTransactionDialog({ isOpen: false, type: null, item: null }); 
+        }}
+      >
+        <DialogContent className="w-[95vw] max-w-[400px] rounded-3xl p-0 border-none shadow-2xl">
+          <div className={`h-1.5 w-full bg-gradient-to-r ${
+            transactionDialog.type === 'hire' ? 'from-primary to-blue-600' :
+            transactionDialog.type === 'return' ? 'from-secondary to-purple-600' :
+            transactionDialog.type === 'damage' ? 'from-destructive to-red-600' :
+            'from-green-600 to-emerald-400'
+          }`} />
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-xl font-black uppercase tracking-tight">
+              {transactionDialog.type} Item
+            </DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              {transactionDialog.item?.item_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="px-6 py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Quantity</label>
+              <Input 
+                type="number" 
+                value={transactionQty} 
+                onChange={(e) => setTransactionQty(Math.max(1, parseInt(e.target.value) || 0))}
+                min={1}
+                className="font-black text-3xl text-center h-16 rounded-2xl bg-muted/20 border-none"
+                autoFocus
+              />
+              <p className="text-[10px] text-center text-muted-foreground">
+                 Available: {transactionDialog.type === 'hire' || transactionDialog.type === 'damage' 
+                   ? transactionDialog.item?.in_store 
+                   : transactionDialog.type === 'return' 
+                     ? transactionDialog.item?.hired 
+                     : transactionDialog.item?.damaged}
+              </p>
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setTransactionDialog({ isOpen: false, type: null, item: null })}
+                className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleTransactionSubmit}
+                disabled={actionMutation.isPending}
+                className={`flex-1 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg rounded-xl ${
+                   transactionDialog.type === 'hire' ? 'bg-primary hover:bg-primary/90 shadow-primary/20' :
+                   transactionDialog.type === 'return' ? 'bg-secondary hover:bg-secondary/90 shadow-secondary/20' :
+                   transactionDialog.type === 'damage' ? 'bg-destructive hover:bg-destructive/90 shadow-destructive/20' :
+                   'bg-green-600 hover:bg-green-700 shadow-green-600/20'
+                }`}
+              >
+                {actionMutation.isPending ? 'Processing...' : 'Confirm'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Item Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

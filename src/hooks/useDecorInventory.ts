@@ -63,8 +63,8 @@ export const useDecorActionMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: 'hire' | 'return' | 'damage' | 'repair' }) => {
-      const response = await apiClient.post<{ data: DecorInventoryItem }>('/api/decor-inventory', { id, action });
+    mutationFn: async ({ id, action, quantity = 1 }: { id: string; action: 'hire' | 'return' | 'damage' | 'repair', quantity?: number }) => {
+      const response = await apiClient.post<{ data: DecorInventoryItem }>('/api/decor-inventory', { id, action, quantity });
       return response.data;
     },
     onSuccess: (_, { action }) => {

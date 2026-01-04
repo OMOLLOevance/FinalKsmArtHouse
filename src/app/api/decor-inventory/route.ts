@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const { action, id, ...itemData } = body;
+    const { action, id, quantity = 1, ...itemData } = body;
 
     const client = token ? createAuthenticatedClient(token) : supabase;
 
@@ -103,24 +103,26 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (fetchError) throw ApiError.fromSupabase(fetchError);
+      
+      const qty = Math.max(1, parseInt(quantity));
 
       let updates: any = {};
       switch (action) {
         case 'hire':
-          if (current.in_store <= 0) return NextResponse.json({ error: 'No items available' }, { status: 400 });
-          updates = { in_store: current.in_store - 1, hired: current.hired + 1 };
+          if (current.in_store < qty) return NextResponse.json({ error: `Not enough items available. Available: ${current.in_store}` }, { status: 400 });
+          updates = { in_store: current.in_store - qty, hired: current.hired + qty };
           break;
         case 'return':
-          if (current.hired <= 0) return NextResponse.json({ error: 'No items to return' }, { status: 400 });
-          updates = { hired: current.hired - 1, in_store: current.in_store + 1 };
+          if (current.hired < qty) return NextResponse.json({ error: `Cannot return more than hired. Hired: ${current.hired}` }, { status: 400 });
+          updates = { hired: current.hired - qty, in_store: current.in_store + qty };
           break;
         case 'damage':
-          if (current.in_store <= 0) return NextResponse.json({ error: 'No items to damage' }, { status: 400 });
-          updates = { in_store: current.in_store - 1, damaged: current.damaged + 1 };
+          if (current.in_store < qty) return NextResponse.json({ error: `Not enough items in store to mark damaged. In Store: ${current.in_store}` }, { status: 400 });
+          updates = { in_store: current.in_store - qty, damaged: current.damaged + qty };
           break;
         case 'repair':
-          if (current.damaged <= 0) return NextResponse.json({ error: 'No items to repair' }, { status: 400 });
-          updates = { damaged: current.damaged - 1, in_store: current.in_store + 1 };
+          if (current.damaged < qty) return NextResponse.json({ error: `Cannot repair more than damaged. Damaged: ${current.damaged}` }, { status: 400 });
+          updates = { damaged: current.damaged - qty, in_store: current.in_store + qty };
           break;
       }
 
