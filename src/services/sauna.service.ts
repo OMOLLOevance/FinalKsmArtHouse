@@ -17,9 +17,12 @@ export type CreateSaunaBookingRequest = z.infer<typeof SaunaBookingSchema>;
 
 class SaunaService {
   // Sauna Bookings
-  async getSaunaBookings(userId: string): Promise<SaunaBooking[]> {
+  async getSaunaBookings(userId: string, filterUserId?: string | null): Promise<SaunaBooking[]> {
     try {
-      const response = await apiClient.get<{ data: any[] }>(`/api/sauna?userId=${userId}`);
+      let url = `/api/sauna?userId=${userId}`;
+      if (filterUserId) url += `&filterUserId=${filterUserId}`;
+
+      const response = await apiClient.get<{ data: any[] }>(url);
       return (response?.data || []).map(this.mapDbToFrontend);
     } catch (error) {
       logger.error('SaunaService.getSaunaBookings failed:', error);

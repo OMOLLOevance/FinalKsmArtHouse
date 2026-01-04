@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/Dialog';
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
+import { StaffSelector } from '@/components/shared/StaffSelector';
 
 import { calculateMembershipEndDate } from '@/utils/calculations';
 import { sanitizePhoneNumber, formatCurrency } from '@/utils/formatters';
@@ -48,8 +49,13 @@ interface GymManagementProps {
 const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
-  const { data: finances, isLoading: financesLoading, refetch: refetchFinances } = useGymFinancesQuery();
-  const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useGymMembersQuery();
+  
+  // RBAC
+  const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+
+  const { data: finances, isLoading: financesLoading, refetch: refetchFinances } = useGymFinancesQuery(filterUserId);
+  const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useGymMembersQuery('', filterUserId);
 
   const addFinanceMutation = useCreateGymFinanceMutation();
   const updateFinanceMutation = useUpdateGymFinanceMutation();
@@ -68,9 +74,6 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const [quickExpenseAmount, setQuickExpenseAmount] = useState('');
   const [quickExpenseDescription, setQuickExpenseDescription] = useState('');
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string; type: 'finance' | 'member'; name?: string }>({ isOpen: false, id: '', type: 'finance' });
-
-  // Role Permissions using RBAC hook
-  const { canDeleteTransaction } = useRoleGuard();
 
   const form = useForm<MemberFormValues>({
     resolver: zodResolver(MemberSchema) as any,
@@ -383,7 +386,7 @@ Thank you for being part of our fitness community!`
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           {onBack && (
             <Button variant="outline" size="sm" onClick={onBack} className="flex items-center">
@@ -396,6 +399,18 @@ Thank you for being part of our fitness community!`
             <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Professional Operations</p>
           </div>
         </div>
+
+        {/* RBAC Staff Filter */}
+        {(isOperationsManager() || isDirectorOrInvestor()) && (
+          <div className="w-64">
+            <StaffSelector 
+              value={filterUserId} 
+              onChange={setFilterUserId} 
+              className="w-full bg-background/50 backdrop-blur-sm"
+            />
+          </div>
+        )}
+
         <Button onClick={() => setIsAdding(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add {activeTab === 'finances' ? 'Finance' : 'Member'}
@@ -666,3 +681,4 @@ Thank you for being part of our fitness community!`
 };
 
 export default React.memo(GymManagement);
+

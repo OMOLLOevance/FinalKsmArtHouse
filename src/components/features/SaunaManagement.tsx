@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
+import { StaffSelector } from '@/components/shared/StaffSelector';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
 
@@ -24,14 +25,16 @@ interface SaunaManagementProps {
 
 const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
-  const { data: bookings, isLoading: bookingsLoading } = useSaunaBookingsQuery();
+  
+  // RBAC
+  const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
+
+  const { data: bookings, isLoading: bookingsLoading } = useSaunaBookingsQuery(filterUserId);
   const createBookingMutation = useCreateSaunaBookingMutation();
   const deleteBookingMutation = useDeleteSaunaBookingMutation();
 
   const [isAdding, setIsAdding] = useState(false);
-
-  // Role Permissions using RBAC hook
-  const { canDeleteTransaction } = useRoleGuard();
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -88,7 +91,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           {onBack && (
             <Button variant="outline" size="sm" onClick={onBack}>
@@ -101,6 +104,18 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
             <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Wellness Operations</p>
           </div>
         </div>
+
+        {/* RBAC Staff Filter */}
+        {(isOperationsManager() || isDirectorOrInvestor()) && (
+          <div className="w-64">
+            <StaffSelector 
+              value={filterUserId} 
+              onChange={setFilterUserId} 
+              className="w-full bg-background/50 backdrop-blur-sm"
+            />
+          </div>
+        )}
+
         <Button onClick={() => setIsAdding(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Booking

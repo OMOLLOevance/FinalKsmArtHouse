@@ -6,12 +6,12 @@ import { logger } from '@/lib/logger';
 
 
 // Gym Members Hooks
-export const useGymMembersQuery = (search?: string) => {
+export const useGymMembersQuery = (search?: string, filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['gym', 'members', userId, search],
-    queryFn: () => gymService.getMembers(userId!, search).catch(err => {
+    queryKey: ['gym', 'members', userId, search, filterUserId],
+    queryFn: () => gymService.getMembers(userId!, search, filterUserId).catch(err => {
       logger.error('Gym members fetch error:', err);
       return [];
     }),
@@ -73,12 +73,12 @@ export const useDeleteGymMemberMutation = () => {
 };
 
 // Gym Finances Hooks
-export const useGymFinancesQuery = () => {
+export const useGymFinancesQuery = (filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['gym', 'finances', userId],
-    queryFn: () => gymService.getFinances(userId!).catch(err => {
+    queryKey: ['gym', 'finances', userId, filterUserId],
+    queryFn: () => gymService.getFinances(userId!, filterUserId).catch(err => {
       logger.error('Gym finances fetch error:', err);
       return [];
     }),

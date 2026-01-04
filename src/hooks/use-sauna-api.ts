@@ -6,12 +6,12 @@ import { logger } from '@/lib/logger';
 
 
 // Sauna Bookings Hooks
-export const useSaunaBookingsQuery = () => {
+export const useSaunaBookingsQuery = (filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['sauna', 'bookings', userId],
-    queryFn: () => saunaService.getSaunaBookings(userId!).catch(err => {
+    queryKey: ['sauna', 'bookings', userId, filterUserId],
+    queryFn: () => saunaService.getSaunaBookings(userId!, filterUserId).catch(err => {
       logger.error('Sauna bookings fetch error:', err);
       return [];
     }),

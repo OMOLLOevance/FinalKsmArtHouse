@@ -27,10 +27,13 @@ export type CreateGymFinanceRequest = z.infer<typeof GymFinanceSchema>;
 
 class GymService {
   // Members
-  async getMembers(userId: string, search?: string): Promise<GymMember[]> {
+  async getMembers(userId: string, search?: string, filterUserId?: string | null): Promise<GymMember[]> {
     try {
-      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
-      const response = await apiClient.get<{data: any[]}>(`/api/gym?userId=${userId}${searchParam}`);
+      let url = `/api/gym?userId=${userId}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (filterUserId) url += `&filterUserId=${filterUserId}`; // Pass filter param
+      
+      const response = await apiClient.get<{data: any[]}>(url);
       return (response?.data || []).map(this.mapDbMemberToFrontend);
     } catch (error) {
       logger.error('GymService.getMembers failed:', error);
@@ -89,9 +92,12 @@ class GymService {
   }
 
   // Finances
-  async getFinances(userId: string): Promise<GymFinance[]> {
+  async getFinances(userId: string, filterUserId?: string | null): Promise<GymFinance[]> {
     try {
-      const response = await apiClient.get<{data: any[]}>(`/api/gym/finances?userId=${userId}`);
+      let url = `/api/gym/finances?userId=${userId}`;
+      if (filterUserId) url += `&filterUserId=${filterUserId}`;
+
+      const response = await apiClient.get<{data: any[]}>(url);
       return (response?.data || []).map(this.mapDbFinanceToFrontend);
     } catch (error) {
       logger.error('GymService.getFinances failed:', error);
