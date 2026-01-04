@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message.replace(/[\r\n]/g, ' ') : 'Auth check failed';
-      console.error('Auth check error:', { message: errorMessage });
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Auth check failed';
+      console.error('Auth check error:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -109,9 +109,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return { success: false, message: 'Session not created' };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message.replace(/[\r\n]/g, ' ') : 'Login failed';
-      console.error('Login error:', { message: errorMessage });
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Login failed';
+      console.error('Login error:', error);
       setUser(null);
       return { success: false, message: errorMessage };
     } finally {
@@ -156,9 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return { success: true, message: 'Account created successfully!' };
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message.replace(/[\r\n]/g, ' ') : 'Signup failed';
-      console.error('Signup error:', { message: errorMessage });
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Signup failed';
+      console.error('Signup error:', error);
       return { success: false, message: errorMessage };
     } finally {
       setIsLoading(false);
@@ -172,9 +172,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       setUser(null);
       // Removed: router.push('/login'); // Redirect to login after logout
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message.replace(/[\r\n]/g, ' ') : 'Logout failed';
-      console.error('Logout error:', { message: errorMessage });
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Logout failed';
+      console.error('Logout error:', error);
     } finally {
       setIsLoading(false);
     }
