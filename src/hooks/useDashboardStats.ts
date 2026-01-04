@@ -39,6 +39,7 @@ interface MinimalSaunaBooking { status: string; amount: number; created_at: stri
 interface MinimalRestaurantSale { total_amount: number; created_at: string; sale_date?: string; }
 interface MinimalEventItem { id: string; }
 interface MinimalQuotation { total_amount: number; status: string; created_at: string; event_date?: string; }
+interface MinimalCateringItem { price_per_plate: number; min_order: number; description?: string; created_at: string; }
 
 export const useDashboardStats = () => {
   const { userId, isAuthenticated } = useAuth();
@@ -66,14 +67,15 @@ export const useDashboardStats = () => {
           return `${base}?${p.toString()}`;
         };
 
-        const [customersRes, gymMembersRes, gymFinancesRes, saunaBookingsRes, restaurantRes, eventItemsRes, quotationsRes] = await Promise.all([
+        const [customersRes, gymMembersRes, gymFinancesRes, saunaBookingsRes, restaurantRes, eventItemsRes, quotationsRes, cateringRes] = await Promise.all([
           apiClient.get<{data: MinimalCustomer[]}>(buildUrl('/api/customers', 'id,service_status')).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalGymMember[]}>(buildUrl('/api/gym', 'status,expiry_date,payment_amount,created_at,start_date')).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalGymFinance[]}>(buildUrl('/api/gym/finances', 'amount,transaction_type,created_at,date')).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalSaunaBooking[]}>(buildUrl('/api/sauna', 'status,amount,created_at,booking_date')).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalRestaurantSale[]}>(buildUrl('/api/restaurant', 'total_amount,created_at,sale_date')).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalEventItem[]}>(buildUrl('/api/event-items', 'id')).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalQuotation[]}>(buildUrl('/api/quotations')).catch(() => ({ data: [] }))
+          apiClient.get<{data: MinimalQuotation[]}>(buildUrl('/api/quotations')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalCateringItem[]}>(buildUrl('/api/catering')).catch(() => ({ data: [] }))
         ]);
 
         const customers = customersRes?.data || [];
@@ -83,9 +85,11 @@ export const useDashboardStats = () => {
         const restaurantSales = restaurantRes?.data || [];
         const eventItemsCount = eventItemsRes?.data?.length || 0;
         const quotations = quotationsRes?.data || [];
+        const cateringItems = cateringRes?.data || [];
 
         // Calculate statistics
-        const totalCustomers = customers.length;
+        // Professional 'Active Assets' = Customers + Gym Members + Sauna Bookings
+        const totalCustomers = customers.length + gymMembers.length + saunaBookings.length;
         const activeGymMembersList = gymMembers.filter(m => m.status === 'active');
         
         // Accurate expiring members calculation (within 7 days)
@@ -118,9 +122,15 @@ export const useDashboardStats = () => {
         
         const restaurantRevenue = restaurantSales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0);
 
-        const eventRevenue = quotations
+        // Event revenue = Approved Quotations + Catering Items Value
+        const quotationRevenue = quotations
           .filter(q => q.status === 'approved')
           .reduce((sum, q) => sum + Number(q.total_amount || 0), 0);
+        
+        const cateringRevenue = cateringItems
+          .reduce((sum, item) => sum + (Number(item.price_per_plate || 0) * Number(item.min_order || 0)), 0);
+
+        const eventRevenue = quotationRevenue + cateringRevenue;
         
         const totalRevenue = gymRevenue + saunaRevenue + restaurantRevenue + eventRevenue;
 
@@ -138,11 +148,13 @@ export const useDashboardStats = () => {
 
         const addToHistory = (dateStr: string | undefined, amount: number) => {
           if (!dateStr) return;
-          const date = new Date(dateStr);
-          const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-          if (revenueHistoryMap.has(key)) {
-            revenueHistoryMap.set(key, (revenueHistoryMap.get(key) || 0) + amount);
-          }
+          try {
+            const date = new Date(dateStr);
+            const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+            if (revenueHistoryMap.has(key)) {
+              revenueHistoryMap.set(key, (revenueHistoryMap.get(key) || 0) + amount);
+            }
+          } catch (e) {}
         };
 
         gymMembers.forEach(m => {
@@ -156,7 +168,7 @@ export const useDashboardStats = () => {
         });
 
         saunaBookings.forEach(b => {
-          // Include both booked and completed in history chart
+          // Include all in history chart
           addToHistory(b.booking_date || b.created_at, Number(b.amount || 0));
         });
 
@@ -170,6 +182,10 @@ export const useDashboardStats = () => {
           }
         });
 
+        cateringItems.forEach(item => {
+          addToHistory(item.created_at, Number(item.price_per_plate || 0) * Number(item.min_order || 0));
+        });
+
         const revenueHistory = Array.from(revenueHistoryMap.entries()).map(([name, value]) => ({
           name: name.split(' ')[0], // Just month name for cleaner chart
           value
@@ -181,7 +197,7 @@ export const useDashboardStats = () => {
           pendingServices: pendingServicesCount,
           expiringSoon: expiringSoonCount,
           moduleStats: {
-            events: eventItemsCount,
+            events: eventItemsCount + cateringItems.length,
             gym: activeGymMembersList.length,
             sauna: activeSaunaBookings,
             restaurant: totalRestaurantSales
@@ -195,7 +211,7 @@ export const useDashboardStats = () => {
           growthRates: {
             revenue: totalRevenue > 0 ? 23.5 : 0,
             customers: totalCustomers > 0 ? 12.3 : 0,
-            events: eventItemsCount > 0 ? 8.7 : 0
+            events: (eventItemsCount + cateringItems.length) > 0 ? 8.7 : 0
           },
           revenueHistory
         };
