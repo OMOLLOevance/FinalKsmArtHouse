@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
 import { StaffSelector } from '@/components/shared/StaffSelector';
 import { formatCurrency } from '@/utils/formatters';
@@ -136,69 +137,78 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
         </Button>
       </div>
 
-      {isAdding && (
-        <Card className="glass-card glow-primary">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>New Booking Entry</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => setIsAdding(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Date</label>
-                <Input 
-                  type="date" 
-                  value={formData.date} 
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
-                  required 
-                />
+      <Dialog open={isAdding} onOpenChange={setIsAdding}>
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-none shadow-2xl">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary to-blue-600" />
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
+              New Booking Entry
+            </DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              Register a new sauna session
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="px-6 py-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Date</label>
+                  <Input 
+                    type="date" 
+                    value={formData.date} 
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
+                    required 
+                    className="font-bold rounded-xl h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Time</label>
+                  <Input 
+                    type="time" 
+                    value={formData.time} 
+                    onChange={(e) => setFormData({ ...formData, time: e.target.value })} 
+                    required 
+                    className="font-bold rounded-xl h-11"
+                  />
+                </div>
+                <div className="col-span-full space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Client Name</label>
+                  <Input 
+                    type="text" 
+                    value={formData.client} 
+                    onChange={(e) => setFormData({ ...formData, client: e.target.value })} 
+                    placeholder="Enter client name"
+                    required 
+                    className="font-bold rounded-xl h-11"
+                  />
+                </div>
+                <div className="col-span-full space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Amount (KSH)</label>
+                  <Input 
+                    type="number" 
+                    value={formData.amount || ''} 
+                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} 
+                    placeholder="0.00"
+                    required 
+                    className="font-black text-right rounded-xl h-11"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Time</label>
-                <Input 
-                  type="time" 
-                  value={formData.time} 
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })} 
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Client Name</label>
-                <Input 
-                  type="text" 
-                  value={formData.client} 
-                  onChange={(e) => setFormData({ ...formData, client: e.target.value })} 
-                  placeholder="Enter client name"
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-muted-foreground tracking-widest">Amount (KSH)</label>
-                <Input 
-                  type="number" 
-                  value={formData.amount || ''} 
-                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} 
-                  placeholder="0.00"
-                  required 
-                />
-              </div>
-              <div className="md:col-span-2 flex justify-end space-x-2 pt-4">
-                <Button variant="outline" type="button" onClick={() => setIsAdding(false)}>
+
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                <Button variant="outline" type="button" onClick={() => setIsAdding(false)} className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] rounded-xl">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createBookingMutation.isPending}>
+                <Button type="submit" disabled={createBookingMutation.isPending} className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl">
                   <Save className="h-4 w-4 mr-2" />
                   {createBookingMutation.isPending ? 'Saving...' : 'Save Booking'}
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Standardized Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

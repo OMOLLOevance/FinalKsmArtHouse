@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Plus, Edit, Trash2, ArrowLeft, Save, DollarSign, Users, TrendingUp, Calendar, Mail, AlertTriangle, MessageCircle, Send, Waves } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, DollarSign, Users, TrendingUp, Calendar, Mail, AlertTriangle, MessageCircle, Send, Waves, X } from 'lucide-react';
 import { GymFinance, GymMember } from '@/types';
 import { useGymMembersQuery, useCreateGymMemberMutation, useUpdateGymMemberMutation, useDeleteGymMemberMutation, useGymFinancesQuery, useCreateGymFinanceMutation, useUpdateGymFinanceMutation, useDeleteGymFinanceMutation } from '@/hooks/use-gym-api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
-import { ConfirmDialog } from '@/components/ui/Dialog';
+import { ConfirmDialog, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
 import { StaffSelector } from '@/components/shared/StaffSelector';
 
@@ -563,123 +563,212 @@ Thank you for being part of our fitness community!`
         </Card>
       )}
 
-      {(isAdding || editingFinance) && activeTab === 'finances' && (
-        <Card className="mb-6">
-          <CardHeader><CardTitle className="text-lg font-semibold">{editingFinance ? 'Edit Finance Entry' : 'Add New Finance Entry'}</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={handleFinanceSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium mb-1">Date</label><Input type="date" value={financeFormData.date} onChange={(e) => setFinanceFormData({ ...financeFormData, date: e.target.value })} required /></div>
-              <div><label className="block text-sm font-medium mb-1">Type</label><select value={financeFormData.type} onChange={(e) => setFinanceFormData({ ...financeFormData, type: e.target.value as 'income' | 'expense' })} className="w-full px-3 py-2 border rounded-md bg-background text-foreground" required><option value="income">Income</option><option value="expense">Expense</option></select></div>
-              <div><label className="block text-sm font-medium mb-1">Amount (KSH)</label><Input type="number" value={financeFormData.amount} onChange={(e) => setFinanceFormData({ ...financeFormData, amount: parseFloat(e.target.value) || 0 })} required /></div>
-              <div><label className="block text-sm font-medium mb-1">Description</label><Input type="text" value={financeFormData.description} onChange={(e) => setFinanceFormData({ ...financeFormData, description: e.target.value })} required /></div>
-              <div className="md:col-span-2 flex justify-end space-x-2"><Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingFinance(null); }}>Cancel</Button><Button type="submit"><Save className="h-4 w-4 mr-2" />{editingFinance ? 'Update' : 'Save'}</Button></div>
+      <Dialog 
+        open={(isAdding || !!editingFinance) && activeTab === 'finances'} 
+        onOpenChange={(open) => { 
+          if (!open) { 
+            setIsAdding(false); 
+            setEditingFinance(null); 
+          } 
+        }}
+      >
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-none shadow-2xl">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary to-blue-600" />
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
+              {editingFinance ? 'Edit Finance Entry' : 'New Finance Entry'}
+            </DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              Record financial transaction details
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="px-6 py-4">
+            <form onSubmit={handleFinanceSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Date</label>
+                  <Input 
+                    type="date" 
+                    value={financeFormData.date} 
+                    onChange={(e) => setFinanceFormData({ ...financeFormData, date: e.target.value })} 
+                    required 
+                    className="font-bold rounded-xl h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Type</label>
+                  <select 
+                    value={financeFormData.type} 
+                    onChange={(e) => setFinanceFormData({ ...financeFormData, type: e.target.value as 'income' | 'expense' })} 
+                    className="w-full px-3 py-2 border rounded-xl bg-background text-foreground font-bold h-11" 
+                    required
+                  >
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Amount (KSH)</label>
+                  <Input 
+                    type="number" 
+                    value={financeFormData.amount} 
+                    onChange={(e) => setFinanceFormData({ ...financeFormData, amount: parseFloat(e.target.value) || 0 })} 
+                    required 
+                    className="font-black text-right rounded-xl h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Description</label>
+                  <Input 
+                    type="text" 
+                    value={financeFormData.description} 
+                    onChange={(e) => setFinanceFormData({ ...financeFormData, description: e.target.value })} 
+                    required 
+                    className="font-bold rounded-xl h-11"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingFinance(null); }} className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] rounded-xl">
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl">
+                  <Save className="h-4 w-4 mr-2" />{editingFinance ? 'Update Entry' : 'Save Entry'}
+                </Button>
+              </div>
             </form>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      {(isAdding || editingMember) && activeTab === 'members' && (
-        <Card className="mb-6">
-          <CardHeader><CardTitle className="text-lg font-semibold">{editingMember ? 'Edit Gym Member' : 'Add New Gym Member'}</CardTitle></CardHeader>
-          <CardContent>
+      <Dialog 
+        open={(isAdding || !!editingMember) && activeTab === 'members'} 
+        onOpenChange={(open) => { 
+          if (!open) { 
+            setIsAdding(false); 
+            setEditingMember(null); 
+          } 
+        }}
+      >
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto rounded-3xl p-0 border-none shadow-2xl">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary to-green-600" />
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-primary">
+              {editingMember ? 'Edit Gym Member' : 'Register New Member'}
+            </DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+              Manage gym membership details
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="px-6 py-4">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onMemberSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="0712345678" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="john@example.com" type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="packageType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Package</FormLabel>
-                      <FormControl>
-                        <select {...field} className="w-full px-3 py-2 border rounded-md bg-background text-foreground h-10">
-                          <option value="weekly">Weekly</option>
-                          <option value="monthly">Monthly</option>
-                          <option value="three-months">3 Months</option>
-                        </select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="amountPaid"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount Paid</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="md:col-span-2">
-                  <p className="text-sm text-muted-foreground mb-4 font-bold italic">
+              <form onSubmit={form.handleSubmit(onMemberSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} className="font-bold rounded-xl h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="0712345678" {...field} className="font-bold rounded-xl h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="john@example.com" type="email" {...field} className="font-medium rounded-xl h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="packageType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Package</FormLabel>
+                        <FormControl>
+                          <select {...field} className="w-full px-3 py-2 border rounded-xl bg-background text-foreground font-bold h-11">
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="three-months">3 Months</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="amountPaid"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Amount Paid</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} className="font-black text-right rounded-xl h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Start Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className="font-bold rounded-xl h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="pt-2">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest mb-4 italic text-right">
                     Calculated End Date: {calculateMembershipEndDate(form.watch('startDate'), form.watch('packageType'))}
                   </p>
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingMember(null); }}>Cancel</Button>
-                    <Button type="submit"><Save className="h-4 w-4 mr-2" />{editingMember ? 'Update' : 'Save'}</Button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingMember(null); }} className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] rounded-xl">
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="flex-1 h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl">
+                      <Save className="h-4 w-4 mr-2" />{editingMember ? 'Update Member' : 'Register Member'}
+                    </Button>
                   </div>
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Card className="border-none shadow-sm overflow-hidden">
         <div className="flex border-b bg-muted/10">

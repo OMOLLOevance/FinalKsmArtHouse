@@ -17,6 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, 
   DialogDescription, DialogFooter 
 } from '@/components/ui/Dialog';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { logger } from '@/lib/logger';
@@ -49,6 +50,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
 
   const [editingItem, setEditingItem] = useState<CateringItem | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isNewCategory, setIsNewCategory] = useState(false);
   
   // Track local changes for existing items
   const [localInventory, setLocalInventory] = useState<Record<string, Partial<CateringInventoryItem>>>({});
@@ -62,6 +64,17 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
     // Combine with defaults but prioritize existing DB categories
     return [...new Set([...DEFAULT_CATEGORIES, ...dbCategories, ...pendingCategories])].sort();
   }, [inventoryItems, pendingItems]);
+
+  const categoryOptions = useMemo(() => {
+    return categories.map(cat => ({ value: cat, label: cat }));
+  }, [categories]);
+
+  const categoriesWithNew = useMemo(() => {
+    return [
+      { value: "NEW_CATEGORY", label: "➕ ADD NEW CATEGORY..." },
+      ...categoryOptions
+    ];
+  }, [categoryOptions]);
 
   const [formData, setFormData] = useState({
     item: '',
@@ -446,7 +459,46 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Classification</label>
-                <Input placeholder="e.g. Catering" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} required className="font-bold rounded-xl h-11" />
+                {!isNewCategory ? (
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.category}
+                      onValueChange={(val) => {
+                        if (val === "NEW_CATEGORY") {
+                          setIsNewCategory(true);
+                          setFormData({ ...formData, category: '' });
+                        } else {
+                          setFormData({ ...formData, category: val });
+                        }
+                      }}
+                      placeholder="Select Category"
+                      options={categoriesWithNew}
+                      className="flex-1 rounded-xl"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
+                    <Input 
+                      placeholder="Enter new category name..." 
+                      value={formData.category} 
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value.toUpperCase() })}
+                      className="font-black h-11 border-primary/20 focus:border-primary uppercase rounded-xl flex-1"
+                      autoFocus
+                    />
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      onClick={() => setIsNewCategory(false)}
+                      className="h-11 w-11 p-0 rounded-xl hover:bg-muted"
+                      title="Back to List"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+                 <p className="text-[8px] text-muted-foreground ml-1">
+                    {!isNewCategory ? "Choose from existing list or select 'ADD NEW' to create" : "Manual entry mode active."}
+                  </p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Quantity / Servings</label>
