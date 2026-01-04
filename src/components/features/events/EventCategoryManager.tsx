@@ -42,58 +42,63 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
   const isSpecialCategory = category === 'entertainment' || category === 'sanitation';
   
   const currentData = useMemo(() => {
+    let source: any;
+    let mapItem: (item: any) => any;
+    let addItemFn: any;
+    let deleteItemFn: any;
+
     if (category === 'entertainment') {
-      return {
-        items: entertainment.items.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity_available,
-          price: item.price,
-          unit: 'unit',
-          status: 'available',
-          users: (item as any).users
-        })),
-        loading: entertainment.loading,
-        error: entertainment.error,
-        addItem: entertainment.addItem,
-        deleteItem: entertainment.deleteItem,
-        refetch: entertainment.refetch
-      };
-    }
-    if (category === 'sanitation') {
-      return {
-        items: sanitation.items.map(item => ({
-          id: item.id,
-          name: (item as any).name || (item as any).item_name || 'Item',
-          quantity: item.quantity,
-          price: item.price,
-          unit: item.unit,
-          status: item.status,
-          users: (item as any).users
-        })),
-        loading: sanitation.loading,
-        error: sanitation.error,
-        addItem: sanitation.addItem,
-        deleteItem: sanitation.deleteItem,
-        refetch: sanitation.refetch
-      };
-    }
-    // Default: event_items table
-    return {
-      items: (eventItems.data || []).filter(item => item.category === category).map(item => ({
+      source = entertainment;
+      addItemFn = entertainment.addItem;
+      deleteItemFn = entertainment.deleteItem;
+      mapItem = (item: any) => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity_available,
+        price: item.price,
+        unit: 'unit',
+        status: 'available',
+        users: item.users
+      });
+    } else if (category === 'sanitation') {
+      source = sanitation;
+      addItemFn = sanitation.addItem;
+      deleteItemFn = sanitation.deleteItem;
+      mapItem = (item: any) => ({
+        id: item.id,
+        name: item.name || item.item_name || 'Item',
+        quantity: item.quantity,
+        price: item.price,
+        unit: item.unit,
+        status: item.status,
+        users: item.users
+      });
+    } else {
+      source = eventItems;
+      addItemFn = createEventItem.mutateAsync;
+      deleteItemFn = deleteEventItem.mutateAsync;
+      mapItem = (item: any) => ({
         id: item.id,
         name: item.name,
         quantity: item.quantityAvailable,
         price: item.price,
         unit: item.unit,
         status: item.status,
-        users: (item as any).users
-      })),
-      loading: eventItems.isLoading,
-      error: eventItems.error?.message,
-      addItem: createEventItem.mutateAsync,
-      deleteItem: deleteEventItem.mutateAsync,
-      refetch: eventItems.refetch
+        users: item.users
+      });
+    }
+
+    const rawItems = category === 'entertainment' || category === 'sanitation' 
+      ? source.items 
+      : (source.data || []).filter((item: any) => item.category === category);
+
+    return {
+      items: rawItems.map(mapItem),
+      loading: source.loading || source.isLoading,
+      error: source.error?.message || source.error,
+      addItem: addItemFn,
+      deleteItem: deleteItemFn,
+      refetch: source.refetch
     };
   }, [category, entertainment, sanitation, eventItems, createEventItem, deleteEventItem]);
 
