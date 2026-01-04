@@ -28,32 +28,47 @@ const RequirementSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+// Helper function to get user role
+async function getUserRole(userId: string, client: any): Promise<string> {
+  const { data } = await client
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role || 'staff';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userIdParam = searchParams.get('userId');
     const customerId = searchParams.get('customerId');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-
-    if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     // Default to authenticated client
     let client = token ? createAuthenticatedClient(token) : supabase;
     let isManager = false;
+    let sessionUserId = null;
 
     // RBAC: Check current user role and escalate if management
     if (token && adminSupabase) {
       const authClient = createAuthenticatedClient(token);
       const { data: { user } } = await authClient.auth.getUser();
       if (user) {
-        const { data: profile } = await authClient.from('users').select('role').eq('id', user.id).single();
-        const role = profile?.role || 'staff';
+        sessionUserId = user.id;
+        const role = await getUserRole(user.id, authClient);
         isManager = !!['director', 'investor', 'operations_manager'].includes(role);
         if (isManager) {
           client = adminSupabase;
         }
       }
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      sessionUserId = user?.id;
     }
+
+    const userId = userIdParam || sessionUserId;
+    if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     // 1. Fetch requirements
     let query = client.from('customer_requirements').select('*');
@@ -61,7 +76,7 @@ export async function GET(request: NextRequest) {
     // Filtering Logic
     if (customerId) {
       query = query.eq('customer_id', customerId);
-    } else if (!isManager) {
+    } else if (!isManager && userId) {
       query = query.eq('user_id', userId);
     }
 

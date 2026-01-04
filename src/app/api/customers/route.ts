@@ -48,7 +48,7 @@ async function getUserRole(userId: string, client: any): Promise<string> {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userIdParam = searchParams.get('userId');
     const discovery = searchParams.get('discovery') === 'true';
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -58,12 +58,14 @@ export async function GET(request: NextRequest) {
     // Default client
     let client = token ? createAuthenticatedClient(token) : supabase;
     let isManager = false;
+    let sessionUserId = null;
 
     // Check for management privileges
     if (token && adminSupabase) {
       const authClient = createAuthenticatedClient(token);
       const { data: { user } } = await authClient.auth.getUser();
       if (user) {
+        sessionUserId = user.id;
         const { data: profile } = await authClient
           .from('users')
           .select('role')
@@ -75,7 +77,13 @@ export async function GET(request: NextRequest) {
           client = adminSupabase;
         }
       }
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      sessionUserId = user?.id;
     }
+
+    const userId = userIdParam || sessionUserId;
+    if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     // DISCOVERY MODE: Cross-table customer search for Management
     if (discovery && isManager) {

@@ -56,23 +56,23 @@ const DecorAllocationSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userIdParam = searchParams.get('userId');
     const filterUserId = searchParams.get('filterUserId');
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-
     // Default client
     let client = token ? createAuthenticatedClient(token) : supabase;
     let isManager = false;
+    let sessionUserId = null;
 
     // RBAC: Check current user role and escalate if management
     if (token && adminSupabase) {
       const authClient = createAuthenticatedClient(token);
       const { data: { user } } = await authClient.auth.getUser();
       if (user) {
+        sessionUserId = user.id;
         const { data: userProfile } = await authClient.from('users').select('role').eq('id', user.id).single();
         const role = userProfile?.role || 'staff';
         isManager = !!['director', 'investor', 'operations_manager'].includes(role);
@@ -80,14 +80,20 @@ export async function GET(request: NextRequest) {
           client = adminSupabase;
         }
       }
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      sessionUserId = user?.id;
     }
+
+    const userId = userIdParam || sessionUserId;
+    if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     let query = client.from('decor_allocations').select('*');
 
     // RBAC Filtering Logic
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager) {
+    } else if (!isManager && userId) {
       query = query.eq('user_id', userId);
     }
     
