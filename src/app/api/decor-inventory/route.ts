@@ -1,21 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { z } from 'zod';
-import { ApiError } from '@/lib/errors';
-import { logger } from '@/lib/logger';
-
-const DecorInventorySchema = z.object({
-  category: z.string().min(1),
-  item_name: z.string().min(1),
-  in_store: z.number().int().min(0),
-  hired: z.number().int().min(0).default(0),
-  damaged: z.number().int().min(0).default(0),
-  price: z.number().min(0),
-  user_id: z.string().uuid().optional(),
-});
-
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
