@@ -54,8 +54,30 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
-  const { data: finances, isLoading: financesLoading, refetch: refetchFinances } = useGymFinancesQuery(filterUserId);
-  const { data: members, isLoading: membersLoading, refetch: refetchMembers } = useGymMembersQuery('', filterUserId);
+  const { 
+    data: finances, 
+    isLoading: financesLoading, 
+    refetch: refetchFinances,
+    isError: isFinancesError,
+    error: financesError
+  } = useGymFinancesQuery(filterUserId);
+
+  const { 
+    data: members, 
+    isLoading: membersLoading, 
+    refetch: refetchMembers,
+    isError: isMembersError,
+    error: membersError
+  } = useGymMembersQuery('', filterUserId);
+
+  useEffect(() => {
+    if (isFinancesError && financesError) {
+      showError('Error loading finances', financesError.message);
+    }
+    if (isMembersError && membersError) {
+      showError('Error loading members', membersError.message);
+    }
+  }, [isFinancesError, financesError, isMembersError, membersError, showError]);
 
   const addFinanceMutation = useCreateGymFinanceMutation();
   const updateFinanceMutation = useUpdateGymFinanceMutation();

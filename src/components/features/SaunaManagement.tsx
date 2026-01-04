@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2, ArrowLeft, Save, Waves, X } from 'lucide-react';
 import { 
   useSaunaBookingsQuery, 
@@ -18,6 +18,7 @@ import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
 import { StaffSelector } from '@/components/shared/StaffSelector';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
+import { useToast } from '@/components/ui/Toast';
 
 interface SaunaManagementProps {
   onBack?: () => void;
@@ -25,12 +26,25 @@ interface SaunaManagementProps {
 
 const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   
   // RBAC
   const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
-  const { data: bookings, isLoading: bookingsLoading } = useSaunaBookingsQuery(filterUserId);
+  const { 
+    data: bookings, 
+    isLoading: bookingsLoading,
+    isError: isBookingsError,
+    error: bookingsError
+  } = useSaunaBookingsQuery(filterUserId);
+
+  useEffect(() => {
+    if (isBookingsError && bookingsError) {
+      showError('Error loading sauna bookings', bookingsError.message);
+    }
+  }, [isBookingsError, bookingsError, showError]);
+
   const createBookingMutation = useCreateSaunaBookingMutation();
   const deleteBookingMutation = useDeleteSaunaBookingMutation();
 

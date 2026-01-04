@@ -46,7 +46,13 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   
   // Pass filterUserId to the hook
-  const { inventory: dbRecords, loading: dbLoading, addInventoryItem, refetch } = useRestaurantInventory(selectedMonth, filterUserId);
+  const { inventory: dbRecords, loading: dbLoading, addInventoryItem, refetch, error: dbError } = useRestaurantInventory(selectedMonth, filterUserId);
+
+  useEffect(() => {
+    if (dbError) {
+      showError('Error loading inventory', dbError);
+    }
+  }, [dbError, showError]);
 
   // Initialize Input Forms
   useEffect(() => {
