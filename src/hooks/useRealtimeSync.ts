@@ -96,7 +96,9 @@ export const useRealtimeSync = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Failed to sync to Supabase:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to sync to Supabase:', error);
+      }
       return false;
     }
   }, [user, getDeviceId]);
@@ -117,12 +119,16 @@ export const useRealtimeSync = () => {
       }));
 
       if (result) {
-        console.log('✅ All data synced to cloud successfully');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('All data synced to cloud successfully');
+        }
       }
 
       return result;
     } catch (error: any) {
-      console.error('Batch sync failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Batch sync failed:', error);
+      }
       setSyncStatus(prev => ({
         ...prev,
         syncing: false,
@@ -151,13 +157,17 @@ export const useRealtimeSync = () => {
 
         localStorage.setItem('ksm_last_cloud_sync', cloudData.updated_at);
 
-        console.log(`📥 Loaded all data from device ${cloudData.device_id}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Loaded all data from device ${cloudData.device_id}`);
+        }
         return true;
       }
 
       return false;
     } catch (error: any) {
-      console.error('Failed to load from Supabase:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load from Supabase:', error);
+      }
       return false;
     }
   }, [user]);
@@ -182,7 +192,9 @@ export const useRealtimeSync = () => {
 
       return result;
     } catch (error: any) {
-      console.error('Failed to load data:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load data:', error);
+      }
       setSyncStatus(prev => ({
         ...prev,
         syncing: false,
