@@ -27,6 +27,7 @@ export interface AdditionalCharges {
 export interface Quotation {
   id: string;
   quotationNumber: string;
+  customerId: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -57,6 +58,7 @@ export const useQuotationsQuery = (filterUserId?: string | null) => {
       return response.data.map(q => ({
         id: q.id,
         quotationNumber: q.id ? `QT-${q.id.slice(-6)}` : 'QT-NEW',
+        customerId: q.customer_id,
         customerName: q.customer_name || 'Unnamed Client',
         customerEmail: q.customer_email || '',
         customerPhone: q.customer_phone || '',
