@@ -246,8 +246,6 @@ export const useRealtimeSync = () => {
 
                 setSyncStatus(prev => ({ ...prev, lastSync: newData.updated_at }));
 
-                console.log(`📱 Real-time update from device ${newData.device_id}`);
-
                 window.dispatchEvent(new CustomEvent('realtime-data-update', {
                   detail: { deviceId: newData.device_id, timestamp: newData.updated_at }
                 }));
@@ -259,13 +257,14 @@ export const useRealtimeSync = () => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setSyncStatus(prev => ({ ...prev, connected: true, error: null }));
-          console.log('🔄 Real-time sync active');
-
-          // Initial load only, no continuous syncing
-          loadAllDataFromSupabase();
+          // Initial load without causing dependency loop
+          loadDataFromSupabase().then(result => {
+            if (result) {
+              window.dispatchEvent(new CustomEvent('data-reloaded'));
+            }
+          });
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          setSyncStatus(prev => ({ ...prev, connected: true, error: null }));
-          console.log('📱 Working in local mode');
+          setSyncStatus(prev => ({ ...prev, connected: false, error: 'Connection failed' }));
         }
       });
 
@@ -277,7 +276,7 @@ export const useRealtimeSync = () => {
         channelRef.current = null;
       }
     };
-  }, [isAuthenticated, user, getDeviceId, loadAllDataFromSupabase]);
+  }, [isAuthenticated, user?.id, getDeviceId]);
 
   useEffect(() => {
     // Removed continuous sync on visibility change to prevent loops
