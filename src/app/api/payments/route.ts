@@ -43,7 +43,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const validatedData = PaymentSchema.parse(body);
+    
+    // For backward compatibility, only handle quotation payments for now
+    if (body.service_type && body.service_type !== 'quotation') {
+      return NextResponse.json({ error: 'Service type not yet supported. Please apply database migration first.' }, { status: 400 });
+    }
+    
+    const validatedData = QuotationPaymentSchema.parse(body);
 
     const paymentData = {
       ...validatedData,
@@ -85,13 +91,13 @@ export async function GET(req: NextRequest) {
   
       let query = supabase.from('payments').select('*').eq('user_id', userId);
   
-      // Ensure only one service-specific filter is applied
+      // Only filter by quotation_id for now (backward compatibility)
       if (quotationId) {
         query = query.eq('quotation_id', quotationId);
-      } else if (gymMemberId) {
-        query = query.eq('gym_member_id', gymMemberId);
-      } else if (saunaBookingId) {
-        query = query.eq('sauna_booking_id', saunaBookingId);
+      }
+      // For gym and sauna, return empty array until migration is applied
+      else if (gymMemberId || saunaBookingId) {
+        return NextResponse.json({ data: [] });
       }
   
       const { data, error } = await query.order('payment_date', { ascending: false });
