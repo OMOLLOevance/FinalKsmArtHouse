@@ -62,23 +62,26 @@ interface Quotation {
 }
 
 const EVENT_TEMPLATE: QuotationSection[] = [
-  { name: 'FRESH FLOWERS REQUIREMENTS', items: Array(13).fill(null).map((_, i) => ({ id: `flowers-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'CHURCH CEREMONY AREA', items: Array(20).fill(null).map((_, i) => ({ id: `church-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'VEHICLE DECORATION', items: Array(10).fill(null).map((_, i) => ({ id: `vehicle-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'PARTICULARS RECEPTION AREA', items: Array(20).fill(null).map((_, i) => ({ id: `reception-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'SOUND AND ENTERTAINMENT', items: Array(10).fill(null).map((_, i) => ({ id: `sound-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
+  { name: 'FRESH FLOWERS REQUIREMENTS', items: [{ id: 'flowers-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'CHURCH CEREMONY AREA', items: [{ id: 'church-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'VEHICLE DECORATION', items: [{ id: 'vehicle-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'PARTICULARS RECEPTION AREA', items: [{ id: 'reception-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'SOUND AND ENTERTAINMENT', items: [{ id: 'sound-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'CLEANING AND SANITATION', items: [{ id: 'cleaning-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'TRANSPORT', items: [{ id: 'transport-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
 ];
 
 const FOOD_TEMPLATE: QuotationSection[] = [
-  { name: 'PROTEINS', items: Array(10).fill(null).map((_, i) => ({ id: `protein-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'CARBOHYDRATES', items: Array(10).fill(null).map((_, i) => ({ id: `carbs-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'ADDITIVES', items: Array(15).fill(null).map((_, i) => ({ id: `additive-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'VEGETABLES AND GROCERIES', items: Array(16).fill(null).map((_, i) => ({ id: `veg-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'FRUITS IN SEASON', items: Array(6).fill(null).map((_, i) => ({ id: `fruit-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'BEVERAGES', items: Array(6).fill(null).map((_, i) => ({ id: `bev-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'WRAPPING AND WASHING ITEMS', items: Array(7).fill(null).map((_, i) => ({ id: `wrap-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'ENERGY', items: Array(7).fill(null).map((_, i) => ({ id: `energy-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
-  { name: 'OTHERS', items: Array(5).fill(null).map((_, i) => ({ id: `other-${i}`, description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' })) },
+  { name: 'PROTEINS', items: [{ id: 'protein-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'CARBOHYDRATES', items: [{ id: 'carbs-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'ADDITIVES', items: [{ id: 'additive-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'VEGETABLES AND GROCERIES', items: [{ id: 'veg-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'FRUITS IN SEASON', items: [{ id: 'fruit-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'BEVERAGES', items: [{ id: 'bev-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'WRAPPING AND WASHING ITEMS', items: [{ id: 'wrap-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'ENERGY', items: [{ id: 'energy-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'CATERING', items: [{ id: 'catering-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
+  { name: 'OTHERS', items: [{ id: 'other-0', description: '', unit: '', unitPrice: 0, quantity: 0, total: 0, remarks: '' }] },
 ];
 
 const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
@@ -146,6 +149,21 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       window.print();
       document.title = originalTitle;
     }, 200);
+  };
+
+  const handleAddItem = (sectionIndex: number) => {
+    const newSections = JSON.parse(JSON.stringify(sections));
+    const newId = `new-item-${Date.now()}`;
+    newSections[sectionIndex].items.push({
+      id: newId,
+      description: '',
+      unit: '',
+      unitPrice: 0,
+      quantity: 0,
+      total: 0,
+      remarks: '',
+    });
+    setSections(newSections);
   };
 
   const handleDownloadPDF = async () => {
@@ -408,9 +426,15 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                 <div key={sIdx} className="mb-10">
                   <div className="flex items-center justify-between border-b-2 border-primary/20 pb-2 mb-4">
                     <h4 className="text-sm font-black uppercase text-primary tracking-widest">{section.name}</h4>
-                    <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded uppercase">
-                      {section.items.filter(i => i.description).length} Items Configured
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button type="button" size="xs" variant="outline" onClick={() => handleAddItem(sIdx)} className="h-6 text-xs">
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add New Item
+                      </Button>
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded uppercase">
+                        {section.items.filter(i => i.description).length} Items Configured
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 print:hidden">

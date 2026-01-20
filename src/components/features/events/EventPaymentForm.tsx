@@ -128,7 +128,7 @@ export const EventPaymentForm: React.FC = () => {
                   <label className="text-sm font-medium">Total Budget</label>
                   <Input
                     type="number"
-                    value={payment.eventBudget || ''}
+                    value={payment.eventBudget}
                     onChange={(e) => setPayment({...payment, eventBudget: Number(e.target.value)})}
                     className="font-bold text-primary"
                     required
@@ -138,7 +138,7 @@ export const EventPaymentForm: React.FC = () => {
                   <label className="text-sm font-medium">Amount Paid</label>
                   <Input
                     type="number"
-                    value={payment.amountPaid || ''}
+                    value={payment.amountPaid}
                     onChange={(e) => setPayment({...payment, amountPaid: Number(e.target.value)})}
                     className="font-bold text-success"
                     required
