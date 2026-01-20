@@ -291,8 +291,8 @@ export const useRealtimeSync = () => {
   }, [isAuthenticated, user?.id, getDeviceId]);
 
   useEffect(() => {
-    // Removed continuous sync on visibility change to prevent loops
-  }, [isAuthenticated, syncStatus.connected, loadAllDataFromSupabase]);
+    // Empty effect to prevent dependency issues
+  }, []);
 
   return {
     syncStatus,

@@ -123,6 +123,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     serviceCharge: 0,
     transport: 0,
   });
+  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     if (!editingQuotation) {
@@ -164,6 +166,31 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       remarks: '',
     });
     setSections(newSections);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) {
+      toast.error('Please enter a category name');
+      return;
+    }
+    
+    const newSection: QuotationSection = {
+      name: newCategoryName.toUpperCase(),
+      items: [{
+        id: `${newCategoryName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+        description: '',
+        unit: '',
+        unitPrice: 0,
+        quantity: 0,
+        total: 0,
+        remarks: '',
+      }]
+    };
+    
+    setSections(prev => [...prev, newSection]);
+    setNewCategoryName('');
+    setShowAddCategoryDialog(false);
+    toast.success(`Category "${newSection.name}" added successfully`);
   };
 
   const handleDownloadPDF = async () => {
@@ -297,6 +324,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     setSections(EVENT_TEMPLATE);
     setAdditionalCharges({ cateringLabour: 0, serviceCharge: 0, transport: 0 });
     setEditingQuotation(null);
+    setNewCategoryName('');
+    setShowAddCategoryDialog(false);
   };
 
   const handleEdit = (quotation: Quotation) => {
@@ -414,7 +443,20 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           <Card className="print:shadow-none print:border-none">
             <CardHeader className="flex flex-row items-center justify-between print:hidden">
               <CardTitle>{quotationType === 'event' ? 'Event & Decor' : 'Food & Catering'}</CardTitle>
-              <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print</Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowAddCategoryDialog(true)}
+                  className="h-8 text-xs font-bold"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Category
+                </Button>
+                <Button variant="outline" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4 mr-2" /> Print
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="hidden print:block mb-6 text-center border-b-4 border-primary pb-4">
@@ -873,6 +915,65 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
               <Printer className="h-4 w-4 mr-2" /> Send to Printer
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Category Dialog */}
+      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              Add New Category
+            </DialogTitle>
+            <DialogDescription>
+              Create a custom category for your quotation items. This will be added to your current quotation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Category Name</label>
+              <Input
+                placeholder="e.g. LIGHTING EQUIPMENT, PHOTOGRAPHY, SECURITY"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCategory();
+                  }
+                  if (e.key === 'Escape') {
+                    setShowAddCategoryDialog(false);
+                    setNewCategoryName('');
+                  }
+                }}
+                className="uppercase font-medium"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                Category name will be automatically converted to uppercase
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowAddCategoryDialog(false);
+                setNewCategoryName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddCategory} 
+              disabled={!newCategoryName.trim()}
+              className="min-w-[120px]"
+            >
+              <Plus className="h-4 w-4 mr-2" /> 
+              Add Category
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
