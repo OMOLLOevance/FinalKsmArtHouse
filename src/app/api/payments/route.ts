@@ -43,13 +43,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    
-    // For backward compatibility, only handle quotation payments for now
-    if (body.service_type && body.service_type !== 'quotation') {
-      return NextResponse.json({ error: 'Service type not yet supported. Please apply database migration first.' }, { status: 400 });
-    }
-    
-    const validatedData = QuotationPaymentSchema.parse(body);
+    const validatedData = PaymentSchema.parse(body);
 
     const paymentData = {
       ...validatedData,
@@ -78,38 +72,37 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-    const { userId } = getAuth(req);
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-  
-    try {
-      const { searchParams } = new URL(req.url);
-      const quotationId = searchParams.get('quotationId');
-      const gymMemberId = searchParams.get('gymMemberId');
-      const saunaBookingId = searchParams.get('saunaBookingId');
-  
-      let query = supabase.from('payments').select('*').eq('user_id', userId);
-  
-      // Only filter by quotation_id for now (backward compatibility)
-      if (quotationId) {
-        query = query.eq('quotation_id', quotationId);
-      }
-      // For gym and sauna, return empty array until migration is applied
-      else if (gymMemberId || saunaBookingId) {
-        return NextResponse.json({ data: [] });
-      }
-  
-      const { data, error } = await query.order('payment_date', { ascending: false });
-  
-      if (error) {
-        logger.error('Payments GET Database Error:', error);
-        throw error;
-      }
-  
-      return NextResponse.json({ data });
-    } catch (error: any) {
-      logger.error('Payments GET Error:', error);
-      return NextResponse.json({ error: error.message || 'An unknown error occurred' }, { status: 500 });
-    }
+  const { userId } = getAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const quotationId = searchParams.get('quotationId');
+    const gymMemberId = searchParams.get('gymMemberId');
+    const saunaBookingId = searchParams.get('saunaBookingId');
+
+    let query = supabase.from('payments').select('*').eq('user_id', userId);
+
+    // Apply service-specific filters
+    if (quotationId) {
+      query = query.eq('quotation_id', quotationId);
+    } else if (gymMemberId) {
+      query = query.eq('gym_member_id', gymMemberId);
+    } else if (saunaBookingId) {
+      query = query.eq('sauna_booking_id', saunaBookingId);
+    }
+
+    const { data, error } = await query.order('payment_date', { ascending: false });
+
+    if (error) {
+      logger.error('Payments GET Database Error:', error);
+      throw error;
+    }
+
+    return NextResponse.json({ data });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'An unknown error occurred', details: error }, { status: 500 });
+  }
+}

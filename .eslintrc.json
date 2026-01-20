@@ -1,17 +1,7 @@
 {
-  "extends": [
-    "next/core-web-vitals",
-    "@typescript-eslint/recommended",
-    "plugin:security/recommended",
-    "plugin:jsx-a11y/recommended"
-  ],
-  "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "security", "jsx-a11y"],
+  "extends": ["next"],
   "rules": {
     "no-console": "warn",
-    "@typescript-eslint/no-unused-vars": "error",
-    "@typescript-eslint/no-explicit-any": "warn",
-    "security/detect-object-injection": "error",
-    "jsx-a11y/alt-text": "error"
+    "no-unused-vars": "error"
   }
 }

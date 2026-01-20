@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
