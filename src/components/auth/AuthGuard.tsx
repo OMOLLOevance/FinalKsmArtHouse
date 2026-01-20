@@ -17,39 +17,36 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    // Only redirect after loading is complete and we have definitive auth status
     if (!isLoading) {
       if (!isAuthenticated && pathname !== '/login') {
         logger.info(`Unauthorized access attempt to ${pathname}, redirecting to /login`);
-        router.push('/login');
+        router.replace('/login'); // Use replace instead of push to avoid back button issues
       } 
-      else if (isAuthenticated) {
-        if (pathname === '/login') {
-          logger.info('Authenticated user on login page, redirecting to dashboard');
-          router.push('/');
-        } else {
-          // Check role-based clearance
-          const allowedRoles = RESTRICTED_ROUTES[pathname];
-          if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-            toast.error('Access Restricted: Insufficient professional clearance for this module.');
-            router.push('/');
-          }
+      else if (isAuthenticated && pathname === '/login') {
+        logger.info('Authenticated user on login page, redirecting to dashboard');
+        router.replace('/'); // Use replace instead of push
+      } else if (isAuthenticated) {
+        // Check role-based clearance only for authenticated users
+        const allowedRoles = RESTRICTED_ROUTES[pathname];
+        if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+          toast.error('Access Restricted: Insufficient professional clearance for this module.');
+          router.replace('/'); // Use replace instead of push
         }
       }
     }
   }, [isAuthenticated, isLoading, pathname, router, user]);
 
-
-  // Show professional PageLoader while auth status is being determined
+  // Show loading while auth status is being determined
   if (isLoading) {
     return <PageLoader text="Verifying Credentials..." />;
   }
 
-  // If on login page, render children (login form)
-  // If authenticated and not on login page, render children (protected content)
-  if (pathname === '/login' || isAuthenticated) {
-    return <>{children}</>;
+  // If not authenticated and not on login page, don't render anything (redirect will happen)
+  if (!isAuthenticated && pathname !== '/login') {
+    return <PageLoader text="Redirecting to login..." />;
   }
 
-  // Fallback, should ideally be covered by redirects or loading state
-  return null;
+  // If authenticated or on login page, render children
+  return <>{children}</>;
 }

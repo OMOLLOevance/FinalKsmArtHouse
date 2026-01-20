@@ -26,7 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Removed: const pathname = usePathname();
 
   const checkAuthStatus = useCallback(async () => {
-    setIsLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -53,17 +52,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Set loading to true initially
+    setIsLoading(true);
     checkAuthStatus(); // Initial check
 
     // Listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        // When auth state changes (e.g., SIGNED_IN), re-fetch user
-        checkAuthStatus();
-      } else {
-        // If signed out or session is null, set user to null
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // When signed in, update user data
+        const userData: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          firstName: session.user.user_metadata?.first_name || '',
+          lastName: session.user.user_metadata?.last_name || '',
+          role: session.user.user_metadata?.role || 'staff',
+          createdAt: session.user.created_at || new Date().toISOString()
+        };
+        setUser(userData);
+        setIsLoading(false);
+      } else if (event === 'SIGNED_OUT' || !session) {
+        // When signed out or no session, clear user
         setUser(null);
         setIsLoading(false);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // On token refresh, maintain user data
+        const userData: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          firstName: session.user.user_metadata?.first_name || '',
+          lastName: session.user.user_metadata?.last_name || '',
+          role: session.user.user_metadata?.role || 'staff',
+          createdAt: session.user.created_at || new Date().toISOString()
+        };
+        setUser(userData);
       }
     });
 
