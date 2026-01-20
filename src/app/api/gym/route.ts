@@ -1,23 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
 
 const GymMemberSchema = z.object({
   user_id: z.string().uuid(),
@@ -33,16 +19,6 @@ const GymMemberSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -53,22 +29,8 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // Default to authenticated client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        const role = await getUserRole(user.id, authClient);
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    }
+    const { client, isManager } = await getClientWithRole(token);
+    if (!client) return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
 
     let query = client
       .from('gym_members')

@@ -251,10 +251,6 @@ export const useRealtimeSync = () => {
                 window.dispatchEvent(new CustomEvent('realtime-data-update', {
                   detail: { deviceId: newData.device_id, timestamp: newData.updated_at }
                 }));
-
-                setTimeout(() => {
-                  window.location.reload();
-                }, 1000);
               }
             }
           }

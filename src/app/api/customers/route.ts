@@ -1,23 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
 
 const CustomerSchema = z.object({
   user_id: z.string().uuid(),
@@ -35,16 +21,6 @@ const CustomerSchema = z.object({
   requirements: z.any().optional().nullable(),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -55,38 +31,14 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // Default client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-    let sessionUserId = null;
-
-    // Check for management privileges
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        sessionUserId = user.id;
-        const { data: profile } = await authClient
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
-        isManager = !!(profile && ['director', 'investor', 'operations_manager'].includes(profile.role));
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      sessionUserId = user?.id;
-    }
+    const { client, isManager: isManagerRole, userId: sessionUserId } = await getClientWithRole(token);
+    if (!client) return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
 
     const userId = userIdParam || sessionUserId;
-    if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    if (!userId && !isManagerRole) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
     // DISCOVERY MODE: Cross-table customer search for Management
-    if (discovery && isManager) {
+    if (discovery && isManagerRole) {
       const [customersRes, monthlyRes, decorRes, gymRes, saunaRes, quotationsRes] = await Promise.all([
         client.from('customers').select('*'),
         client.from('monthly_allocations').select('*'),
@@ -149,9 +101,9 @@ export async function GET(request: NextRequest) {
     // Standard Query
     let query = client.from('customers').select(fields).order('created_at', { ascending: false });
     
-    if (userId && !isManager) {
+    if (userId && !isManagerRole) {
       query = query.eq('user_id', userId);
-    } else if (userId && isManager && !discovery) {
+    } else if (userId && isManagerRole && !discovery) {
       query = query.eq('user_id', userId);
     }
 
