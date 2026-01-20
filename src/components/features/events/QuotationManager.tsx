@@ -462,12 +462,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                   type="button" 
                   variant="outline" 
                   size="sm" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Add Category clicked'); // Debug log
-                    setShowAddCategoryDialog(true);
-                  }}
+                  onClick={() => setShowAddCategoryDialog(true)}
                   className="h-8 text-xs font-bold"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Category
@@ -938,10 +933,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       </Dialog>
 
       {/* Add Category Dialog */}
-      <Dialog open={showAddCategoryDialog} onOpenChange={(open) => {
-        console.log('Dialog state changing to:', open); // Debug log
-        setShowAddCategoryDialog(open);
-      }}>
+      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -949,19 +941,18 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
               Add New Category
             </DialogTitle>
             <DialogDescription>
-              Create a custom category for your quotation items. This will be added to your current quotation.
+              Create a custom category for your quotation items.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Category Name</label>
+              <label className="text-sm font-medium">Category Name</label>
               <Input
-                placeholder="e.g. LIGHTING EQUIPMENT, PHOTOGRAPHY, SECURITY"
+                placeholder="e.g. LIGHTING EQUIPMENT, PHOTOGRAPHY"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
+                  if (e.key === 'Enter' && newCategoryName.trim()) {
                     handleAddCategory();
                   }
                   if (e.key === 'Escape') {
@@ -972,9 +963,6 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                 className="uppercase font-medium"
                 autoFocus
               />
-              <p className="text-xs text-muted-foreground">
-                Category name will be automatically converted to uppercase
-              </p>
             </div>
           </div>
           <DialogFooter className="gap-2">
@@ -990,10 +978,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             <Button 
               onClick={handleAddCategory} 
               disabled={!newCategoryName.trim()}
-              className="min-w-[120px]"
             >
-              <Plus className="h-4 w-4 mr-2" /> 
-              Add Category
+              <Plus className="h-4 w-4 mr-2" /> Add Category
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,113 +1,58 @@
--- KSM Art House - Supabase Only Setup
--- Run this in Supabase SQL Editor
+-- KSM Art House - Supabase Database Setup
+-- Run this script in your Supabase SQL Editor
 
--- 1. Create custom users table (extends auth.users)
-CREATE TABLE IF NOT EXISTS custom_users (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  role TEXT DEFAULT 'staff' CHECK (role IN ('admin', 'manager', 'staff')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Create cloud_sync_data table for real-time synchronization
+CREATE TABLE IF NOT EXISTS public.cloud_sync_data (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    data JSONB NOT NULL DEFAULT '{}',
+    device_id TEXT NOT NULL,
+    version TEXT DEFAULT '4.0',
+    change_log JSONB DEFAULT '[]',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Create customers table
-CREATE TABLE IF NOT EXISTS customers (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  contact TEXT NOT NULL,
-  location TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  event_date DATE NOT NULL,
-  total_amount DECIMAL(10,2) DEFAULT 0,
-  paid_amount DECIMAL(10,2) DEFAULT 0,
-  payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('deposit', 'full', 'pending')),
-  payment_method TEXT DEFAULT 'cash' CHECK (payment_method IN ('cash', 'bank', 'mpesa')),
-  service_status TEXT DEFAULT 'pending' CHECK (service_status IN ('pending', 'served')),
-  notes TEXT,
-  user_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Create unique constraint on user_id (one record per user)
+CREATE UNIQUE INDEX IF NOT EXISTS cloud_sync_data_user_id_idx ON public.cloud_sync_data(user_id);
 
--- 3. Create gym members table
-CREATE TABLE IF NOT EXISTS gym_members (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  phone_number TEXT NOT NULL,
-  email TEXT,
-  package_type TEXT NOT NULL CHECK (package_type IN ('weekly', 'monthly', 'three-months')),
-  amount_paid DECIMAL(10,2) NOT NULL,
-  start_date DATE NOT NULL,
-  end_date DATE NOT NULL,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'expired')),
-  user_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Create index on device_id for faster queries
+CREATE INDEX IF NOT EXISTS cloud_sync_data_device_id_idx ON public.cloud_sync_data(device_id);
 
--- 4. Create restaurant sales table
-CREATE TABLE IF NOT EXISTS restaurant_sales (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  date DATE NOT NULL,
-  item TEXT NOT NULL,
-  quantity INTEGER NOT NULL,
-  unit_price DECIMAL(10,2) NOT NULL,
-  total_amount DECIMAL(10,2) NOT NULL,
-  expenses DECIMAL(10,2) DEFAULT 0,
-  user_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Enable Row Level Security
+ALTER TABLE public.cloud_sync_data ENABLE ROW LEVEL SECURITY;
 
--- 5. Create sauna bookings table
-CREATE TABLE IF NOT EXISTS sauna_bookings (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  date DATE NOT NULL,
-  time TIME NOT NULL,
-  client TEXT NOT NULL,
-  duration INTEGER NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  status TEXT DEFAULT 'booked' CHECK (status IN ('booked', 'completed')),
-  user_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Create RLS policies
+CREATE POLICY "Users can view their own sync data" ON public.cloud_sync_data
+    FOR SELECT USING (auth.uid() = user_id);
 
--- 6. Enable Row Level Security
-ALTER TABLE custom_users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE gym_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE restaurant_sales ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sauna_bookings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can insert their own sync data" ON public.cloud_sync_data
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 7. Create RLS policies
-CREATE POLICY "Users can view own profile" ON custom_users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON custom_users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can update their own sync data" ON public.cloud_sync_data
+    FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage own customers" ON customers FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own gym members" ON gym_members FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own restaurant sales" ON restaurant_sales FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own sauna bookings" ON sauna_bookings FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own sync data" ON public.cloud_sync_data
+    FOR DELETE USING (auth.uid() = user_id);
 
--- 8. Create function to handle user profile creation
-CREATE OR REPLACE FUNCTION handle_new_user()
+-- Create function to automatically update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO custom_users (id, email, first_name, last_name, role)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'first_name', 'User'),
-    COALESCE(NEW.raw_user_meta_data->>'last_name', 'Name'),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'staff')
-  );
-  RETURN NEW;
+    NEW.updated_at = NOW();
+    RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
--- 9. Create trigger for new user profile creation
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+-- Create trigger for updated_at
+CREATE TRIGGER handle_cloud_sync_data_updated_at
+    BEFORE UPDATE ON public.cloud_sync_data
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+-- Enable realtime for the table
+ALTER PUBLICATION supabase_realtime ADD TABLE public.cloud_sync_data;
+
+-- Grant necessary permissions
+GRANT ALL ON public.cloud_sync_data TO authenticated;
+GRANT ALL ON public.cloud_sync_data TO service_role;
