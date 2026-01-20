@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import { Select, SelectOption } from '@/components/ui/Select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select';
+
 import { useEventItemsQuery, useCreateEventItemMutation, useDeleteEventItemMutation } from '@/hooks/use-event-api';
 import { useEntertainmentItems } from '@/hooks/useEntertainmentItems';
 import { useSanitationItems } from '@/hooks/useSanitationItems';
@@ -300,10 +301,18 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
                         setFormData({ ...formData, name: val });
                       }
                     }}
-                    placeholder="Select Item"
-                    options={itemsWithNew}
-                    className="flex-1 rounded-xl"
-                  />
+                  >
+                    <SelectTrigger className="flex-1 rounded-xl">
+                      <SelectValue placeholder="Select Item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {itemsWithNew.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               ) : (
                 <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">

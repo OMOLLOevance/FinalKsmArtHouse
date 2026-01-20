@@ -2,7 +2,13 @@
 
 import React, { useMemo } from 'react';
 import { useStaff } from '@/hooks/useStaff';
-import { Select, SelectOption } from '@/components/ui/Select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select';
+
+interface SelectOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
 import { Loader2 } from 'lucide-react';
 
 interface StaffSelectorProps {
@@ -40,12 +46,21 @@ export function StaffSelector({ value, onChange, className, placeholder = "Filte
   }
 
   return (
-    <Select
-      value={value || "all"}
-      onValueChange={(val) => onChange(val === "all" ? null : val)}
-      options={options}
-      placeholder={placeholder}
-      className={className}
-    />
+          <Select
+            value={value || "all"}
+            onValueChange={(val) => onChange(val === "all" ? null : val)}
+            disabled={loading}
+          >
+            <SelectTrigger className={`w-full h-9 text-xs font-black uppercase tracking-widest ${className}`}>
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
   );
 }

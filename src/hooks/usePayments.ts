@@ -15,20 +15,25 @@ export interface Payment {
   notes?: string;
 }
 
-export const usePaymentsQuery = (quotationId?: string) => {
+export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'gym' | 'sauna') => {
   const { userId, isAuthenticated } = useAuth();
 
   return useQuery({
-    queryKey: ['payments', quotationId],
+    queryKey: ['payments', itemId, serviceType],
     queryFn: async (): Promise<Payment[]> => {
       let url = '/api/payments';
-      if (quotationId) {
-        url += `?quotationId=${quotationId}`;
+      if (itemId && serviceType) {
+        const paramMap = {
+          quotation: 'quotationId',
+          gym: 'gymMemberId',
+          sauna: 'saunaBookingId'
+        };
+        url += `?${paramMap[serviceType]}=${itemId}`;
       }
       const response = await apiClient.get<{ data: Payment[] }>(url);
       return response.data;
     },
-    enabled: !!userId && isAuthenticated && !!quotationId,
+    enabled: !!userId && isAuthenticated && !!itemId && !!serviceType,
   });
 };
 
