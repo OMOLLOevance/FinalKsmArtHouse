@@ -105,12 +105,12 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
     };
   }, [category, entertainment, sanitation, eventItems, createEventItem, deleteEventItem]);
 
-  const itemOptions: SelectOption[] = useMemo(() => {
+  const itemOptions: { value: string; label: string }[] = useMemo(() => {
     const names = [...new Set(currentData.items.map((item: any) => String(item.name || '')))].sort();
     return names.filter(Boolean).map(name => ({ value: String(name), label: String(name) }));
   }, [currentData.items]);
 
-  const itemsWithNew: SelectOption[] = useMemo(() => {
+  const itemsWithNew: { value: string; label: string }[] = useMemo(() => {
     return [
       { value: "ADD_NEW_ITEM", label: "➕ ADD NEW ITEM..." },
       ...itemOptions

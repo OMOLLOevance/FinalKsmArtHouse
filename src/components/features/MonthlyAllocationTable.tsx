@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { Select, StatusBadge } from '@/components/ui/Select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -475,14 +475,17 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                     <Select
                       value={allocation.status}
                       onValueChange={(value) => handleStatusChange(allocation.id, value)}
-                      className="w-36 h-9 text-xs font-black uppercase tracking-widest bg-background/50"
-                      options={[
-                        { value: 'pending', label: 'PENDING' },
-                        { value: 'confirmed', label: 'CONFIRMED' },
-                        { value: 'completed', label: 'COMPLETED' },
-                        { value: 'cancelled', label: 'CANCELLED' }
-                      ]}
-                    />
+                    >
+                      <SelectTrigger className="w-36 h-9 text-xs font-black uppercase tracking-widest bg-background/50">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">PENDING</SelectItem>
+                        <SelectItem value="confirmed">CONFIRMED</SelectItem>
+                        <SelectItem value="completed">COMPLETED</SelectItem>
+                        <SelectItem value="cancelled">CANCELLED</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {allocation.status === 'pending' && (
                       <Button 
                         size="sm" 

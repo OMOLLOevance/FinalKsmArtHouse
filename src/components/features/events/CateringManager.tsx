@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, 
   DialogDescription, DialogFooter 
 } from '@/components/ui/Dialog';
-import { Select } from '@/components/ui/Select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { logger } from '@/lib/logger';
@@ -471,10 +471,18 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
                           setFormData({ ...formData, category: val });
                         }
                       }}
-                      placeholder="Select Category"
-                      options={categoriesWithNew}
-                      className="flex-1 rounded-xl"
-                    />
+                    >
+                      <SelectTrigger className="flex-1 rounded-xl">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoriesWithNew.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 ) : (
                   <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">

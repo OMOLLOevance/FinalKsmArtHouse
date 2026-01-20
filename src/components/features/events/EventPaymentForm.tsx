@@ -166,9 +166,9 @@ export const EventPaymentForm: React.FC = () => {
             <ul className="border rounded-md max-h-40 overflow-y-auto">
               {searchResults.map((item: Quotation | GymMember | SaunaBooking) => (
                 <li key={item.id} onClick={() => handleSelectItem(item)} className="p-2 hover:bg-muted cursor-pointer">
-                  {serviceType === 'quotation' && `${item.quotationNumber} - ${item.customerName}`}
-                  {serviceType === 'gym' && item.name}
-                  {serviceType === 'sauna' && `${item.client} - ${new Date(item.date).toLocaleDateString()}`}
+                  {serviceType === 'quotation' && `${(item as Quotation).quotationNumber} - ${(item as Quotation).customerName}`}
+                  {serviceType === 'gym' && (item as GymMember).name}
+                  {serviceType === 'sauna' && `${(item as SaunaBooking).client} - ${new Date((item as SaunaBooking).date).toLocaleDateString()}`}
                 </li>
               ))}
             </ul>

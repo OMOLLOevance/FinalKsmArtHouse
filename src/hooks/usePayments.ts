@@ -7,8 +7,11 @@ export interface Payment {
   id: string;
   created_at: string;
   user_id: string;
-  quotation_id: string;
-  customer_id: string;
+  quotation_id?: string;
+  customer_id?: string;
+  gym_member_id?: string;
+  sauna_booking_id?: string;
+  service_type: 'quotation' | 'gym' | 'sauna';
   amount_paid: number;
   payment_method: string;
   payment_date: string;

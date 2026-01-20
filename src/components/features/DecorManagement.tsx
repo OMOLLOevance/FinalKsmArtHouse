@@ -16,7 +16,7 @@ import { useAddItemToCustomerMutation } from '@/hooks/useCustomerRequirements';
 import { StaffSelector } from '@/components/shared/StaffSelector';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { Customer } from '@/types';
-import { Select } from '@/components/ui/Select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select';
 import { toast } from 'sonner';
 import { 
   useDecorInventoryQuery, 
@@ -512,10 +512,18 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                           setNewItem({ ...newItem, category: val });
                         }
                       }}
-                      placeholder="Select Category"
-                      options={categoriesWithNew}
-                      className="flex-1 rounded-xl"
-                    />
+                    >
+                      <SelectTrigger className="flex-1 rounded-xl">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoriesWithNew.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 ) : (
                   <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
