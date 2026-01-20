@@ -182,8 +182,8 @@ export const EventPaymentForm: React.FC = () => {
         </CardContent>
 
         <CardFooter className="bg-muted/20 border-t p-6 flex justify-between items-center">
-          <Badge variant={balance <= 0 ? 'success' : 'outline'} className="h-6">
-            {balance <= 0 ? 'FULLY PAID' : 'PAYMENT PENDING'}
+          <Badge variant={balance <= 0 && payment.eventBudget > 0 ? 'success' : 'outline'} className="h-6">
+            {balance <= 0 && payment.eventBudget > 0 ? 'FULLY PAID' : 'PAYMENT PENDING'}
           </Badge>
           <Button type="submit" disabled={isSubmitting} className="min-w-[200px]">
             {isSubmitting ? 'Processing...' : 'Save Record'}
