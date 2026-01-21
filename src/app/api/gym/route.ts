@@ -23,46 +23,32 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const filterUserId = searchParams.get('filterUserId');
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const search = searchParams.get('search');
 
-    const { client, isManager } = await getClientWithRole(token);
-    if (!client) return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
-
-    let query = client
+    let query = supabase
       .from('gym_members')
       .select(fields)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // RBAC Filtering Logic
-    // 1. If filterUserId is explicitly provided, filter by it.
-    // 2. If no filter but staff role, only show own.
-    // 3. If no filter and manager role, show all.
-    if (filterUserId) {
-      query = query.eq('user_id', filterUserId);
-    } else if (!isManager && userId) {
-      query = query.eq('user_id', userId);
-    }
-
-    const search = searchParams.get('search');
     if (search) {
       query = query.or(`member_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
     const { data, error } = await query;
 
-    if (error) throw ApiError.fromSupabase(error);
+    if (error) {
+      logger.error('Gym GET Error:', error);
+      return NextResponse.json({ data: [], error: error.message }, { status: 200 });
+    }
 
     return NextResponse.json({ data: data || [] });
   } catch (error) {
     logger.error('Gym GET Error:', error);
-    const status = error instanceof ApiError ? error.status : 500;
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
-    return NextResponse.json({ error: message, data: [] }, { status });
+    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 200 });
   }
 }
 
