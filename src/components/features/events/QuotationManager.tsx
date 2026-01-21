@@ -17,6 +17,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { StaffSelector } from '@/components/shared/StaffSelector';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 interface QuotationManagerProps {
   onBack: () => void;
@@ -87,6 +88,7 @@ const FOOD_TEMPLATE: QuotationSection[] = [
 const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const { userId } = useAuth();
   const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { isOnline } = useNetworkStatus();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
   const { quotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations(filterUserId);
@@ -192,7 +194,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     console.log('Adding new section:', newSection);
     setSections(prev => {
       const updated = [...prev, newSection];
-      console.log('Updated sections:', updated);
+      console.log('Updated sections count:', updated.length);
       return updated;
     });
     
@@ -465,8 +467,11 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Add Category clicked');
-                    setShowAddCategoryDialog(true);
+                    console.log('Add Category clicked - Current dialog state:', showAddCategoryDialog);
+                    setShowAddCategoryDialog(prev => {
+                      console.log('Setting dialog state from', prev, 'to true');
+                      return true;
+                    });
                   }}
                   className="h-8 text-xs font-bold"
                 >
