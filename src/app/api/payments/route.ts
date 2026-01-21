@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
@@ -42,6 +43,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Create a Supabase client with the service role key for RLS bypass
+    const supabaseServiceRole = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const body = await req.json();
     const validatedData = PaymentSchema.parse(body);
 
@@ -50,7 +57,7 @@ export async function POST(req: NextRequest) {
       user_id: userId,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServiceRole
       .from('payments')
       .insert(paymentData)
       .select()
@@ -78,12 +85,18 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Create a Supabase client with the service role key for RLS bypass
+    const supabaseServiceRole = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { searchParams } = new URL(req.url);
     const quotationId = searchParams.get('quotationId');
     const gymMemberId = searchParams.get('gymMemberId');
     const saunaBookingId = searchParams.get('saunaBookingId');
 
-    let query = supabase.from('payments').select('*').eq('user_id', userId);
+    let query = supabaseServiceRole.from('payments').select('*').eq('user_id', userId);
 
     // Apply service-specific filters
     if (quotationId) {
