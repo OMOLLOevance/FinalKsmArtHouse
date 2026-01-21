@@ -588,6 +588,62 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             </CardFooter>
           </Card>
         </form>
+
+        {/* Add Category Dialog */}
+        <Dialog open={showAddCategoryDialog} onOpenChange={(open) => {
+          setShowAddCategoryDialog(open);
+          if (!open) setNewCategoryName('');
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5 text-primary" />
+                Add New Category
+              </DialogTitle>
+              <DialogDescription>
+                Create a custom category for your quotation items.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category Name</label>
+                <Input
+                  placeholder="e.g. LIGHTING EQUIPMENT, PHOTOGRAPHY"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newCategoryName.trim()) {
+                      handleAddCategory();
+                    }
+                    if (e.key === 'Escape') {
+                      setShowAddCategoryDialog(false);
+                      setNewCategoryName('');
+                    }
+                  }}
+                  className="uppercase font-medium"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAddCategoryDialog(false);
+                  setNewCategoryName('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddCategory} 
+                disabled={!newCategoryName.trim()}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add Category
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -917,62 +973,6 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
               <Printer className="h-4 w-4 mr-2" /> Send to Printer
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Category Dialog */}
-      <Dialog open={showAddCategoryDialog} onOpenChange={(open) => {
-        setShowAddCategoryDialog(open);
-        if (!open) setNewCategoryName('');
-      }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-primary" />
-              Add New Category
-            </DialogTitle>
-            <DialogDescription>
-              Create a custom category for your quotation items.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Category Name</label>
-              <Input
-                placeholder="e.g. LIGHTING EQUIPMENT, PHOTOGRAPHY"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newCategoryName.trim()) {
-                    handleAddCategory();
-                  }
-                  if (e.key === 'Escape') {
-                    setShowAddCategoryDialog(false);
-                    setNewCategoryName('');
-                  }
-                }}
-                className="uppercase font-medium"
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowAddCategoryDialog(false);
-                setNewCategoryName('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleAddCategory} 
-              disabled={!newCategoryName.trim()}
-            >
-              <Plus className="h-4 w-4 mr-2" /> Add Category
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
