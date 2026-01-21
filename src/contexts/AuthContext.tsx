@@ -108,8 +108,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
+      if (error) {
+        console.error('Login error:', error);
+        return { success: false, message: error.message };
+      }
       
       if (data.session?.user) {
         const userData: User = {
@@ -125,16 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true };
       }
       
-      if (data.user && !data.session) {
-          return { success: false, message: 'Please check your email to confirm your account before logging in.' };
-      }
-
-      return { success: false, message: 'Session not created' };
+      return { success: false, message: 'Login failed' };
     } catch (error: any) {
-      const errorMessage = error?.message || 'Login failed';
       console.error('Login error:', error);
-      setUser(null);
-      return { success: false, message: errorMessage };
+      return { success: false, message: error?.message || 'Login failed' };
     } finally {
       setIsLoading(false);
     }
@@ -143,16 +144,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (userData: Omit<User, 'id' | 'createdAt'>, password: string): Promise<{ success: boolean; message: string }> => {
     setIsLoading(true);
     try {
-
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: password,
         options: {
-
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
-            role: userData.role || 'staff' // Default role
+            role: userData.role || 'staff'
           }
         }
       });
@@ -162,25 +161,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, message: error.message };
       }
 
-      // Automatically log in the user after signup
-      if (data.session?.user) {
-        const userData: User = {
-          id: data.session.user.id,
-          email: data.session.user.email || '',
-          firstName: data.session.user.user_metadata?.first_name || '',
-          lastName: data.session.user.user_metadata?.last_name || '',
-          role: data.session.user.user_metadata?.role || 'staff',
-          createdAt: data.session.user.created_at || new Date().toISOString()
-        };
-
-        setUser(userData);
+      if (data.user) {
+        return { success: true, message: 'Account created successfully! Please check your email to confirm.' };
       }
 
-      return { success: true, message: 'Account created successfully!' };
+      return { success: false, message: 'Signup failed' };
     } catch (error: any) {
-      const errorMessage = error?.message || 'Signup failed';
       console.error('Signup error:', error);
-      return { success: false, message: errorMessage };
+      return { success: false, message: error?.message || 'Signup failed' };
     } finally {
       setIsLoading(false);
     }
