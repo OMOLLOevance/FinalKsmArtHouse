@@ -103,6 +103,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (error: any) {
+    logger.error('Payments GET Handler Error:', {
+      message: error.message,
+      details: error,
+      url: req.url,
+    });
     return NextResponse.json({ error: error.message || 'An unknown error occurred', details: error }, { status: 500 });
   }
 }
