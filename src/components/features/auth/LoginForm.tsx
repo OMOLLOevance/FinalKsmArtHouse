@@ -113,8 +113,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
+                    <label htmlFor="firstName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
                     <Input
+                      id="firstName"
+                      name="firstName"
                       placeholder="Enter first name"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
@@ -123,8 +125,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Last Name</label>
+                    <label htmlFor="lastName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Last Name</label>
                     <Input
+                      id="lastName"
+                      name="lastName"
                       placeholder="Enter last name"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -135,8 +139,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 </div>
 
                 <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-500 delay-100">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Professional Role</label>
+                  <label htmlFor="role" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Professional Role</label>
                   <select
+                    id="role"
+                    name="role"
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                     className="w-full h-11 px-3 py-2 border border-primary/5 bg-muted/20 rounded-md text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-foreground"
@@ -158,6 +164,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-primary opacity-50" />
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="name@ksmarthouse.com"
                   value={formData.email}
@@ -176,6 +183,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-primary opacity-50" />
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Secret passphrase"
                   value={formData.password}

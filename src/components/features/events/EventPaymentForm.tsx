@@ -137,9 +137,9 @@ export const EventPaymentForm: React.FC = () => {
         <CardContent className="pt-6 space-y-6">
           <div className="flex gap-4">
             <div className="w-1/3">
-              <label className="text-sm font-medium">Service Type</label>
+              <label htmlFor="serviceType" className="text-sm font-medium">Service Type</label>
               <Select onValueChange={(value: ServiceType) => setServiceType(value)} defaultValue={serviceType}>
-                <SelectTrigger>
+                <SelectTrigger id="serviceType">
                   <SelectValue placeholder="Select service type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,11 +150,13 @@ export const EventPaymentForm: React.FC = () => {
               </Select>
             </div>
             <div className="w-2/3">
-              <label className="text-sm font-medium flex items-center">
+              <label htmlFor="searchTerm" className="text-sm font-medium flex items-center">
                 <Search className="h-3 w-3 mr-2 opacity-50" />
                 Search
               </label>
               <Input
+                id="searchTerm"
+                name="searchTerm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder={`Search ${serviceType}...`}
@@ -191,8 +193,10 @@ export const EventPaymentForm: React.FC = () => {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Payment</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Amount to Pay</label>
+                      <label htmlFor="amountToPay" className="text-sm font-medium">Amount to Pay</label>
                       <Input
+                        id="amountToPay"
+                        name="amountToPay"
                         type="number"
                         min="0.01"
                         step="0.01"
@@ -204,7 +208,7 @@ export const EventPaymentForm: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Payment Method</label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2" role="group" aria-label="Payment method selection">
                         {(['cash', 'mpesa', 'bank'] as const).map((method) => (
                           <Button
                             key={method}
@@ -212,6 +216,7 @@ export const EventPaymentForm: React.FC = () => {
                             variant={paymentMethod === method ? 'default' : 'outline'}
                             className="flex-1 capitalize h-9 text-xs"
                             onClick={() => setPaymentMethod(method)}
+                            aria-pressed={paymentMethod === method}
                           >
                             {method}
                           </Button>
@@ -220,8 +225,10 @@ export const EventPaymentForm: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Notes</label>
+                    <label htmlFor="paymentNotes" className="text-sm font-medium">Notes</label>
                     <Input
+                      id="paymentNotes"
+                      name="paymentNotes"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Payment notes..."

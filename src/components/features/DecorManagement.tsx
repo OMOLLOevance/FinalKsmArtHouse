@@ -303,6 +303,8 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           </DropdownMenu>
           
           <Input
+            id="searchItems"
+            name="searchItems"
             placeholder="Search items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -438,8 +440,10 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           
           <div className="px-6 py-4 space-y-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Quantity</label>
+              <label htmlFor="transactionQty" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Quantity</label>
               <Input 
+                id="transactionQty"
+                name="transactionQty"
                 type="number" 
                 value={transactionQty} 
                 onChange={(e) => setTransactionQty(Math.max(1, parseInt(e.target.value) || 0))}
@@ -498,7 +502,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
             <div className="space-y-4">
               {/* Asset Classification */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Classification</label>
+                <label htmlFor="newItemCategory" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Classification</label>
                 
                 {!isNewCategory ? (
                   <div className="flex gap-2">
@@ -528,6 +532,8 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                 ) : (
                   <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
                     <Input 
+                      id="newCategoryName"
+                      name="newCategoryName"
                       placeholder="Enter new category name..." 
                       value={newItem.category} 
                       onChange={(e) => setNewItem({ ...newItem, category: e.target.value.toUpperCase() })}
@@ -551,8 +557,10 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
 
               {/* Asset Name */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Name / Particulars</label>
+                <label htmlFor="newItemName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Asset Name / Particulars</label>
                 <Input 
+                  id="newItemName"
+                  name="newItemName"
                   placeholder="e.g. Gold Satin Runner" 
                   value={newItem.item_name} 
                   onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
@@ -563,8 +571,10 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
               {/* Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Initial Stock</label>
+                  <label htmlFor="initialStock" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Initial Stock</label>
                   <Input 
+                    id="initialStock"
+                    name="initialStock"
                     type="number" 
                     placeholder="0" 
                     value={newItem.in_store || ''} 
@@ -573,9 +583,11 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-success">Unit Price (KSH)</label>
+                  <label htmlFor="unitPrice" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-success">Unit Price (KSH)</label>
                   <div className="relative">
                     <Input 
+                      id="unitPrice"
+                      name="unitPrice"
                       type="number" 
                       placeholder="0.00" 
                       value={newItem.price || ''} 
