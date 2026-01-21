@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { formatCurrency } from '@/utils/formatters';
 
 interface MetricCardProps {
   title: string;
@@ -43,12 +44,7 @@ export const MetricCard = React.memo(({
 
 MetricCard.displayName = 'MetricCard';
 
-
 export const calculateRevenueShare = (unitRevenue: number, totalRevenue: number): string => {
   if (totalRevenue === 0) return '0%';
   return `${((unitRevenue / totalRevenue) * 100).toFixed(1)}% of total`;
-};
-
-export const formatCurrency = (amount: number): string => {
-  return `KSH ${amount.toLocaleString()}`;
 };

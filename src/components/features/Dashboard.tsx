@@ -15,7 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { MetricCard, formatCurrency } from '@/components/shared/DashboardComponents';
+import { MetricCard } from '@/components/shared/DashboardComponents';
+import { formatCurrency } from '@/utils/formatters';
 import DatabaseStatus from '@/components/ui/DatabaseStatus';
 import DatabaseSetup from '@/components/ui/DatabaseSetup';
 import InvestorDashboard from './InvestorDashboard';
