@@ -1,1 +1,38 @@
-'use client';\n\nimport { useState, useEffect } from 'react';\nimport { toast } from 'sonner';\n\nexport function useNetworkStatus() {\n  const [isOnline, setIsOnline] = useState(true);\n  const [wasOffline, setWasOffline] = useState(false);\n\n  useEffect(() => {\n    // Check initial status\n    setIsOnline(navigator.onLine);\n\n    const handleOnline = () => {\n      setIsOnline(true);\n      if (wasOffline) {\n        toast.success('Connection restored');\n        setWasOffline(false);\n      }\n    };\n\n    const handleOffline = () => {\n      setIsOnline(false);\n      setWasOffline(true);\n      toast.error('No internet connection');\n    };\n\n    window.addEventListener('online', handleOnline);\n    window.addEventListener('offline', handleOffline);\n\n    return () => {\n      window.removeEventListener('online', handleOnline);\n      window.removeEventListener('offline', handleOffline);\n    };\n  }, [wasOffline]);\n\n  return { isOnline, wasOffline };\n}
+'use client';
+
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+
+export function useNetworkStatus() {
+  const [isOnline, setIsOnline] = useState(true);
+  const [wasOffline, setWasOffline] = useState(false);
+
+  useEffect(() => {
+    // Check initial status
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (wasOffline) {
+        toast.success('Connection restored');
+        setWasOffline(false);
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      setWasOffline(true);
+      toast.error('No internet connection');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [wasOffline]);
+
+  return { isOnline, wasOffline };
+}
