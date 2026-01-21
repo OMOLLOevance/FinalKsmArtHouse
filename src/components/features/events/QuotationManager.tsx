@@ -171,8 +171,6 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   };
 
   const handleAddCategory = () => {
-    console.log('handleAddCategory called with:', newCategoryName);
-    
     if (!newCategoryName.trim()) {
       toast.error('Please enter a category name');
       return;
@@ -191,13 +189,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       }]
     };
     
-    console.log('Adding new section:', newSection);
-    setSections(prev => {
-      const updated = [...prev, newSection];
-      console.log('Updated sections count:', updated.length);
-      return updated;
-    });
-    
+    setSections(prev => [...prev, newSection]);
     setNewCategoryName('');
     setShowAddCategoryDialog(false);
     toast.success(`Category "${newSection.name}" added successfully`);
@@ -454,25 +446,11 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             <CardHeader className="flex flex-row items-center justify-between print:hidden">
               <CardTitle>{quotationType === 'event' ? 'Event & Decor' : 'Food & Catering'}</CardTitle>
               <div className="flex items-center gap-2">
-                {/* Debug info */}
-                {process.env.NODE_ENV === 'development' && (
-                  <span className="text-xs text-muted-foreground">
-                    Dialog: {showAddCategoryDialog ? 'Open' : 'Closed'}
-                  </span>
-                )}
                 <Button 
                   type="button" 
                   variant="outline" 
                   size="sm" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Add Category clicked - Current dialog state:', showAddCategoryDialog);
-                    setShowAddCategoryDialog(prev => {
-                      console.log('Setting dialog state from', prev, 'to true');
-                      return true;
-                    });
-                  }}
+                  onClick={() => setShowAddCategoryDialog(true)}
                   className="h-8 text-xs font-bold"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Category
@@ -943,7 +921,10 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       </Dialog>
 
       {/* Add Category Dialog */}
-      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+      <Dialog open={showAddCategoryDialog} onOpenChange={(open) => {
+        setShowAddCategoryDialog(open);
+        if (!open) setNewCategoryName('');
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
