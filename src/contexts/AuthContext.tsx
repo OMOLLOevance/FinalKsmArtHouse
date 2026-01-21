@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (userData: Omit<User, 'id' | 'createdAt'>, password: string): Promise<{ success: boolean; message: string }> => {
     setIsLoading(true);
     try {
-      console.log('Signup payload:', { ...userData });
+
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: password,

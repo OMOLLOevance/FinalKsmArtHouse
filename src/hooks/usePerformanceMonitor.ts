@@ -20,7 +20,7 @@ export const usePerformanceMonitor = (componentName: string) => {
     // Optional: Send to analytics
     if (process.env.NODE_ENV === 'production' && renderTime > 100) {
       // Send performance data to monitoring service
-      console.log('Performance metric:', { componentName, renderTime });
+
     }
   });
 

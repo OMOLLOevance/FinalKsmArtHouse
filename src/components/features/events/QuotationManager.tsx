@@ -169,7 +169,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   };
 
   const handleAddCategory = () => {
-    console.log('handleAddCategory called with:', newCategoryName); // Debug log
+
     
     if (!newCategoryName.trim()) {
       toast.error('Please enter a category name');
@@ -189,10 +189,10 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       }]
     };
     
-    console.log('Adding new section:', newSection); // Debug log
+
     setSections(prev => {
       const updated = [...prev, newSection];
-      console.log('Updated sections:', updated); // Debug log
+
       return updated;
     });
     

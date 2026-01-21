@@ -136,7 +136,6 @@ export const useCloudSync = () => {
 
   const syncToCloud = useCallback(async (): Promise<boolean> => {
     if (!CLOUD_SYNC_ENABLED || typeof localStorage === 'undefined') {
-      console.log('Cloud sync is disabled or running on server');
       return true;
     }
 
@@ -250,7 +249,6 @@ export const useCloudSync = () => {
         pendingChanges: 0
       }));
 
-      console.log('✅ Data synced to Supabase cloud successfully at:', new Date(timestamp).toLocaleString());
       return true;
 
     } catch (error: any) {
@@ -275,7 +273,6 @@ export const useCloudSync = () => {
 
   const updateFromCloud = useCallback(async (): Promise<boolean> => {
     if (!CLOUD_SYNC_ENABLED || typeof localStorage === 'undefined') { // Handle SSR
-      console.log('Cloud sync is disabled or running on server');
       return true;
     }
 
@@ -361,8 +358,6 @@ export const useCloudSync = () => {
         pendingChanges: 0
       }));
 
-      console.log('✅ Data updated from Supabase cloud successfully at:', new Date(cloudData.updated_at).toLocaleString());
-
       // Reload window to reflect changes from cloud
       setTimeout(() => {
         window.location.reload();
@@ -396,7 +391,7 @@ export const useCloudSync = () => {
               }));
 
               if (syncEvent.type === 'data_updated') {
-                console.log(`📱 Data updated by ${syncEvent.deviceId} at ${new Date(syncEvent.timestamp).toLocaleString()}`);
+                // Data updated by another device
               }
             }
           } catch (error) {

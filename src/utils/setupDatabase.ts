@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 export const setupDatabase = async () => {
   try {
-    console.log('🚀 Starting database setup...');
+    // Database setup started
 
     // Create users table first
     await supabase.rpc('exec_sql', {
@@ -102,7 +102,7 @@ export const setupDatabase = async () => {
       await supabase.rpc('exec_sql', { sql });
     }
 
-    console.log('✅ Database setup completed successfully!');
+    // Database setup completed
     return { success: true, message: 'Database setup completed' };
   } catch (error) {
     console.error('❌ Database setup failed:', error);

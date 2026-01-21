@@ -120,7 +120,7 @@ export const useRealtimeSync = () => {
 
       if (result) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('All data synced to cloud successfully');
+
         }
       }
 
@@ -158,7 +158,7 @@ export const useRealtimeSync = () => {
         localStorage.setItem('ksm_last_cloud_sync', cloudData.updated_at);
 
         if (process.env.NODE_ENV === 'development') {
-          console.log(`Loaded all data from device ${cloudData.device_id}`);
+
         }
         return true;
       }
