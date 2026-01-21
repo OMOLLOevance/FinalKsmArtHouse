@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkDatabaseHealth } from '@/lib/supabase';
+import { checkDatabaseHealth, supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
-    const healthResults = await checkDatabaseHealth();
+    const tables = ['users', 'customers', 'gym_members', 'restaurant_sales'];
+    const healthResults = [];
+
+    for (const table of tables) {
+      try {
+        const result = await supabase.from(table).select('id').limit(1);
+        healthResults.push({
+          tableName: table,
+          status: result.error ? 'error' : 'ok',
+          error: result.error?.message || null
+        });
+      } catch (err) {
+        healthResults.push({
+          tableName: table,
+          status: 'error',
+          error: err instanceof Error ? err.message : 'Unknown error'
+        });
+      }
+    }
+
     return NextResponse.json({ healthResults }, { status: 200 });
   } catch (error: any) {
-    logger.error('Database Health Check Error:', error);
-    return NextResponse.json({ error: error.message || 'An unknown error occurred during database health check' }, { status: 500 });
+    return NextResponse.json({ 
+      healthResults: [{ tableName: 'system', status: 'error', error: 'Health check failed' }]
+    }, { status: 200 });
   }
 }
