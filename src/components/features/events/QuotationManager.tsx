@@ -169,7 +169,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   };
 
   const handleAddCategory = () => {
-
+    console.log('handleAddCategory called with:', newCategoryName);
     
     if (!newCategoryName.trim()) {
       toast.error('Please enter a category name');
@@ -189,10 +189,10 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       }]
     };
     
-
+    console.log('Adding new section:', newSection);
     setSections(prev => {
       const updated = [...prev, newSection];
-
+      console.log('Updated sections:', updated);
       return updated;
     });
     
@@ -462,7 +462,12 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                   type="button" 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setShowAddCategoryDialog(true)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Add Category clicked');
+                    setShowAddCategoryDialog(true);
+                  }}
                   className="h-8 text-xs font-bold"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Category
