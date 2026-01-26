@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
+import { isManager } from '@/lib/auth-utils';
 
 const CustomerSchema = z.object({
   user_id: z.string().uuid(),
@@ -23,36 +24,60 @@ const CustomerSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userIsManager = isManager(profile?.role || 'staff');
+
     const { searchParams } = new URL(request.url);
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('customers')
       .select(fields)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
+    if (!userIsManager) {
+      query = query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
       logger.error('Customers GET Error:', error);
-      return NextResponse.json({ data: [], error: error.message }, { status: 200 });
+      return NextResponse.json({ data: [], error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ data: data || [] });
   } catch (error) {
     logger.error('Customers GET Error:', error);
-    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 200 });
+    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
     const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     
     const dataToValidate = {
-      user_id: body.userId || body.user_id || '00000000-0000-0000-0000-000000000001', // Default test user
+      user_id: user.id,
       name: body.name || body.full_name,
       contact: body.contact || body.phone || body.email,
       location: body.location || body.address,
@@ -69,10 +94,7 @@ export async function POST(request: NextRequest) {
 
     const validatedData = CustomerSchema.parse(dataToValidate);
 
-    const { client } = await getClientWithRole(token);
-    const finalClient = client || supabase; // Fallback to direct supabase
-
-    const { data, error } = await finalClient
+    const { data, error } = await supabase
       .from('customers')
       .insert([validatedData])
       .select()
@@ -93,26 +115,26 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('customers')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -128,33 +150,31 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userRole = profile?.role || 'staff';
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
-
-    const client = token ? createAuthenticatedClient(token) : supabase;
     
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    let query = supabase.from('customers').delete().eq('id', id);
 
-    const userRole = await getUserRole(user.id, client);
-    
-    // Only directors and investors can delete
     if (!['director', 'investor'].includes(userRole)) {
-      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete records' }, { status: 403 });
+      query = query.eq('user_id', user.id);
     }
 
-    const { error } = await client
-      .from('customers')
-      .delete()
-      .eq('id', id);
+    const { error } = await query;
 
     if (error) throw ApiError.fromSupabase(error);
 

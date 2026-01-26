@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { isManager } from '@/lib/auth-utils';
 
 const EventItemSchema = z.object({
   user_id: z.string().uuid(),
@@ -30,53 +17,34 @@ const EventItemSchema = z.object({
   status: z.string().default('available'),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userIsManager = isManager(profile?.role || 'staff');
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const filterUserId = searchParams.get('filterUserId');
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-
-    // Default to authenticated client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        const role = await getUserRole(user.id, authClient);
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    }
-
-    let query = client
+    const filterUserId = searchParams.get('filterUserId');
+    
+    let query = supabase
       .from('event_items')
       .select(fields)
       .order('created_at', { ascending: false });
 
-    // RBAC Filtering Logic
-    if (filterUserId) {
+    if (filterUserId && userIsManager) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager && userId) {
-      query = query.eq('user_id', userId);
+    } else if (!userIsManager) {
+      query = query.eq('user_id', user.id);
     }
 
     query = query.range(offset, offset + limit - 1);
@@ -95,13 +63,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const validatedData = EventItemSchema.parse(body);
+    const validatedData = EventItemSchema.parse({
+      ...body,
+      user_id: user.id
+    });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('event_items')
       .insert([validatedData])
       .select()
@@ -122,20 +98,26 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('event_items')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -151,20 +133,26 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { error } = await client
+    const { error } = await supabase
       .from('event_items')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) throw ApiError.fromSupabase(error);
 

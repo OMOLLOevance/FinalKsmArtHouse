@@ -1,23 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
 
 const QuotationItemSchema = z.object({
   id: z.string(),
@@ -56,53 +42,50 @@ const QuotationSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userIdParam = searchParams.get('userId');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Use supabase directly for simplicity
-    const client = supabase;
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    let query = client.from('quotations').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('quotations').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
 
     const { data, error } = await query;
 
     if (error) {
         logger.error('Quotations GET Database Error:', error);
-        return NextResponse.json({ data: [], error: error.message }, { status: 200 });
+        return NextResponse.json({ data: [], error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ data: data || [] });
   } catch (error: any) {
     logger.error('Quotations GET Error:', error);
-    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 200 });
+    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
-    // Add default user_id if missing
-    const dataWithDefaults = {
+    const body = await request.json();
+    
+    const dataWithUser = {
       ...body,
-      user_id: body.user_id || '00000000-0000-0000-0000-000000000001'
+      user_id: user.id
     };
     
-    const validatedData = QuotationSchema.parse(dataWithDefaults);
+    const validatedData = QuotationSchema.parse(dataWithUser);
 
     const { data, error } = await supabase
       .from('quotations')
@@ -127,18 +110,24 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('quotations')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -160,18 +149,24 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { error } = await client
+    const { error } = await supabase
       .from('quotations')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
         logger.error('Quotations DELETE Database Error:', error);

@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { isManager } from '@/lib/auth-utils';
 
 const RequirementSchema = z.object({
   user_id: z.string().uuid(),
@@ -28,97 +15,39 @@ const RequirementSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userIdParam = searchParams.get('userId');
-    const customerId = searchParams.get('customerId');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Default to authenticated client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-    let sessionUserId = null;
-
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        sessionUserId = user.id;
-        const role = await getUserRole(user.id, authClient);
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      sessionUserId = user?.id;
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = userIdParam || sessionUserId;
-    if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userIsManager = isManager(profile?.role || 'staff');
+    
+    const { searchParams } = new URL(request.url);
+    const customerId = searchParams.get('customerId');
 
-    // 1. Fetch requirements
-    let query = client.from('customer_requirements').select('*');
+    let query = supabase.from('customer_requirements').select(`
+      *,
+      customers (id, name),
+      decor_inventory (id, item_name, category, price)
+    `);
 
-    // Filtering Logic
     if (customerId) {
       query = query.eq('customer_id', customerId);
-    } else if (!isManager && userId) {
-      query = query.eq('user_id', userId);
+    } else if (!userIsManager) {
+      query = query.eq('user_id', user.id);
     }
 
-    const { data: requirements, error: reqError } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query.order('created_at', { ascending: false });
 
-    if (reqError) throw ApiError.fromSupabase(reqError);
-    if (!requirements || requirements.length === 0) return NextResponse.json({ data: [] });
+    if (error) throw ApiError.fromSupabase(error);
 
-    // 2. Identify all IDs we need to look up
-    const targetIds = [...new Set(requirements.map(r => r.customer_id))];
-    const itemIds = [...new Set(requirements.map(r => r.decor_item_id))];
-
-    // 3. Fetch from ALL possible customer sources and the inventory
-    const [customersRes, monthlyRes, decorRes, gymRes, saunaRes, quotationsRes, itemsRes] = await Promise.all([
-        client.from('customers').select('id, name').in('id', targetIds),
-        client.from('monthly_allocations').select('id, customer_name').in('id', targetIds),
-        client.from('decor_allocations').select('id, customer_name').in('id', targetIds),
-        client.from('gym_members').select('id, name').in('id', targetIds),
-        client.from('sauna_bookings').select('id, client_name').in('id', targetIds),
-        client.from('quotations').select('id, customer_name').in('id', targetIds),
-        client.from('decor_inventory').select('id, item_name, category, price').in('id', itemIds)
-    ]);
-
-    // 4. Create a unified customer map (checking all six sources)
-    const customersMap = new Map();
-    customersRes.data?.forEach(c => customersMap.set(c.id, { name: c.name }));
-    monthlyRes.data?.forEach(a => customersMap.set(a.id, { name: a.customer_name }));
-    decorRes.data?.forEach(d => customersMap.set(d.id, { name: d.customer_name }));
-    gymRes.data?.forEach(g => customersMap.set(g.id, { name: g.name }));
-    saunaRes.data?.forEach(s => customersMap.set(s.id, { name: s.client_name }));
-    quotationsRes.data?.forEach(q => customersMap.set(q.id, { name: q.customer_name }));
-    
-    const itemsMap = new Map(itemsRes.data?.map(i => [i.id, i]) || []);
-
-    // 5. Build enriched data
-    const enrichedData = requirements.map(req => ({
-        ...req,
-        customers: customersMap.get(req.customer_id) || { name: 'Unknown Client' },
-        decor_inventory: itemsMap.get(req.decor_item_id) || { item_name: 'Unknown Item', category: 'N/A', price: 0 }
-    }));
-
-    return NextResponse.json({ data: enrichedData });
+    return NextResponse.json({ data: data || [] });
   } catch (error: any) {
     logger.error('Customer Requirements GET Exception:', error);
     const status = error instanceof ApiError ? error.status : 500;
@@ -128,14 +57,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
     const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const validatedData = RequirementSchema.parse(body);
+    const validatedData = RequirementSchema.parse({
+      ...body,
+      user_id: user.id,
+    });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    // Check for existing
-    const { data: existing } = await client
+    const { data: existing } = await supabase
       .from('customer_requirements')
       .select('id, quantity_required')
       .eq('customer_id', validatedData.customer_id)
@@ -143,7 +79,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) {
-      const { data, error } = await client
+      const { data, error } = await supabase
         .from('customer_requirements')
         .update({ 
           quantity_required: existing.quantity_required + validatedData.quantity_required,
@@ -156,7 +92,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data });
     }
 
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('customer_requirements')
       .insert([validatedData])
       .select()
@@ -177,18 +113,24 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('customer_requirements')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -204,18 +146,24 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { error } = await client
+    const { error } = await supabase
       .from('customer_requirements')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) throw ApiError.fromSupabase(error);
 

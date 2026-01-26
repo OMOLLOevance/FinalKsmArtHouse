@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
 
 const GymMemberSchema = z.object({
   user_id: z.string().uuid(),
@@ -21,8 +21,15 @@ const GymMemberSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -31,6 +38,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('gym_members')
       .select(fields)
+      .eq('user_id', user.id) // Security: Only fetch user's own data
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -42,37 +50,37 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       logger.error('Gym GET Error:', error);
-      return NextResponse.json({ data: [], error: error.message }, { status: 200 });
+      return NextResponse.json({ data: [], error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ data: data || [] });
   } catch (error) {
     logger.error('Gym GET Error:', error);
-    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 200 });
+    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const validatedData = GymMemberSchema.parse(body);
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Ensure user_id matches authenticated user for staff
-    const userRole = await getUserRole(user.id, client);
+    const body = await request.json();
+    const validatedData = GymMemberSchema.parse(body);
+
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userRole = profile?.role || 'staff';
+
     if (userRole === 'staff' && validatedData.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden: Staff can only create their own records' }, { status: 403 });
     }
 
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('gym_members')
       .insert([validatedData])
       .select()
@@ -94,23 +102,22 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('gym_members')
       .update(updates)
       .eq('id', id)
@@ -130,30 +137,29 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-
-    if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
-    }
-
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
     
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = await getUserRole(user.id, client);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
     
-    // Only directors and investors can delete
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userRole = profile?.role || 'staff';
+    
     if (!['director', 'investor'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete records' }, { status: 403 });
     }
 
-    const { error } = await client
+    const { error } = await supabase
       .from('gym_members')
       .delete()
       .eq('id', id);

@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { isManager } from '@/lib/auth-utils';
 
 const DecorInventorySchema = z.object({
   category: z.string().min(1),
@@ -31,46 +18,26 @@ const DecorInventorySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const filterUserId = searchParams.get('filterUserId');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Default to RLS client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-
-    // Attempt to escalate privileges for managers
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      
-      if (user) {
-        const { data: profile } = await authClient
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-          
-        const isManager = !!(profile && ['director', 'investor', 'operations_manager'].includes(profile.role));
-        
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let query = client.from('decor_inventory').select('*');
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userIsManager = isManager(profile?.role || 'staff');
+
+    const { searchParams } = new URL(request.url);
+    const filterUserId = searchParams.get('filterUserId');
+
+    let query = supabase.from('decor_inventory').select('*');
     
-    // Filtering Logic:
-    // 1. If filterUserId is explicitly provided (e.g. Director selecting Staff), use it.
-    // 2. If no filterUserId but userId is provided (e.g. Staff viewing own), use userId.
-    // 3. Managers using adminSupabase can see all if no filters provided.
-    // 4. Regular staff using RLS client will only see their own regardless of filters (enforced by DB).
-    
-    if (filterUserId) {
+    if (filterUserId && userIsManager) {
       query = query.eq('user_id', filterUserId);
-    } else if (userId) {
-      query = query.eq('user_id', userId);
+    } else if (!userIsManager) {
+      query = query.eq('user_id', user.id);
     }
 
     const { data, error } = await query
@@ -88,15 +55,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const { action, id, quantity = 1, ...itemData } = body;
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
 
     if (action && id) {
       // Handle special actions: hire, return, damage, repair
-      const { data: current, error: fetchError } = await client
+      const { data: current, error: fetchError } = await supabase
         .from('decor_inventory')
         .select('in_store, hired, damaged')
         .eq('id', id)
@@ -126,7 +99,7 @@ export async function POST(request: NextRequest) {
           break;
       }
 
-      const { data, error } = await client
+      const { data, error } = await supabase
         .from('decor_inventory')
         .update(updates)
         .eq('id', id)
@@ -139,9 +112,9 @@ export async function POST(request: NextRequest) {
 
     // Handle normal insertion
     const validatedData = DecorInventorySchema.parse(itemData);
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('decor_inventory')
-      .insert([validatedData])
+      .insert([{...validatedData, user_id: user.id}])
       .select()
       .single();
 
@@ -155,13 +128,18 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('decor_inventory')
       .update(updates)
       .eq('id', id)

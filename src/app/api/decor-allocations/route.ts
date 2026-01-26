@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { isManager } from '@/lib/auth-utils';
 
 const DecorAllocationSchema = z.object({
   id: z.string().uuid().optional(),
@@ -55,46 +42,28 @@ const DecorAllocationSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userIsManager = isManager(profile?.role || 'staff');
+
     const { searchParams } = new URL(request.url);
-    const userIdParam = searchParams.get('userId');
     const filterUserId = searchParams.get('filterUserId');
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // Default client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-    let sessionUserId = null;
+    let query = supabase.from('decor_allocations').select('*');
 
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        sessionUserId = user.id;
-        const { data: userProfile } = await authClient.from('users').select('role').eq('id', user.id).single();
-        const role = userProfile?.role || 'staff';
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      sessionUserId = user?.id;
-    }
-
-    const userId = userIdParam || sessionUserId;
-    if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-
-    let query = client.from('decor_allocations').select('*');
-
-    // RBAC Filtering Logic
-    if (filterUserId) {
+    if (filterUserId && userIsManager) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager && userId) {
-      query = query.eq('user_id', userId);
+    } else if (!userIsManager) {
+      query = query.eq('user_id', user.id);
     }
     
     if (monthStr) {
@@ -123,13 +92,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const validatedData = DecorAllocationSchema.parse(body);
+    const validatedData = DecorAllocationSchema.parse({
+      ...body,
+      user_id: user.id
+    });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('decor_allocations')
       .upsert(validatedData, { 
         onConflict: 'month, year, row_number, user_id' 

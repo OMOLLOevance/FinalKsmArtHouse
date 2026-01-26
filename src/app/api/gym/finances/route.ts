@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { isManager } from '@/lib/auth-utils';
 
 const GymFinanceSchema = z.object({
   user_id: z.string().uuid(),
@@ -28,90 +15,75 @@ const GymFinanceSchema = z.object({
   payment_method: z.string().default('cash'),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userIsManager = isManager(profile?.role || 'staff');
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const filterUserId = searchParams.get('filterUserId');
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const filterUserId = searchParams.get('filterUserId');
 
-    // Default to authenticated client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        const role = await getUserRole(user.id, authClient);
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    }
-
-    // RLS policies will be bypassed if using adminSupabase
-    let query = client
+    let query = supabase
       .from('gym_finances')
       .select(fields)
       .order('transaction_date', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // RBAC Filtering Logic
-    if (filterUserId) {
+    if (filterUserId && userIsManager) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager && userId) {
-      query = query.eq('user_id', userId);
+    } else if (!userIsManager) {
+      query = query.eq('user_id', user.id);
     }
 
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ data: [] });
+      logger.error('Gym Finances GET Error:', error);
+      return NextResponse.json({ data: [], error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ data: data || [] });
   } catch (error) {
-    return NextResponse.json({ data: [] });
+    logger.error('Gym Finances GET Error:', error);
+    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const validatedData = GymFinanceSchema.parse(body);
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Ensure user_id matches authenticated user for staff
-    const userRole = await getUserRole(user.id, client);
+    const body = await request.json();
+    const validatedData = GymFinanceSchema.parse({
+      ...body,
+      user_id: user.id,
+    });
+    
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userRole = profile?.role || 'staff';
+
     if (userRole === 'staff' && validatedData.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden: Staff can only create their own transactions' }, { status: 403 });
     }
 
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('gym_finances')
       .insert([validatedData])
       .select()
@@ -130,60 +102,44 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+export async function PUT(_request: NextRequest) {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
-    }
-
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Block all updates as per RBAC requirements
+    // Block all updates as per original business logic
     return NextResponse.json({ error: 'Forbidden: Transaction updates are not allowed' }, { status: 403 });
-  } catch (error) {
-    logger.error('Gym Finances PUT Error:', error);
-    const status = error instanceof ApiError ? error.status : 500;
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status });
-  }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    const userRole = profile?.role || 'staff';
+    
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
-
-    const client = token ? createAuthenticatedClient(token) : supabase;
     
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRole = await getUserRole(user.id, client);
-    
-    // Only directors and investors can delete
     if (!['director', 'investor'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete transactions' }, { status: 403 });
     }
 
-    // RLS policy will handle the actual deletion permission
-    const { error } = await client
+    const { error } = await supabase
       .from('gym_finances')
       .delete()
       .eq('id', id);
