@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/services/auth.service';
 import { toast } from 'sonner';
-import { tokenStorage } from '@/lib/token-storage';
 
 // Auth hooks
 export const useLogin = () => {
@@ -10,7 +9,6 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
-      tokenStorage.setToken(data.token);
       queryClient.invalidateQueries({ queryKey: ['user'] });
       toast.success('Login successful');
     },
@@ -26,7 +24,6 @@ export const useRegister = () => {
   return useMutation({
     mutationFn: authService.register,
     onSuccess: (data) => {
-      tokenStorage.setToken(data.token);
       queryClient.invalidateQueries({ queryKey: ['user'] });
       toast.success('Registration successful');
     },

@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { toast } from 'sonner';
-import { tokenStorage } from './token-storage';
 import { logger } from './logger';
 import { supabase } from './supabase';
 
@@ -24,7 +23,7 @@ class APIClient {
       async (config) => {
         // Try to get token from Supabase session directly
         const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token || tokenStorage.getToken();
+        const token = data.session?.access_token;
         
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -45,11 +44,6 @@ class APIClient {
         return response;
       },
       async (error) => {
-        if (error.response?.status === 401) {
-          logger.warn('Unauthorized request, initiating logout/refresh');
-          await this.handleTokenRefresh();
-        }
-        
         const message = error.response?.data?.message || error.response?.data?.error || 'Network error';
         
         // Handle Network Errors (no response) gracefully
@@ -65,18 +59,6 @@ class APIClient {
         return Promise.reject(error);
       }
     );
-  }
-
-  
-  private async handleTokenRefresh() {
-    try {
-      // Implement token refresh logic here
-      tokenStorage.removeToken();
-      window.location.href = '/login';
-    } catch (error) {
-      logger.error('Token refresh failed:', error);
-
-    }
   }
   
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {

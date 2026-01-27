@@ -4,7 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
-import ClientLayout from './ClientLayout';
+import ClientLayout from './ClientLayout'; 
 
 export const metadata: Metadata = {
   title: {
@@ -29,17 +29,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ErrorBoundary>
-            <QueryProvider>
-              <AuthProvider>
+        <AuthProvider>
+          <QueryProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <ErrorBoundary>
                 <ClientLayout>
                   {children}
                 </ClientLayout>
-              </AuthProvider>
-            </QueryProvider>
-          </ErrorBoundary>
-        </ThemeProvider>
+              </ErrorBoundary>
+            </ThemeProvider>
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );
