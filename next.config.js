@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@supabase/supabase-js', 'framer-motion'],
-  },
-  outputFileTracingRoot: __dirname,
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
