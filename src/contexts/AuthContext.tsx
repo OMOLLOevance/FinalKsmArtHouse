@@ -69,8 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: session.user.created_at || new Date().toISOString()
         };
         setUser(userData);
-        setIsLoading(false);
-      } else if (event === 'SIGNED_OUT' || !session) {
+        setIsLoading(false);      } else if (event === 'SIGNED_OUT' || !session) {
         // When signed out or no session, clear user
         setUser(null);
         setIsLoading(false);

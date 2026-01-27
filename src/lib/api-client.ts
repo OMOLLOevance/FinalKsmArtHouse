@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { toast } from 'sonner';
-import { tokenStorage } from './token-storage';
+// Removed tokenStorage as it's no longer used
 import { logger } from './logger';
 import { supabase } from './supabase';
 
@@ -11,7 +11,8 @@ class APIClient {
     this.client = axios.create({
       baseURL: process.env.NEXT_PUBLIC_API_URL || '',
       timeout: 30000,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      withCredentials: true // Enable cookies for same-origin requests
     });
 
     
@@ -24,11 +25,13 @@ class APIClient {
       async (config) => {
         // Try to get token from Supabase session directly
         const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token || tokenStorage.getToken();
+        const token = data.session?.access_token;
         
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        // Ensure cookies are included for authentication
+        config.withCredentials = true; 
         logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
@@ -45,11 +48,6 @@ class APIClient {
         return response;
       },
       async (error) => {
-        if (error.response?.status === 401) {
-          logger.warn('Unauthorized request, initiating logout/refresh');
-          await this.handleTokenRefresh();
-        }
-        
         const message = error.response?.data?.message || error.response?.data?.error || 'Network error';
         
         // Handle Network Errors (no response) gracefully
@@ -59,6 +57,25 @@ class APIClient {
             return Promise.reject(error);
         }
 
+        // Handle 401 Unauthorized - always clear session and redirect to login
+        if (error.response?.status === 401) {
+          logger.warn(`API Unauthorized: ${error.config?.url} - aggressively clearing session and redirecting to login`);
+          if (typeof window !== 'undefined') {
+            await supabase.auth.signOut(); 
+            
+            // Aggressively clear Supabase-related localStorage items
+            for (const key in localStorage) {
+              if (key.startsWith('sb-') || key.startsWith('supabase.auth.')) {
+                localStorage.removeItem(key);
+                logger.info(`Cleared localStorage key: ${key}`);
+              }
+            }
+            
+            window.location.href = '/login';
+          }
+          return Promise.reject(error); // Reject to prevent further processing
+        }
+
         logger.error(`API Error: ${error.response?.status || 'Network'} ${error.config?.url}`, { message, data: error.response?.data });
         toast.error(message);
         
@@ -66,18 +83,8 @@ class APIClient {
       }
     );
   }
-
   
-  private async handleTokenRefresh() {
-    try {
-      // Implement token refresh logic here
-      tokenStorage.removeToken();
-      window.location.href = '/login';
-    } catch (error) {
-      logger.error('Token refresh failed:', error);
-
-    }
-  }
+  // The handleTokenRefresh method is no longer needed as 401s are handled by aggressive clear
   
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.get<T>(url, config);

@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase';
 
 export const useCustomersQuery = () => {
-  const { userId, isAuthenticated } = useAuth();
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth(); // Add authLoading
   const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
   
   return useQuery({
@@ -29,7 +29,7 @@ export const useCustomersQuery = () => {
         return [];
       }
     },
-    enabled: !!userId && isAuthenticated,
+    enabled: !!userId && isAuthenticated && !authLoading, // ADD !authLoading
     retry: 3,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,

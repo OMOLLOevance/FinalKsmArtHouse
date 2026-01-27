@@ -4,11 +4,18 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useRealtimeInvalidation = () => {
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: authLoading } = useAuth(); // Get auth state
 
   useEffect(() => {
+    // Only subscribe if authenticated and auth state is loaded
+    if (!isAuthenticated || authLoading) {
+      return; // Do not subscribe if not authenticated or still loading auth
+    }
+
     const channel = supabase.channel('db_changes')
       .on(
         'postgres_changes',
@@ -51,5 +58,5 @@ export const useRealtimeInvalidation = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, isAuthenticated, authLoading]); // Add isAuthenticated and authLoading to dependencies
 };

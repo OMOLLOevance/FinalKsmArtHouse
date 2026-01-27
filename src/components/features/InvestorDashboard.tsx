@@ -76,8 +76,19 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+import { useAuth } from '@/contexts/AuthContext'; // Add this import
+
+// ... other imports
+
 const InvestorDashboard: React.FC = () => {
-  const { data: stats, isLoading: loading, error } = useDashboardStats();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  // Conditionally initialize useDashboardStats
+  const { data: stats, isLoading: statsLoading, error } = isAuthenticated
+    ? useDashboardStats()
+    : { data: undefined, isLoading: false, error: undefined }; // Added conditional initialization
+
+  const loading = authLoading || statsLoading; // Added combined loading state
 
   if (loading) return <LoadingSpinner text="Analyzing Enterprise Data..." />;
 
