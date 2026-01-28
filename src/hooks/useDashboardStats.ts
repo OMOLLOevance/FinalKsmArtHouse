@@ -42,12 +42,12 @@ interface MinimalQuotation { total_amount: number; status: string; created_at: s
 interface MinimalCateringItem { price_per_plate: number; min_order: number; description?: string; created_at: string; }
 
 export const useDashboardStats = () => {
-  const { userId, isAuthenticated } = useAuth();
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth(); // Add authLoading
   const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
 
   return useQuery<DashboardStats>({
     queryKey: ['dashboard-stats', userId],
-    enabled: !!userId && isAuthenticated,
+    enabled: !!userId && isAuthenticated && !authLoading, // ADD !authLoading
     queryFn: async () => {
       try {
         const isManagement = isDirectorOrInvestor() || isOperationsManager();

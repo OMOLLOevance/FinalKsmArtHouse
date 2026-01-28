@@ -33,10 +33,15 @@ interface DashboardSummaryItem {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const { data: stats, isLoading: loading, error } = useDashboardStats();
-  const [showDatabaseStatus, setShowDatabaseStatus] = useState(false);
+
+  // Conditionally initialize useDashboardStats
+  const { data: stats, isLoading: statsLoading, error } = isAuthenticated
+    ? useDashboardStats()
+    : { data: undefined, isLoading: false, error: undefined };
+
+  const loading = authLoading || statsLoading;  const [showDatabaseStatus, setShowDatabaseStatus] = useState(false);
   const [showDatabaseSetup, setShowDatabaseSetup] = useState(false);
 
   const handleModuleClick = (moduleId: string) => {

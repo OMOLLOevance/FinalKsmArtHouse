@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { createClient as createServerClient } from '@/lib/supabase/server'; // From HEAD for user session
+import { createClient } from '@supabase/supabase-js'; // For service role client
+import { cookies } from 'next/headers'; // From HEAD
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 
@@ -37,23 +38,29 @@ const PaymentSchema = z.discriminatedUnion('service_type', [
 
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createServerClient(cookieStore); // Use server client for user auth
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const userId = user.id;
 
   try {
+    const supabaseServiceRole = createClient( // Use standard client for service role
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const body = await req.json();
     const validatedData = PaymentSchema.parse(body);
 
     const paymentData = {
       ...validatedData,
-      user_id: user.id,
+      user_id: userId,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServiceRole
       .from('payments')
       .insert(paymentData)
       .select()
@@ -76,23 +83,29 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createServerClient(cookieStore); // Use server client for user auth
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const userId = user.id;
 
   try {
+    const supabaseServiceRole = createClient( // Use standard client for service role
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { searchParams } = new URL(req.url);
     const quotationId = searchParams.get('quotationId');
     const gymMemberId = searchParams.get('gymMemberId');
     const saunaBookingId = searchParams.get('saunaBookingId');
 
-    let query = supabase.from('payments').select('*');
+    let query = supabaseServiceRole.from('payments').select('*'); // Use supabaseServiceRole for select
 
     // Always enforce user_id scoping
-    query = query.eq('user_id', user.id);
+    query = query.eq('user_id', userId);
 
     // Apply service-specific filters
     if (quotationId) {
