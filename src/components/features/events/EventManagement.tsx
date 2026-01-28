@@ -16,6 +16,7 @@ const EventCategoryManager = lazy(() => import('./EventCategoryManager'));
 const EventPaymentForm = lazy(() => import('./EventPaymentForm'));
 const DecorManagement = lazy(() => import('../DecorManagement'));
 const CustomerRequirements = lazy(() => import('../CustomerRequirements'));
+const ClientArea = lazy(() => import('./ClientArea'));
 
 interface EventManagementProps {
   onBack?: () => void;
@@ -67,6 +68,14 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
       description: 'Advanced customer management with monthly allocations' 
     },
     { 
+      id: 'client-area', 
+      title: 'Client Area', 
+      icon: Users, 
+      color: 'text-green-600 dark:text-green-400', 
+      bg: 'bg-green-100 dark:bg-green-900/20',
+      description: 'Manage client information and event details' 
+    },
+    { 
       id: 'requirements', 
       title: 'Requirements', 
       icon: FileText, 
@@ -106,6 +115,8 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
         return <CateringManager onBack={() => setActiveModule(null)} />;
       case 'customers':
         return <CustomerManager onBack={() => setActiveModule(null)} />;
+      case 'client-area':
+        return <ClientArea onBack={() => setActiveModule(null)} />;
       case 'requirements':
         return <CustomerRequirements onBack={() => setActiveModule(null)} />;
       case 'quotation':
