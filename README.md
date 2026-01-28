@@ -53,7 +53,7 @@ src/
 └── utils/                 # Business logic utilities
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Node.js 20+ 
