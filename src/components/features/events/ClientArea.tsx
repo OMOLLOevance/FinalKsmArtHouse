@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import ClientAreaForm, { IClientForm } from './ClientAreaForm';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from '@/lib/supabase';
+import { useForm } from 'react-hook-form';
 
 
 interface ClientAreaProps {
@@ -22,9 +24,60 @@ interface ClientAreaProps {
 
 const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
   const [clients, setClients] = useState<IClientForm[]>([]);
+  const { reset } = useForm<IClientForm>();
 
-  const handleSubmit = (data: IClientForm) => {
-    setClients([...clients, data]);
+  const fetchClients = async () => {
+    const { data, error } = await supabase.from('clients').select('*');
+    if (error) {
+      console.error('Error fetching clients:', error);
+    } else {
+      setClients(data as IClientForm[]);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const handleSubmit = async (data: IClientForm) => {
+    const existingClient = clients.find(client => client.clientName === data.clientName);
+    if (existingClient) {
+      alert('Client with this name already exists.');
+      return;
+    }
+
+    const { error } = await supabase.from('clients').insert([
+      {
+        date: data.date,
+        account_manager: data.accountManager,
+        client_name: data.clientName,
+        location: data.location,
+        number_of_parks: data.numberOfParks,
+        phone_number: data.phoneNumber,
+        type_of_events: data.typeOfEvents,
+        status: data.status,
+      },
+    ]);
+
+    if (error) {
+      console.error('Error inserting client:', error);
+    } else {
+      await fetchClients();
+      reset();
+    }
+  };
+
+  const getStatusColorClass = (status: IClientForm['status']) => {
+    switch (status) {
+      case 'confirmed':
+        return 'text-green-500 font-medium';
+      case 'no-feedback':
+        return 'text-red-500 font-medium';
+      case 'under-discussion':
+        return 'text-yellow-500 font-medium';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -61,7 +114,7 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
                   <TableCell>{client.clientName}</TableCell>
                   <TableCell>{client.date}</TableCell>
                   <TableCell>{client.accountManager}</TableCell>
-                  <TableCell>{client.status}</TableCell>
+                  <TableCell className={getStatusColorClass(client.status)}>{client.status}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
