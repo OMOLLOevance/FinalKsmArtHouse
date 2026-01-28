@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-import { getAuth } from '@clerk/nextjs/server';
+// import { getAuth } from '@clerk/nextjs/server'; // REMOVE THIS
 
 const BasePaymentSchema = z.object({
   amount_paid: z.number().positive(),
@@ -37,10 +36,28 @@ const PaymentSchema = z.discriminatedUnion('service_type', [
 ]);
 
 export async function POST(req: NextRequest) {
-  const { userId } = getAuth(req);
-  if (!userId) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const token = authHeader.split(' ')[1];
+
+  // Create a Supabase client that can verify the user's token
+  const supabaseAuth = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use anon key for client to verify token
+    {
+      auth: { persistSession: false }, // Do not persist session on server-side
+    }
+  );
+
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+
+  if (authError || !user) {
+    logger.error('Payments POST Auth Error:', authError);
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const userId = user.id;
 
   try {
     // Create a Supabase client with the service role key for RLS bypass
@@ -79,10 +96,28 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const { userId } = getAuth(req);
-  if (!userId) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const token = authHeader.split(' ')[1];
+
+  // Create a Supabase client that can verify the user's token
+  const supabaseAuth = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use anon key for client to verify token
+    {
+      auth: { persistSession: false }, // Do not persist session on server-side
+    }
+  );
+
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+
+  if (authError || !user) {
+    logger.error('Payments GET Auth Error:', authError);
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const userId = user.id;
 
   try {
     // Create a Supabase client with the service role key for RLS bypass
