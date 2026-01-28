@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
 export interface IClientForm {
+  id?: number;
   date: string;
   accountManager: string;
   clientName: string;
