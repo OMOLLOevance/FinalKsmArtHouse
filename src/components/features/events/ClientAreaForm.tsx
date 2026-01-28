@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,7 @@ export interface IClientForm {
   numberOfParks: number;
   phoneNumber: string;
   typeOfEvents: string;
-  status: 'confirmed' | 'no-feedback' | 'under-discussion';
+  status?: 'confirmed' | 'no-feedback' | 'under-discussion';
 }
 
 interface ClientAreaFormProps {
@@ -24,7 +24,7 @@ interface ClientAreaFormProps {
 }
 
 const ClientAreaForm: React.FC<ClientAreaFormProps> = ({ onSubmit }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm<IClientForm>();
+  const { register, handleSubmit, control, formState: { errors } } = useForm<IClientForm>();
 
   return (
     <Card>
@@ -77,16 +77,22 @@ const ClientAreaForm: React.FC<ClientAreaFormProps> = ({ onSubmit }) => {
 
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select>
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="no-feedback">No Feedback</SelectItem>
-                <SelectItem value="under-discussion">Under Discussion</SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="no-feedback">No Feedback</SelectItem>
+                    <SelectItem value="under-discussion">Under Discussion</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="md:col-span-2">
