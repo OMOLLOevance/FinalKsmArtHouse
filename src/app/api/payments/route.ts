@@ -67,6 +67,41 @@ export async function POST(req: NextRequest) {
     );
 
     const body = await req.json();
+
+    if (body.service_type === 'quotation' && !body.customer_id && body.quotation_id) {
+        const { data: quotation, error: quotationError } = await supabaseServiceRole
+            .from('quotations')
+            .select('customer_name, customer_email, user_id')
+            .eq('id', body.quotation_id)
+            .single();
+
+        if (quotation && quotation.customer_email) {
+            const { data: existingCustomer, error: customerError } = await supabaseServiceRole
+                .from('customers')
+                .select('id')
+                .eq('contact', quotation.customer_email)
+                .single();
+
+            if (existingCustomer) {
+                body.customer_id = existingCustomer.id;
+            } else {
+                const { data: newCustomer, error: newCustomerError } = await supabaseServiceRole
+                    .from('customers')
+                    .insert({
+                        name: quotation.customer_name,
+                        contact: quotation.customer_email,
+                        user_id: quotation.user_id,
+                    })
+                    .select('id')
+                    .single();
+                
+                if (newCustomer) {
+                    body.customer_id = newCustomer.id;
+                }
+            }
+        }
+    }
+
     const validatedData = PaymentSchema.parse(body);
 
     const paymentData = {

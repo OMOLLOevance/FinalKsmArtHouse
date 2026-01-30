@@ -52,7 +52,25 @@ export const useCreatePaymentMutation = () => {
       toast.success('Payment recorded successfully');
     },
     onError: (error: any) => {
-      toast.error(`Failed to record payment: ${error.message || 'Unknown error'}`);
+      let errorMessage = 'Failed to record payment.';
+      if (error.response?.data?.error) {
+        const { formErrors, fieldErrors } = error.response.data.error;
+        const messages: string[] = [];
+        if (formErrors.length > 0) {
+          messages.push(...formErrors);
+        }
+        for (const key in fieldErrors) {
+          if (fieldErrors[key]) {
+            messages.push(`${key}: ${fieldErrors[key].join(', ')}`);
+          }
+        }
+        if (messages.length > 0) {
+          errorMessage = `Validation failed: ${messages.join('; ')}`;
+        }
+      } else if (error.message) {
+        errorMessage = `Failed to record payment: ${error.message}`;
+      }
+      toast.error(errorMessage);
     },
   });
 };
