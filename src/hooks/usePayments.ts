@@ -40,7 +40,7 @@ export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'g
   });
 };
 
-export const useCreatePaymentMutation = () => {
+export const useCreatePaymentMutation = ({ onSuccess: customOnSuccess }: { onSuccess?: () => void } = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -50,9 +50,30 @@ export const useCreatePaymentMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Payment recorded successfully');
+      if (customOnSuccess) {
+        customOnSuccess();
+      }
     },
     onError: (error: any) => {
-      toast.error(`Failed to record payment: ${error.message || 'Unknown error'}`);
+      let errorMessage = 'Failed to record payment.';
+      if (error.response?.data?.error) {
+        const { formErrors, fieldErrors } = error.response.data.error;
+        const messages: string[] = [];
+        if (formErrors.length > 0) {
+          messages.push(...formErrors);
+        }
+        for (const key in fieldErrors) {
+          if (fieldErrors[key]) {
+            messages.push(`${key}: ${fieldErrors[key].join(', ')}`);
+          }
+        }
+        if (messages.length > 0) {
+          errorMessage = `Validation failed: ${messages.join('; ')}`;
+        }
+      } else if (error.message) {
+        errorMessage = `Failed to record payment: ${error.message}`;
+      }
+      toast.error(errorMessage);
     },
   });
 };
