@@ -52,7 +52,12 @@ export const useCreatePaymentMutation = () => {
       toast.success('Payment recorded successfully');
     },
     onError: (error: any) => {
-      toast.error(`Failed to record payment: ${error.message || 'Unknown error'}`);
+      if (error.response?.data?.details) {
+        const errorMessages = error.response.data.details.map((detail: any) => detail.message).join(', ');
+        toast.error(`Validation failed: ${errorMessages}`);
+      } else {
+        toast.error(`Failed to record payment: ${error.message || 'Unknown error'}`);
+      }
     },
   });
 };

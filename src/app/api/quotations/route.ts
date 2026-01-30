@@ -36,6 +36,7 @@ const QuotationSectionSchema = z.object({
 
 const QuotationSchema = z.object({
   user_id: z.string().uuid(),
+  customer_id: z.string().uuid().optional(),
   customer_name: z.string().min(1),
   customer_email: z.string().optional().nullable(),
   customer_phone: z.string().optional().nullable(),
@@ -102,7 +103,43 @@ export async function POST(request: NextRequest) {
       user_id: body.user_id || '00000000-0000-0000-0000-000000000001'
     };
     
-    const validatedData = QuotationSchema.parse(dataWithDefaults);
+    let validatedData = QuotationSchema.parse(dataWithDefaults);
+
+    // Get or create customer
+    let customerId = validatedData.customer_id;
+    if (!customerId && validatedData.customer_email) {
+      const { data: existingCustomer, error: customerError } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('contact', validatedData.customer_email)
+        .single();
+
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
+      } else {
+        const { data: newCustomer, error: newCustomerError } = await supabase
+          .from('customers')
+          .insert({
+            name: validatedData.customer_name,
+            contact: validatedData.customer_email,
+            user_id: validatedData.user_id,
+          })
+          .select('id')
+          .single();
+        
+        if (newCustomerError) {
+          logger.error('Failed to create new customer:', newCustomerError);
+          return NextResponse.json({ error: 'Failed to process customer information.' }, { status: 500 });
+        }
+        customerId = newCustomer.id;
+      }
+    }
+
+    if (customerId) {
+      validatedData.customer_id = customerId;
+    } else {
+        return NextResponse.json({ error: 'Customer ID is required to create a quotation.' }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from('quotations')
