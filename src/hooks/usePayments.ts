@@ -40,6 +40,19 @@ export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'g
   });
 };
 
+export const useAllPaymentsQuery = () => {
+  const { userId, isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['payments', 'all'],
+    queryFn: async (): Promise<Payment[]> => {
+      const response = await apiClient.get<{ data: Payment[] }>('/api/payments');
+      return response.data;
+    },
+    enabled: !!userId && isAuthenticated,
+  });
+};
+
 export const useCreatePaymentMutation = ({ onSuccess: customOnSuccess }: { onSuccess?: () => void } = {}) => {
   const queryClient = useQueryClient();
 

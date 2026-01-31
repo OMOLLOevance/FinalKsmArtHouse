@@ -14,6 +14,7 @@ const CustomerManager = lazy(() => import('./CustomerManager'));
 const QuotationManager = lazy(() => import('./QuotationManager'));
 const EventCategoryManager = lazy(() => import('./EventCategoryManager'));
 const EventPaymentForm = lazy(() => import('./EventPaymentForm'));
+const AllPaymentsList = lazy(() => import('./AllPaymentsList'));
 const DecorManagement = lazy(() => import('../DecorManagement'));
 const CustomerRequirements = lazy(() => import('../CustomerRequirements'));
 const ClientArea = lazy(() => import('./ClientArea'));
@@ -127,6 +128,7 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
             <Button variant="outline" size="sm" onClick={() => setActiveModule(null)}>
               <ArrowLeft className="h-4 w-4 mr-2" /> Back
             </Button>
+            <AllPaymentsList />
             <EventPaymentForm />
           </div>
         );
