@@ -40,7 +40,7 @@ export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'g
   });
 };
 
-export const useCreatePaymentMutation = () => {
+export const useCreatePaymentMutation = ({ onSuccess: customOnSuccess }: { onSuccess?: () => void } = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -50,6 +50,9 @@ export const useCreatePaymentMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Payment recorded successfully');
+      if (customOnSuccess) {
+        customOnSuccess();
+      }
     },
     onError: (error: any) => {
       let errorMessage = 'Failed to record payment.';

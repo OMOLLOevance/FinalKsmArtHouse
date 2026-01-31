@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,6 +23,7 @@ export const EventPaymentForm: React.FC = () => {
   const [serviceType, setServiceType] = useState<ServiceType>('quotation');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<Quotation | GymMember | SaunaBooking | null>(null);
+  const [lastSelectedItem, setLastSelectedItem] = useState<Quotation | GymMember | SaunaBooking | null>(null);
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'bank'>('cash');
   const [notes, setNotes] = useState('');
@@ -43,7 +44,12 @@ export const EventPaymentForm: React.FC = () => {
     getPaymentQueryId(),
     serviceType
   );
-  const createPaymentMutation = useCreatePaymentMutation();
+  
+  const createPaymentMutation = useCreatePaymentMutation({
+    onSuccess: () => {
+      setSelectedItem(null);
+    }
+  });
 
   const searchResults = useMemo(() => {
     if (!searchTerm) return [];
@@ -61,6 +67,7 @@ export const EventPaymentForm: React.FC = () => {
 
   const handleSelectItem = (item: Quotation | GymMember | SaunaBooking) => {
     setSelectedItem(item);
+    setLastSelectedItem(item);
     setSearchTerm('');
   };
 
@@ -69,21 +76,30 @@ export const EventPaymentForm: React.FC = () => {
   }, [payments]);
 
   const { totalBudget, balance, clientName } = useMemo(() => {
-    if (!selectedItem) return { totalBudget: 0, balance: 0, clientName: '' };
+    const itemForDetails = selectedItem || lastSelectedItem;
+    if (!itemForDetails) return { totalBudget: 0, balance: 0, clientName: '' };
     if (serviceType === 'quotation') {
-      const q = selectedItem as Quotation;
+      const q = itemForDetails as Quotation;
       return { totalBudget: q.grandTotal, balance: q.grandTotal - totalPaid, clientName: q.customerName };
     }
     if (serviceType === 'gym') {
-      const m = selectedItem as GymMember;
+      const m = itemForDetails as GymMember;
       return { totalBudget: m.amountPaid, balance: m.amountPaid - totalPaid, clientName: m.name };
     }
     if (serviceType === 'sauna') {
-      const b = selectedItem as SaunaBooking;
+      const b = itemForDetails as SaunaBooking;
       return { totalBudget: b.amount, balance: b.amount - totalPaid, clientName: b.client };
     }
     return { totalBudget: 0, balance: 0, clientName: '' };
-  }, [selectedItem, serviceType, totalPaid]);
+  }, [selectedItem, lastSelectedItem, serviceType, totalPaid]);
+
+  useEffect(() => {
+    if (selectedItem) {
+      setAmountPaid(balance);
+    } else {
+      setAmountPaid(0);
+    }
+  }, [selectedItem, balance]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +192,7 @@ export const EventPaymentForm: React.FC = () => {
             </ul>
           )}
 
-          {selectedItem && (
+          {(selectedItem || lastSelectedItem) && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -204,6 +220,7 @@ export const EventPaymentForm: React.FC = () => {
                         onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
                         className="font-bold text-success"
                         required
+                        readOnly
                       />
                     </div>
                     <div className="space-y-2">
@@ -261,12 +278,12 @@ export const EventPaymentForm: React.FC = () => {
         </CardContent>
 
         <CardFooter className="bg-muted/20 border-t p-6 flex justify-between items-center">
-          {selectedItem && (
+          {(selectedItem || lastSelectedItem) && (
             <Badge variant={balance <= 0 && totalBudget > 0 ? 'success' : 'outline'} className="h-6">
               {balance <= 0 && totalBudget > 0 ? 'FULLY PAID' : 'PAYMENT PENDING'}
             </Badge>
           )}
-          <Button type="submit" disabled={createPaymentMutation.isPending || !selectedItem} className="min-w-[200px]">
+          <Button type="submit" disabled={createPaymentMutation.isPending || !selectedItem || balance <= 0} className="min-w-[200px]">
             {createPaymentMutation.isPending ? 'Processing...' : 'Save Record'}
             <CreditCard className="ml-2 h-4 w-4" />
           </Button>
