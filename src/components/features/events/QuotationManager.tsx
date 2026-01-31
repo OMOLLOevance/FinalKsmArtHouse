@@ -18,6 +18,7 @@ import html2canvas from 'html2canvas';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { StaffSelector } from '@/components/shared/StaffSelector';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import QuotationCard from './QuotationCard';
 
 interface QuotationManagerProps {
   onBack: () => void;
@@ -145,7 +146,6 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
   const handlePrintIndividual = (quotation: Quotation) => {
     setSelectedQuotation(quotation);
-    // Set document title so the PDF filename is professional
     const originalTitle = document.title;
     document.title = `Quotation_${quotation.quotationNumber}_${quotation.customerName.replace(/\s+/g, '_')}`;
     
@@ -548,7 +548,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                     ))}
                   </div>
 
-                  {/* Print-only Table view */} 
+                  {/* Print-only Table view */}
                   <table className="min-w-full border-collapse hidden print:table">
                     <thead>
                       <tr className="bg-muted/50 border-b text-xs font-bold">
@@ -649,10 +649,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   }
 
   const handleDirectPrint = () => {
-    // Add a class to body to help with isolation
     document.body.classList.add('is-printing');
     window.print();
-    // Use a slight delay to remove the class after print dialog opens
     setTimeout(() => {
       document.body.classList.remove('is-printing');
     }, 500);
@@ -748,75 +746,13 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
       <div className="grid gap-4 print:hidden">
         {filteredQuotations.map((q) => (
-          <Card key={q.id} className="hover-lift border-l-4 border-l-primary/40 overflow-hidden relative">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div className="space-y-3 flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-lg tracking-tight">{q.quotationNumber}</span>
-                    <Badge variant={
-                      q.status === 'approved' ? 'success' : 
-                      q.status === 'sent' ? 'default' : 'outline'
-                    } className="text-[9px] font-black uppercase tracking-widest">
-                      {q.status === 'draft' ? 'PROPOSAL' : q.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{q.customerName}</p>
-                    <p className="text-[10px] uppercase font-black text-muted-foreground opacity-60 tracking-widest">{q.eventType} • {q.eventDate}</p>
-                  </div>
-                  
-                  {/* Job Status Bar */} 
-                  <div className="space-y-1.5 max-w-xs">
-                    <div className="flex justify-between items-end">
-                      <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Job Status</span>
-                      <span className="text-[10px] font-bold text-primary">{getStatusPercentage(q.status)}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-1000 ease-out ${getStatusColor(q.status)}`}
-                        style={{ width: `${getStatusPercentage(q.status)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <p className="text-lg font-black text-primary tracking-tighter">{formatCurrency(q.grandTotal)}</p>
-                </div>
-                <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border border-primary/5">
-                  <Button size="xs" variant="ghost" className="h-8 px-3 font-bold text-[10px] uppercase" onClick={() => { setSelectedQuotation(q); setShowViewDialog(true); }}>
-                    <FileText className="h-3.5 w-3.5 mr-1.5" /> View Proposal
-                  </Button>
-                  <Separator orientation="vertical" className="h-4 mx-1" />
-                  <Button size="xs" variant="ghost" className="h-8 w-8 p-0 text-primary" onClick={() => handleEdit(q)}><Edit className="h-3.5 w-3.5" /></Button>
-                  <Button size="xs" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => handleDelete(q.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                </div>
-              </div>
-              
-              {q.status !== 'approved' && (
-                <div className="mt-4 pt-4 border-t border-primary/5 flex gap-2">
-                  {q.status === 'draft' && (
-                    <Button size="xs" variant="outline" className="h-7 text-[9px] font-black uppercase" onClick={() => handleUpdateStatus(q.id, 'sent')}> 
-                      <Clock className="h-3 w-3 mr-1" /> Mark as Sent
-                    </Button>
-                  )}
-                  {(isOperationsManager() || isDirectorOrInvestor()) && (
-                    <Button 
-                      size="xs" 
-                      className="h-7 text-[9px] font-black uppercase bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20" 
-                      onClick={() => handleUpdateStatus(q.id, 'approved')}
-                      disabled={approvingId === q.id}
-                    >
-                      {approvingId === q.id ? (
-                        <><Loader className="h-3 w-3 mr-1 animate-spin" /> Approving...</>
-                      ) : (
-                        <><CheckCircle className="h-3 w-3 mr-1" /> Approve Proposal</>
-                      )}
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <QuotationCard 
+            key={q.id}
+            quotation={q}
+            onView={(quotation) => { setSelectedQuotation(quotation); setShowViewDialog(true); }}
+            onApprove={(quotation) => handleUpdateStatus(quotation.id, 'approved')}
+            onMarkAsSent={(quotation) => handleUpdateStatus(quotation.id, 'sent')}
+          />
         ))}
         
         {filteredQuotations.length === 0 && (
@@ -828,7 +764,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
         )}
       </div>
 
-      {/* Professional View/Print Dialog */} 
+      {/* Professional View/Print Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
         <DialogContent id="printable-quotation-container" className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl bg-slate-100">
           <DialogHeader className="p-6 border-b bg-white print:hidden">
