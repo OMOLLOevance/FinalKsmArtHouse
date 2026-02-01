@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { DollarSign, Search, CreditCard, Receipt, User, History } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 import { useQuotationsQuery, Quotation } from '@/hooks/useQuotations';
 import { useGymMembersQuery } from '@/hooks/use-gym-api';
 import { useSaunaBookingsQuery } from '@/hooks/use-sauna-api';
@@ -27,6 +28,7 @@ export const EventPaymentForm: React.FC = () => {
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'bank'>('cash');
   const [notes, setNotes] = useState('');
+  const [isFullyPaid, setIsFullyPaid] = useState(false);
 
   const { data: quotations } = useQuotationsQuery();
   const { data: gymMembers } = useGymMembersQuery(searchTerm);
@@ -100,8 +102,14 @@ export const EventPaymentForm: React.FC = () => {
   useEffect(() => {
     if (!selectedItem) {
       setAmountPaid(0);
+      setIsFullyPaid(false);
+    } else if (balance <= 0) {
+      toast.info('This item is already fully paid. Please choose another item.');
+      setIsFullyPaid(true);
+    } else {
+      setIsFullyPaid(false);
     }
-  }, [selectedItem]);
+  }, [selectedItem, balance]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,50 +217,52 @@ export const EventPaymentForm: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Payment</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="amountToPay" className="text-sm font-medium">Amount to Pay</label>
-                      <Input
-                        id="amountToPay"
-                        name="amountToPay"
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        value={amountPaid}
-                        onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
-                        className="font-bold text-success"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Payment Method</label>
-                      <div className="flex gap-2" role="group" aria-label="Payment method selection">
-                        {(['cash', 'mpesa', 'bank'] as const).map((method) => (
-                          <Button
-                            key={method}
-                            type="button"
-                            variant={paymentMethod === method ? 'default' : 'outline'}
-                            className="flex-1 capitalize h-9 text-xs"
-                            onClick={() => setPaymentMethod(method)}
-                            aria-pressed={paymentMethod === method}
-                          >
-                            {method}
-                          </Button>
-                        ))}
+                  <fieldset disabled={isFullyPaid}>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Payment</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="amountToPay" className="text-sm font-medium">Amount to Pay</label>
+                        <Input
+                          id="amountToPay"
+                          name="amountToPay"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={amountPaid}
+                          onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
+                          className="font-bold text-success"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Payment Method</label>
+                        <div className="flex gap-2" role="group" aria-label="Payment method selection">
+                          {(['cash', 'mpesa', 'bank'] as const).map((method) => (
+                            <Button
+                              key={method}
+                              type="button"
+                              variant={paymentMethod === method ? 'default' : 'outline'}
+                              className="flex-1 capitalize h-9 text-xs"
+                              onClick={() => setPaymentMethod(method)}
+                              aria-pressed={paymentMethod === method}
+                            >
+                              {method}
+                            </Button>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="paymentNotes" className="text-sm font-medium">Notes</label>
-                    <Input
-                      id="paymentNotes"
-                      name="paymentNotes"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Payment notes..."
-                    />
-                  </div>
+                    <div className="space-y-2">
+                      <label htmlFor="paymentNotes" className="text-sm font-medium">Notes</label>
+                      <Input
+                        id="paymentNotes"
+                        name="paymentNotes"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Payment notes..."
+                      />
+                    </div>
+                  </fieldset>
                 </div>
               </div>
 
