@@ -69,6 +69,12 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
     status: 'booked' as 'booked' | 'completed',
   });
 
+  const [dailyCustomerData, setDailyCustomerData] = useState({
+    client: '',
+    service: '',
+    amount: 0,
+  });
+
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
     return bookings.filter((booking: any) => {
@@ -93,6 +99,31 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
       });
     } catch (error) {
       logger.error('Failed to create sauna booking:', error);
+    }
+  };
+
+  const handleDailyCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      logger.info('Creating daily customer booking...', dailyCustomerData);
+      const now = new Date();
+      const bookingData = {
+        client: dailyCustomerData.client,
+        service: dailyCustomerData.service,
+        amount: dailyCustomerData.amount,
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0].substring(0, 5),
+        duration: 60,
+        status: 'completed' as 'booked' | 'completed',
+      };
+      await createBookingMutation.mutateAsync(bookingData);
+      setDailyCustomerData({
+        client: '',
+        service: '',
+        amount: 0,
+      });
+    } catch (error) {
+      logger.error('Failed to create daily customer booking:', error);
     }
   };
 
@@ -338,6 +369,56 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-none shadow-sm bg-transparent">
+        <CardHeader className="px-0 pb-4">
+          <CardTitle className="text-xl font-bold">Daily Customer</CardTitle>
+          <CardDescription className="text-xs uppercase tracking-[0.2em] font-black opacity-60">Add a walk-in customer</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <form onSubmit={handleDailyCustomerSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Customer Name</label>
+                <Input
+                  type="text"
+                  value={dailyCustomerData.client}
+                  onChange={(e) => setDailyCustomerData({ ...dailyCustomerData, client: e.target.value })}
+                  placeholder="Enter client name"
+                  required
+                  className="font-bold rounded-xl h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Service</label>
+                <Input
+                  type="text"
+                  value={dailyCustomerData.service}
+                  onChange={(e) => setDailyCustomerData({ ...dailyCustomerData, service: e.target.value })}
+                  placeholder="Enter service"
+                  required
+                  className="font-bold rounded-xl h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Amount Paid</label>
+                <Input
+                  type="number"
+                  value={dailyCustomerData.amount || ''}
+                  onChange={(e) => setDailyCustomerData({ ...dailyCustomerData, amount: parseFloat(e.target.value) || 0 })}
+                  placeholder="0.00"
+                  required
+                  className="font-black text-right rounded-xl h-11"
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={createBookingMutation.isPending} className="h-12 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl">
+              <Save className="h-4 w-4 mr-2" />
+              {createBookingMutation.isPending ? 'Saving...' : 'Save Daily Customer'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card className="border-none shadow-sm bg-transparent">
         <CardHeader className="px-0 pb-4">

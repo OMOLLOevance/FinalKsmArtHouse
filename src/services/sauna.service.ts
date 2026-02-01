@@ -8,6 +8,7 @@ export const SaunaBookingSchema = z.object({
   date: z.string().min(1),
   time: z.string().min(1),
   client: z.string().min(1),
+  service: z.string().optional(),
   duration: z.number().min(1),
   amount: z.number().min(0),
   status: z.enum(['booked', 'completed']).default('booked'),
