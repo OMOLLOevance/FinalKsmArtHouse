@@ -109,6 +109,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
       const now = new Date();
       const bookingData = {
         client: dailyCustomerData.client,
+        service: dailyCustomerData.service,
         amount: dailyCustomerData.amount,
         date: now.toISOString().split('T')[0],
         time: now.toTimeString().split(' ')[0].substring(0, 5),
