@@ -1,7 +1,8 @@
+
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Plus, Edit, Trash2, ArrowLeft, Save, Waves, X, Search, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, Waves, X, Search, Calendar, Package } from 'lucide-react';
 import { 
   useSaunaBookingsQuery, 
   useCreateSaunaBookingMutation, 
@@ -20,6 +21,8 @@ import { StaffSelector } from '@/components/shared/StaffSelector';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/components/ui/Toast';
+import { SAUNA_INVENTORY_ITEMS } from '@/config/sauna';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 
 interface SaunaManagementProps {
   onBack?: () => void;
@@ -54,6 +57,9 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   const deleteBookingMutation = useDeleteSaunaBookingMutation();
 
   const [isAdding, setIsAdding] = useState(false);
+  const [isInventoryOpen, setInventoryOpen] = useState(false);
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState<string>('');
+  const [sessionInventory, setSessionInventory] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -100,6 +106,17 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
     }
   }, [deleteBookingMutation]);
 
+  const handleAddInventoryItem = () => {
+    if (selectedInventoryItem && !sessionInventory.includes(selectedInventoryItem)) {
+      setSessionInventory([...sessionInventory, selectedInventoryItem]);
+    }
+  };
+
+  const handleRemoveInventoryItem = (itemToRemove: string) => {
+    setSessionInventory(sessionInventory.filter(item => item !== itemToRemove));
+  };
+
+
   if (bookingsLoading) {
     return (
       <div className="space-y-6">
@@ -143,6 +160,11 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
               />
             </div>
           )}
+
+          <Button onClick={() => setInventoryOpen(true)} size="sm" variant="outline">
+            <Package className="h-4 w-4 mr-2" />
+            Manage Inventory
+          </Button>
 
           <Button onClick={() => setIsAdding(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
@@ -244,6 +266,43 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                 </Button>
               </div>
             </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isInventoryOpen} onOpenChange={setInventoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sauna Inventory</DialogTitle>
+            <DialogDescription>Manage inventory items for sauna sessions.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Select onValueChange={setSelectedInventoryItem}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SAUNA_INVENTORY_ITEMS.map(item => (
+                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleAddInventoryItem}>Add</Button>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium">Selected Items:</h4>
+              <ul className="space-y-1">
+                {sessionInventory.map(item => (
+                  <li key={item} className="flex justify-between items-center">
+                    <span>{item}</span>
+                    <Button variant="ghost" size="xs" onClick={() => handleRemoveInventoryItem(item)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
