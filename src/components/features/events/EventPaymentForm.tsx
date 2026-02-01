@@ -93,13 +93,15 @@ export const EventPaymentForm: React.FC = () => {
     return { totalBudget: 0, balance: 0, clientName: '' };
   }, [selectedItem, lastSelectedItem, serviceType, totalPaid]);
 
+  const remainingBalance = useMemo(() => {
+    return balance - amountPaid;
+  }, [balance, amountPaid]);
+
   useEffect(() => {
-    if (selectedItem) {
-      setAmountPaid(balance);
-    } else {
+    if (!selectedItem) {
       setAmountPaid(0);
     }
-  }, [selectedItem, balance]);
+  }, [selectedItem]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,6 +204,7 @@ export const EventPaymentForm: React.FC = () => {
                     <p><strong>Total Due:</strong> {formatCurrency(totalBudget)}</p>
                     <p><strong>Amount Paid:</strong> {formatCurrency(totalPaid)}</p>
                     <p><strong>Balance:</strong> {formatCurrency(balance)}</p>
+                    <p><strong>Remaining After This Payment:</strong> {formatCurrency(remainingBalance)}</p>
                   </div>
                 </div>
 
@@ -220,7 +223,6 @@ export const EventPaymentForm: React.FC = () => {
                         onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
                         className="font-bold text-success"
                         required
-                        readOnly
                       />
                     </div>
                     <div className="space-y-2">
