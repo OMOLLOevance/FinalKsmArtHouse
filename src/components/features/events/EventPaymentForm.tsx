@@ -135,7 +135,7 @@ export const EventPaymentForm: React.FC = () => {
 
     if (serviceType === 'quotation') {
       const q = selectedItem as Quotation;
-      paymentData = { ...paymentData, quotation_id: q.id, customer_id: q.customerId };
+      paymentData = { ...paymentData, quotation_id: q.id };
     } else if (serviceType === 'gym') {
       const m = selectedItem as GymMember;
       paymentData = { ...paymentData, gym_member_id: m.id };
