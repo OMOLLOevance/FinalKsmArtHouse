@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, ConfirmDialog } from '@/components/ui/Dialog';
 import { formatCurrency } from '@/utils/formatters';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
@@ -104,6 +104,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Quotation | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -358,13 +359,21 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this quotation?')) {
+  const handleDelete = (quotation: Quotation) => {
+    setShowDeleteConfirm(quotation);
+  };
+
+  const confirmDelete = async () => {
+    if (showDeleteConfirm) {
       try {
-        await deleteQuotation(id);
+        await deleteQuotation(showDeleteConfirm.id);
         await fetchQuotations();
+        toast.success('Quotation deleted successfully');
       } catch (error) {
         logger.error('Delete failed:', error);
+        toast.error('Failed to delete quotation');
+      } finally {
+        setShowDeleteConfirm(null);
       }
     }
   };
@@ -746,12 +755,14 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
 
       <div className="grid gap-4 print:hidden">
         {filteredQuotations.map((q) => (
-          <QuotationCard 
+          <QuotationCard
             key={q.id}
             quotation={q}
             onView={(quotation) => { setSelectedQuotation(quotation); setShowViewDialog(true); }}
             onApprove={(quotation) => handleUpdateStatus(quotation.id, 'approved')}
             onMarkAsSent={(quotation) => handleUpdateStatus(quotation.id, 'sent')}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         ))}
         
@@ -911,6 +922,17 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(null)}
+        onConfirm={confirmDelete}
+        title="Delete Quotation"
+        message={`Are you sure you want to delete quotation ${showDeleteConfirm?.quotationNumber}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

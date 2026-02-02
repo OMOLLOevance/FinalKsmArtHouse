@@ -16,9 +16,11 @@ interface QuotationCardProps {
   onView: (quotation: Quotation) => void;
   onApprove: (quotation: Quotation) => void;
   onMarkAsSent: (quotation: Quotation) => void;
+  onEdit: (quotation: Quotation) => void;
+  onDelete: (quotation: Quotation) => void;
 }
 
-const QuotationCard: React.FC<QuotationCardProps> = ({ quotation, onView, onApprove, onMarkAsSent }) => {
+const QuotationCard: React.FC<QuotationCardProps> = ({ quotation, onView, onApprove, onMarkAsSent, onEdit, onDelete }) => {
   const { data: payments, isLoading: paymentsLoading } = usePaymentsQuery(quotation.id, 'quotation');
 
   const totalPaid = React.useMemo(() => {
@@ -84,6 +86,8 @@ const QuotationCard: React.FC<QuotationCardProps> = ({ quotation, onView, onAppr
         </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
+        <Button variant="outline" onClick={() => onEdit(quotation)}>Edit</Button>
+        <Button variant="destructive" onClick={() => onDelete(quotation)}>Delete</Button>
         <Button variant="outline" onClick={() => onView(quotation)}>View Proposal</Button>
         {quotation.status === 'sent' && <Button onClick={() => onApprove(quotation)}>Approve Proposal</Button>}
         {quotation.status === 'draft' && <Button onClick={() => onMarkAsSent(quotation)}>Mark as Sent</Button>}
