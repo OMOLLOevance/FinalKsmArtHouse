@@ -30,6 +30,7 @@ export interface Quotation {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerId?: string; // Added customerId
   numberOfGuests: number;
   theme: string;
   eventDate: string;
@@ -60,6 +61,7 @@ export const useQuotationsQuery = (filterUserId?: string | null) => {
         customerName: q.customer_name || 'Unnamed Client',
         customerEmail: q.customer_email || '',
         customerPhone: q.customer_phone || '',
+        customerId: q.customer_id || undefined, // Mapped customer_id
         numberOfGuests: q.number_of_guests || 0,
         theme: q.theme || '',
         eventDate: q.event_date || '',
