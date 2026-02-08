@@ -49,7 +49,18 @@ export const EventPaymentForm: React.FC = () => {
   
   const createPaymentMutation = useCreatePaymentMutation({
     onSuccess: () => {
-      setSelectedItem(null);
+      toast.success('Payment recorded successfully!');
+      setSelectedItem(null); // Clear selected item
+      setAmountPaid(0); // Reset amount paid
+      setNotes(''); // Reset notes
+      // No need to explicitly refetch payments/quotations here if react-query invalidation is set up in usePayments hook.
+    },
+    onError: (err: any) => {
+      logger.error('Client: Error creating payment:', err);
+      // Attempt to parse the server error message
+      const serverErrorMessage = err.response?.data?.error;
+      const displayMessage = serverErrorMessage || err.message || 'Failed to record payment.';
+      toast.error(displayMessage);
     }
   });
 
@@ -104,16 +115,21 @@ export const EventPaymentForm: React.FC = () => {
       setAmountPaid(0);
       setIsFullyPaid(false);
     } else if (balance <= 0) {
-      toast.info('This item is already fully paid. Please choose another item.');
-      setIsFullyPaid(true);
+      // Item becomes fully paid (or overpaid), reset amount to 0
+      setAmountPaid(0); 
+      setIsFullyPaid(true); 
     } else {
       setIsFullyPaid(false);
+      // If an item is selected and not fully paid, and amountPaid was previously capped,
+      // we might want to reset it here to allow user to input again. But for now, cap in onChange is sufficient.
     }
-  }, [selectedItem, balance]);
+  }, [selectedItem, balance, setAmountPaid]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem || !user) return;
+
+
 
     let paymentData: {
       amount_paid: number;
@@ -135,7 +151,7 @@ export const EventPaymentForm: React.FC = () => {
 
     if (serviceType === 'quotation') {
       const q = selectedItem as Quotation;
-      paymentData = { ...paymentData, quotation_id: q.id };
+      paymentData = { ...paymentData, quotation_id: q.id, customer_id: q.customerId };
     } else if (serviceType === 'gym') {
       const m = selectedItem as GymMember;
       paymentData = { ...paymentData, gym_member_id: m.id };
@@ -229,7 +245,19 @@ export const EventPaymentForm: React.FC = () => {
                           min="0.01"
                           step="0.01"
                           value={amountPaid}
-                          onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
+                          onChange={(e) => {
+                            let value = Number(e.target.value);
+                            if (isNaN(value)) value = 0; // Handle invalid number input
+                            value = Math.max(0, value); // Ensure non-negative
+
+                            // For quotations, prevent entering an amount greater than the current balance
+                            if (serviceType === 'quotation' && value > balance) {
+                              setAmountPaid(balance); // Cap at remaining balance
+                              toast.warning(`Payment capped at remaining balance: ${formatCurrency(balance)}`);
+                            } else {
+                              setAmountPaid(value);
+                            }
+                          }}
                           className="font-bold text-success"
                           required
                         />
@@ -295,7 +323,17 @@ export const EventPaymentForm: React.FC = () => {
               {balance <= 0 && totalBudget > 0 ? 'FULLY PAID' : 'PAYMENT PENDING'}
             </Badge>
           )}
-          <Button type="submit" disabled={createPaymentMutation.isPending || !selectedItem || balance <= 0} className="min-w-[200px]">
+          <Button 
+            type="submit" 
+            disabled={
+              createPaymentMutation.isPending || 
+              !selectedItem || 
+              amountPaid <= 0 || 
+              (serviceType === 'quotation' && amountPaid > balance) ||
+              isFullyPaid // Keep this for visual feedback and initial state
+            } 
+            className="min-w-[200px]"
+          >
             {createPaymentMutation.isPending ? 'Processing...' : 'Save Record'}
             <CreditCard className="ml-2 h-4 w-4" />
           </Button>
