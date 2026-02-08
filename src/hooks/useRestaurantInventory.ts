@@ -33,11 +33,16 @@ export const useRestaurantInventory = (month: string, filterUserId?: string | nu
     try {
       setLoading(true);
       
+      // Dynamically calculate the last day of the given month to avoid invalid dates.
+      const [year, monthNum] = month.split('-').map(Number);
+      const lastDay = new Date(year, monthNum, 0).getDate();
+      const endDate = `${month}-${lastDay}`;
+      
       let query = supabase
         .from('restaurant_sales')
         .select('*, users(first_name, last_name, email, role)')
         .gte('sale_date', `${month}-01`)
-        .lte('sale_date', `${month}-31`)
+        .lte('sale_date', endDate)
         .order('sale_date', { ascending: false });
 
       // RBAC Filtering Logic
