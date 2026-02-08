@@ -54,13 +54,6 @@ export const EventPaymentForm: React.FC = () => {
       setAmountPaid(0); // Reset amount paid
       setNotes(''); // Reset notes
       // No need to explicitly refetch payments/quotations here if react-query invalidation is set up in usePayments hook.
-    },
-    onError: (err: any) => {
-      logger.error('Client: Error creating payment:', err);
-      // Attempt to parse the server error message
-      const serverErrorMessage = err.response?.data?.error;
-      const displayMessage = serverErrorMessage || err.message || 'Failed to record payment.';
-      toast.error(displayMessage);
     }
   });
 
