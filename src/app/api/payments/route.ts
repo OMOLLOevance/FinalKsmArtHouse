@@ -104,6 +104,57 @@ export async function POST(req: NextRequest) {
 
     const validatedData = PaymentSchema.parse(body);
 
+    // --- Server-side overpayment prevention for quotations ---
+    if (validatedData.service_type === 'quotation') {
+      const quotationId = validatedData.quotation_id;
+      const newPaymentAmount = validatedData.amount_paid;
+
+      // 1. Fetch quotation details
+      const { data: quotation, error: quotationFetchError } = await supabaseServiceRole
+        .from('quotations')
+        .select('total_amount')
+        .eq('id', quotationId)
+        .single();
+
+      if (quotationFetchError) {
+        logger.error('Error fetching quotation for payment validation:', quotationFetchError);
+        return NextResponse.json({ error: 'Quotation not found or inaccessible' }, { status: 404 });
+      }
+      if (!quotation) {
+        return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
+      }
+
+      // 2. Fetch all existing payments for this quotation
+      const { data: existingPayments, error: paymentsFetchError } = await supabaseServiceRole
+        .from('payments')
+        .select('amount_paid')
+        .eq('quotation_id', quotationId)
+        .eq('service_type', 'quotation'); // Ensure we only sum quotation payments
+
+      if (paymentsFetchError) {
+        logger.error('Error fetching existing payments for quotation validation:', paymentsFetchError);
+        return NextResponse.json({ error: 'Failed to retrieve existing payments' }, { status: 500 });
+      }
+
+      const totalPaid = existingPayments.reduce((sum, payment) => sum + payment.amount_paid, 0);
+      const remainingBalance = quotation.total_amount - totalPaid;
+
+      // 3. Validate new payment amount
+      if (newPaymentAmount > remainingBalance) {
+        return NextResponse.json(
+          { 
+            error: `Payment exceeds remaining balance. Remaining: ${remainingBalance.toFixed(2)}`,
+            remaining_balance: remainingBalance,
+            quotation_total: quotation.total_amount,
+            total_paid_so_far: totalPaid,
+            new_payment_amount: newPaymentAmount,
+          },
+          { status: 400 }
+        );
+      }
+    }
+    // --- End server-side overpayment prevention ---
+
     const paymentData = {
       ...validatedData,
       user_id: userId,
