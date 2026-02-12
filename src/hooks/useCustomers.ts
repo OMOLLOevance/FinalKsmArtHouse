@@ -57,23 +57,33 @@ export interface DecorItem {
   african_lampshades: number;
 }
 
-export const useCustomersQuery = () => {
+export const useCustomersQuery = (month?: number | 'all', year?: number) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['customers', userId],
+    queryKey: ['customers', userId, month, year],
     queryFn: async (): Promise<Customer[]> => {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        logger.error('Customers fetch error:', error);
-        throw error;
+      let url = '/api/customers';
+      const params = new URLSearchParams();
+      
+      if (month && month !== 'all' && year) {
+        params.append('month', month.toString());
+        params.append('year', year.toString());
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await fetch(url);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        logger.error('Customers fetch error:', result.error);
+        throw new Error(result.error || 'Failed to fetch customers');
       }
 
-      return data || [];
+      return result.data || [];
     },
     enabled: isAuthenticated,
     retry: 3,
@@ -223,8 +233,8 @@ export const useSyncDataMutation = () => {
   });
 };
 
-export const useCustomers = () => {
-  const customersQuery = useCustomersQuery();
+export const useCustomers = (month?: number | 'all', year?: number) => {
+  const customersQuery = useCustomersQuery(month, year);
   const createMutation = useCreateCustomerMutation();
   const updateMutation = useUpdateCustomerMutation();
   const deleteMutation = useDeleteCustomerMutation();

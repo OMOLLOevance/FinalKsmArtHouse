@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
 
 const QuotationItemSchema = z.object({
   id: z.string(),
@@ -56,26 +41,31 @@ const QuotationSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userIdParam = searchParams.get('userId');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const month = searchParams.get('month');
+    const year = searchParams.get('year');
 
-    // Use supabase directly for simplicity
     const client = supabase;
 
-    let query = client.from('quotations').select('*').order('created_at', { ascending: false });
+    let query = client.from('quotations').select('*');
+
+    // Apply month/year filter if provided
+    if (month && month !== 'all' && year) {
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+      
+      if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
+        // Filter by month and year using created_at
+        const startDate = new Date(yearNum, monthNum - 1, 1).toISOString();
+        const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59).toISOString();
+        
+        query = query.gte('created_at', startDate).lte('created_at', endDate);
+      }
+    }
+
+    query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;
 
@@ -94,7 +84,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     
     // Add default user_id if missing
     const dataWithDefaults = {
@@ -129,11 +118,10 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const client = supabase;
 
     const { data, error } = await client
       .from('quotations')
@@ -162,11 +150,10 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const client = supabase;
 
     const { error } = await client
       .from('quotations')
@@ -174,13 +161,13 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) {
-        logger.error('Quotations DELETE Database Error:', error);
+        logger.error('Quotation DELETE Database Error:', error);
         throw ApiError.fromSupabase(error);
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    logger.error('Quotations DELETE Error:', error);
+    logger.error('Quotation DELETE Error:', error);
     const status = error instanceof ApiError ? error.status : 500;
     return NextResponse.json({ 
         error: error.message || 'Internal Server Error',

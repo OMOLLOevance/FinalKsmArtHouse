@@ -91,8 +91,10 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   const { isOnline } = useNetworkStatus();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
-  const { quotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations(filterUserId);
+  const { quotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations(filterUserId, selectedMonth, selectedYear);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
@@ -740,6 +742,38 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           <h2 className="text-2xl font-bold tracking-tight">Quotations</h2>
         </div>
         <div className="flex items-center gap-2">
+          {/* Month Filter */}
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">All Months</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+          
+          {/* Year Filter */}
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {[selectedYear - 1, selectedYear, selectedYear + 1].map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          
           {(isOperationsManager() || isDirectorOrInvestor()) && (
             <div className="w-64">
               <StaffSelector 
