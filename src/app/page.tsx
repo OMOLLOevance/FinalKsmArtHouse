@@ -1,17 +1,26 @@
 'use client';
 
-import dynamic from 'next/dynamic';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-
-const Dashboard = dynamic(() => import('@/components/features/Dashboard'), {
-  loading: () => <PageLoader text="Loading Dashboard..." />,
-  ssr: false, 
-});
+import InvestorDashboard from '@/components/features/InvestorDashboard';
 
 export default function Home() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      // Directors and investors see the dashboard
+      if (user?.role === 'director' || user?.role === 'investor') {
+        return; // Stay on dashboard
+      }
+      // All other roles redirect to events
+      router.push('/events');
+    }
+  }, [isLoading, isAuthenticated, user, router]);
 
   if (isLoading) {
     return <PageLoader text="Loading KSM.ART HOUSE..." />;
@@ -21,9 +30,14 @@ export default function Home() {
     return <PageLoader text="Verifying access..." />;
   }
 
-  return (
-    <ErrorBoundary>
-      <Dashboard />
-    </ErrorBoundary>
-  );
+  // Only directors and investors see the dashboard
+  if (user?.role === 'director' || user?.role === 'investor') {
+    return (
+      <ErrorBoundary>
+        <InvestorDashboard />
+      </ErrorBoundary>
+    );
+  }
+
+  return <PageLoader text="Redirecting..." />;
 }

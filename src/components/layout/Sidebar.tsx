@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/Badge';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const navItems = [
-  { id: 'dashboard', label: 'Intelligence Hub', icon: LayoutDashboard, href: '/', roles: ['admin', 'director', 'manager', 'staff'] },
   {
     id: 'business',
     label: 'Operations',
@@ -133,58 +132,40 @@ const Sidebar = () => {
         
         <nav className="flex-1 p-6 space-y-2">
           {filteredNavItems.map((item) => {
-            if (item.isSection) {
-              const isExpanded = expandedSections[item.id];
-              return (
-                <div key={item.id} className="space-y-2 py-2">
-                  <button
-                    onClick={() => toggleSection(item.id)}
-                    className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 hover:text-primary transition-colors"
-                  >
-                    <span>{item.label}</span>
-                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                  </button>
-                  
-                  {isExpanded && (
-                    <div className="space-y-1">
-                      {item.children?.map((child) => {
-                        const isActive = pathname === child.href;
-                        return (
-                          <button
-                            key={child.id}
-                            onClick={() => handleNavigation(child.href)}
-                            className={`w-full flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
-                              isActive 
-                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]' 
-                                : 'text-muted-foreground hover:text-primary hover:bg-primary/5 hover:translate-x-1'
-                            }`}
-                          >
-                            <child.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-white' : 'text-primary/60'}`} />
-                            <span>{child.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            } else {
-              const isActive = pathname === item.href;
-              return (
+            const isExpanded = expandedSections[item.id];
+            return (
+              <div key={item.id} className="space-y-2 py-2">
                 <button
-                  key={item.id}
-                  onClick={() => handleNavigation(item.href!)}
-                  className={`w-full flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
-                    isActive 
-                      ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' 
-                      : 'text-muted-foreground hover:text-primary hover:bg-primary/5 hover:translate-x-1'
-                  }`}
+                  onClick={() => toggleSection(item.id)}
+                  className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 hover:text-primary transition-colors"
                 >
-                  <item.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-white' : 'text-primary/60'}`} />
                   <span>{item.label}</span>
+                  {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                 </button>
-              );
-            }
+                
+                {isExpanded && (
+                  <div className="space-y-1">
+                    {item.children?.map((child) => {
+                      const isActive = pathname === child.href;
+                      return (
+                        <button
+                          key={child.id}
+                          onClick={() => handleNavigation(child.href)}
+                          className={`w-full flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
+                            isActive 
+                              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]' 
+                              : 'text-muted-foreground hover:text-primary hover:bg-primary/5 hover:translate-x-1'
+                          }`}
+                        >
+                          <child.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-white' : 'text-primary/60'}`} />
+                          <span>{child.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
           })}
         </nav>
 

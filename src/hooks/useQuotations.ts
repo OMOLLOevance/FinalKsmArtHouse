@@ -45,14 +45,17 @@ export interface Quotation {
   notes: string;
 }
 
-export const useQuotationsQuery = (filterUserId?: string | null) => {
+export const useQuotationsQuery = (filterUserId?: string | null, month?: number | 'all', year?: number) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['quotations', userId, filterUserId],
+    queryKey: ['quotations', userId, filterUserId, month, year],
     queryFn: async () => {
       let url = `/api/quotations?userId=${userId}`;
       if (filterUserId) url += `&filterUserId=${filterUserId}`;
+      if (month && month !== 'all' && year) {
+        url += `&month=${month}&year=${year}`;
+      }
       const response = await apiClient.get<{ data: any[] }>(url);
       // Map API snake_case to Frontend camelCase
       return response.data.map(q => ({
@@ -124,8 +127,8 @@ export const useDeleteQuotationMutation = () => {
 };
 
 // Legacy Wrapper for QuotationManager
-export const useQuotations = (filterUserId?: string | null) => {
-  const query = useQuotationsQuery(filterUserId);
+export const useQuotations = (filterUserId?: string | null, month?: number | 'all', year?: number) => {
+  const query = useQuotationsQuery(filterUserId, month, year);
   const createMutation = useCreateQuotationMutation();
   const updateMutation = useUpdateQuotationMutation();
   const deleteMutation = useDeleteQuotationMutation();

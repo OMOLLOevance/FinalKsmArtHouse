@@ -27,12 +27,30 @@ export async function GET(request: NextRequest) {
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const month = searchParams.get('month');
+    const year = searchParams.get('year');
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('customers')
-      .select(fields)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .select(fields);
+
+    // Apply month/year filter if provided
+    if (month && month !== 'all' && year) {
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+      
+      if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
+        // Filter by month and year using created_at
+        const startDate = new Date(yearNum, monthNum - 1, 1).toISOString();
+        const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59).toISOString();
+        
+        query = query.gte('created_at', startDate).lte('created_at', endDate);
+      }
+    }
+
+    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+
+    const { data, error } = await query;
 
     if (error) {
       logger.error('Customers GET Error:', error);
