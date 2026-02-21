@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 
+import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
+
 const BookingSchema = z.object({
   user_id: z.string().uuid(),
   booking_date: z.string(),
@@ -21,12 +23,25 @@ export async function GET(request: NextRequest) {
   const fields = searchParams.get('fields') || '*';
   const limit = parseInt(searchParams.get('limit') || '100');
   const offset = parseInt(searchParams.get('offset') || '0');
+  const filterUserId = searchParams.get('filterUserId');
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
   try {
-    let query = supabase
-      .from('sauna_bookings')
-      .select(fields)
-      .order('booking_date', { ascending: false })
+    const { client, user } = await getClientWithRole(token);
+    const finalClient = client || supabase;
+    const userRole = user ? await getUserRole(user.id, finalClient) : 'staff';
+    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
+
+    let query = finalClient.from('sauna_bookings').select(fields);
+
+    // Apply User Filtering
+    if (filterUserId && isManager) {
+      query = query.eq('user_id', filterUserId);
+    } else if (!isManager && user) {
+      query = query.eq('user_id', user.id);
+    }
+
+    query = query.order('booking_date', { ascending: false })
       .range(offset, offset + limit - 1);
 
     const { data, error } = await query;

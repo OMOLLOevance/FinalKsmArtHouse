@@ -22,21 +22,33 @@ const GymMemberSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search');
+    const filterUserId = searchParams.get('filterUserId');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    let query = supabase
-      .from('gym_members')
-      .select(fields)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    const { client, user } = await getClientWithRole(token);
+    const finalClient = client || supabase;
+    const userRole = user ? await getUserRole(user.id, finalClient) : 'staff';
+    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
+
+    let query = finalClient.from('gym_members').select(fields);
+
+    // Apply User Filtering
+    if (filterUserId && isManager) {
+      query = query.eq('user_id', filterUserId);
+    } else if (!isManager && user) {
+      query = query.eq('user_id', user.id);
+    }
 
     if (search) {
       query = query.or(`member_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
     }
+
+    query = query.order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     const { data, error } = await query;
 

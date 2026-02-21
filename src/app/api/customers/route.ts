@@ -29,10 +29,22 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
+    const filterUserId = searchParams.get('filterUserId');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    let query = supabase
-      .from('customers')
-      .select(fields);
+    const { client, user } = await getClientWithRole(token);
+    const finalClient = client || supabase;
+    const userRole = user ? await getUserRole(user.id, finalClient) : 'staff';
+    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
+
+    let query = finalClient.from('customers').select(fields);
+
+    // Apply User Filtering
+    if (filterUserId && isManager) {
+      query = query.eq('user_id', filterUserId);
+    } else if (!isManager && user) {
+      query = query.eq('user_id', user.id);
+    }
 
     // Apply month/year filter if provided
     if (month && month !== 'all' && year) {
