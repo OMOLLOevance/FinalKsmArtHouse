@@ -7,20 +7,28 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase';
 
-export const useCustomersQuery = () => {
-  const { userId, isAuthenticated, isLoading: authLoading } = useAuth(); // Add authLoading
+export const useCustomersQuery = (month?: number | 'all', year?: number) => {
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth();
   const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
   
   return useQuery({
-    queryKey: ['customers-combined', userId],
+    queryKey: ['customers-combined', userId, month, year],
     queryFn: async () => {
       try {
         const isManagement = isDirectorOrInvestor() || isOperationsManager();
         
-        // Use the discovery API for management, or standard user filter for staff
-        const url = isManagement 
-          ? `/api/customers?userId=${userId}&discovery=true` 
-          : `/api/customers?userId=${userId}`;
+        const params = new URLSearchParams();
+        if (userId) params.append('userId', userId);
+        if (isManagement) params.append('discovery', 'true');
+        
+        if (month !== undefined && month !== 'all' && year) {
+          // Hooks receive 0-indexed month from UI, but standardized API expects 1-indexed (1-12)
+          const monthNum = typeof month === 'number' ? month + 1 : parseInt(month) + 1;
+          params.append('month', monthNum.toString());
+          params.append('year', year.toString());
+        }
+        
+        const url = `/api/customers?${params.toString()}`;
           
         const response = await apiClient.get<{ data: any[] }>(url);
         return response.data || [];
@@ -29,7 +37,7 @@ export const useCustomersQuery = () => {
         return [];
       }
     },
-    enabled: !!userId && isAuthenticated && !authLoading, // ADD !authLoading
+    enabled: !!userId && isAuthenticated && !authLoading,
     retry: 3,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,

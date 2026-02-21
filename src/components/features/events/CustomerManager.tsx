@@ -15,7 +15,10 @@ interface CustomerManagerProps {
 }
 
 const CustomerManager: React.FC<CustomerManagerProps> = ({ onBack }) => {
-  const { data: customers, isLoading: loading } = useCustomersQuery();
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  
+  const { data: customers, isLoading: loading } = useCustomersQuery(selectedMonth, selectedYear);
   const createCustomerMutation = useCreateCustomerMutation();
   const deleteCustomerMutation = useDeleteCustomerMutation();
   
@@ -26,6 +29,13 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ onBack }) => {
     location: '',
     eventDate: new Date().toISOString().split('T')[0],
   });
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const years = [selectedYear - 1, selectedYear, selectedYear + 1];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,10 +90,36 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ onBack }) => {
             <p className="text-muted-foreground">Manage event customers</p>
           </div>
         </div>
-        <Button onClick={() => setIsAdding(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Customer
-        </Button>
+        
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+              className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">All Months</option>
+              {monthNames.map((name, index) => (
+                <option key={index} value={index}>{name}</option>
+              ))}
+            </select>
+            
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {years.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+
+          <Button onClick={() => setIsAdding(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Customer
+          </Button>
+        </div>
       </div>
 
       {isAdding && (
