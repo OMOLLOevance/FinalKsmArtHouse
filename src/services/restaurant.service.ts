@@ -27,6 +27,17 @@ class RestaurantService {
     }
   }
 
+  // Get restaurant master items
+  async getRestaurantMasterItems(): Promise<any[]> {
+    try {
+      const response = await apiClient.get<any>(`/api/restaurant/master-items`);
+      return response.data;
+    } catch (error) {
+      logger.error('RestaurantService.getRestaurantMasterItems failed:', error);
+      throw error;
+    }
+  }
+
   // Create new restaurant sale
   async createRestaurantSale(userId: string, saleData: CreateRestaurantSaleRequest): Promise<RestaurantSale | null> {
     try {

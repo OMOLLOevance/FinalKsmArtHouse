@@ -1,8 +1,6 @@
-'use client';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Printer, Calendar, Utensils, Plus, Minus, CheckCircle2, Receipt, User, Loader2, Search, ListPlus, X } from 'lucide-react';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Save, Printer, Calendar, Utensils, X, Plus, Minus, Search, Sparkles, CheckCircle2, CheckCircle, ListPlus, Receipt, Trash2, Edit2, Check, Cloud, User, Loader2 } from 'lucide-react';
-import ItemServingsManager from './ItemServingsManager';
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
 import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { StaffSelector } from '@/components/shared/StaffSelector';
@@ -13,25 +11,16 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { formatCurrency } from '@/utils/formatters';
-import { logger } from '@/lib/logger';
 import { SkeletonCard } from '@/components/ui/LoadingSpinner';
+import { useRestaurantMasterItemsQuery } from '@/hooks/use-restaurant-master-items-query';
 
 interface RestaurantManagementProps {
   onBack?: () => void;
 }
 
-const defaultItems = [
-  'Onions', 'Ginger', 'Hoho', 'Beans', 'Njugu', 'Carrots',
-  'Mboga Kienyeji', 'Kuku Kienyeji', 'Bananas', 'Lemon',
-  'Matumbo', 'Beef', 'Eggs', 'Fruits', 'Cabbage', 'Dania',
-  'Fish', 'Charcoal', 'Tomatoes (kg)', 'Potatoes (kg)',
-  'Melon (pieces)', 'Mangoes (kg)', 'Tomato Sauce (litres)',
-  'Garlic (kg)', 'Crisps (grams/kg)', 'Transport',
-];
-
 const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10));
-  const [selectedMonth, setSelectedMonth] = useState(() => {
+  const [selectedMonth] = useState(() => {
     const date = new Date();
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   });
@@ -42,11 +31,11 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
+  const { data: masterItems, isLoading: masterItemsLoading } = useRestaurantMasterItemsQuery();
   const { showSuccess, showError } = useToast();
   const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   
-  // Pass filterUserId to the hook
-  const { inventory: dbRecords, loading: dbLoading, addInventoryItem, refetch, error: dbError } = useRestaurantInventory(selectedMonth, filterUserId);
+  const { inventory: dbRecords, loading: dbLoading, addInventoryItem, error: dbError } = useRestaurantInventory(selectedMonth, filterUserId);
 
   useEffect(() => {
     if (dbError) {
@@ -54,22 +43,21 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
     }
   }, [dbError, showError]);
 
-  // Initialize Input Forms
   useEffect(() => {
-    const loadInputs = () => {
-      try {
-        const storedInputs = localStorage.getItem(`restaurant_inputs_${selectedDate}`);
-        if (storedInputs) {
-          setInventoryInputs(JSON.parse(storedInputs));
-        } else {
-          setInventoryInputs(defaultItems.map(item => ({ item, quantity: '', price: '' })));
-        }
-      } catch (error) {
-        setInventoryInputs(defaultItems.map(item => ({ item, quantity: '', price: '' })));
-      }
-    };
-    loadInputs();
-  }, [selectedDate]);
+    if (masterItemsLoading) return;
+    if (!masterItems || masterItems.length === 0) {
+      setInventoryInputs([]); 
+      return;
+    }
+
+    const initialInputs = masterItems.map(item => ({
+      master_item_id: item.id,
+      item_name: item.name,
+      quantity: '',
+      price: item.default_unit_price ? String(item.default_unit_price) : '',
+    }));
+    setInventoryInputs(initialInputs);
+  }, [masterItems, masterItemsLoading]);
 
   // Persist Input Forms (Drafts)
   useEffect(() => {
@@ -81,13 +69,14 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
   }, [inventoryInputs, selectedDate]);
 
 
-  const handleChange = useCallback((index: number, field: 'quantity' | 'price', value: string) => {
+
+  const handleChange = (index: number, field: 'quantity' | 'price', value: string) => {
     setInventoryInputs(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
-  }, []);
+  };
 
   const adjustQuantity = (index: number, delta: number) => {
     const currentQty = parseFloat(inventoryInputs[index].quantity) || 0;
@@ -95,20 +84,46 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
     handleChange(index, 'quantity', newQty.toString());
   };
 
+  const handleAddCustomItem = () => {
+    if (!newItemName.trim()) {
+      showError('Error', 'Item name cannot be empty.');
+      return;
+    }
+    if (inventoryInputs.some(item => item.item_name.toLowerCase() === newItemName.toLowerCase())) {
+      showError('Error', 'Item already exists in the list.');
+      setNewItemName('');
+      return;
+    }
+
+    setInventoryInputs(prev => [{
+      master_item_id: `custom-${Date.now()}`, // Unique ID for custom items
+      item_name: newItemName,
+      quantity: '',
+      price: ''
+    }, ...prev]);
+    setNewItemName('');
+    showSuccess('Item Added', `${newItemName} added to inventory.`);
+  };
+
+  const removeItemFromList = (index: number) => {
+    setInventoryInputs(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleRecordItem = async (index: number) => {
     const item = inventoryInputs[index];
     if (!item.quantity || !item.price) return;
-    
+
     try {
-      setSubmittingId(item.item); // Use item name as temp ID for loading state
-      
+      setSubmittingId(item.item_name);
+
       await addInventoryItem({
         sale_date: selectedDate,
-        name: item.item,
+        master_item_id: item.master_item_id,
+        name: item.item_name,
         quantity: parseFloat(item.quantity),
         unitPrice: parseFloat(item.price),
         totalValue: parseFloat(item.quantity) * parseFloat(item.price),
-        expenses: parseFloat(item.quantity) * parseFloat(item.price)
+        expenses: parseFloat(item.quantity) * parseFloat(item.price),
       });
 
       // Clear input after success
@@ -118,44 +133,20 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
         return updated;
       });
 
-      showSuccess('Saved', `${item.item} recorded successfully`);
+      showSuccess('Saved', `${item.item_name} recorded successfully`);
     } catch (error) {
-      console.error(error);
       showError('Error', 'Failed to save record. Please try again.');
     } finally {
       setSubmittingId(null);
     }
   };
 
-  const handleAddCustomItem = () => {
-    const name = newItemName.trim();
-    if (!name) return;
-    
-    setInventoryInputs(prev => [{ item: name, quantity: '', price: '' }, ...prev]);
-    setNewItemName('');
-    showSuccess('Added', `${name} added to list`);
-  };
+  const totalCost = dbRecords.reduce((sum, record) => sum + (Number(record.total_amount) || 0), 0);
 
-  const removeItemFromList = (index: number) => {
-    setInventoryInputs(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Calculate totals from DB records
-  const totalCost = useMemo(() => {
-    return dbRecords.reduce((sum, record) => sum + (Number(record.total_amount) || 0), 0);
-  }, [dbRecords]);
-
-  const filteredInputs = useMemo(() => {
+  const filteredInputs = React.useMemo(() => {
     if (!searchTerm) return inventoryInputs;
-    return inventoryInputs.filter(i => i.item.toLowerCase().includes(searchTerm.toLowerCase()));
+    return inventoryInputs.filter(i => i.item_name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [inventoryInputs, searchTerm]);
-
-  const getStaffName = (record: any) => {
-    if (!record.users) return 'Me';
-    const { first_name, last_name, email } = record.users;
-    if (first_name && last_name) return `${first_name} ${last_name}`;
-    return email || 'Unknown';
-  };
 
   if (dbLoading && !inventoryInputs.length) {
     return (
@@ -279,25 +270,22 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       {/* Inventory Grid - Input Area */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 print:hidden">
         {filteredInputs.map((item, index) => {
-          const originalIndex = inventoryInputs.findIndex(i => i === item);
           const hasData = item.quantity && item.price;
-          const isSubmitting = submittingId === item.item;
+          const isSubmitting = submittingId === item.item_name;
           
           return (
-            <Card key={`${item.item}-${index}`} className={`overflow-hidden transition-all duration-500 border-none group relative ${
+            <Card key={`${item.master_item_id}-${index}`} className={`overflow-hidden transition-all duration-500 border-none group relative ${
               hasData ? 'ring-2 ring-primary bg-primary/5 shadow-xl scale-[1.02]' : 'hover:shadow-lg bg-card'
             }`}>
               <div className="p-5 space-y-5">
                 <div className="flex items-center justify-between border-b pb-3 border-primary/5">
                   <div className="flex items-center space-x-2 min-w-0">
                     <Utensils className={`h-4 w-4 transition-colors ${hasData ? 'text-primary' : 'text-muted-foreground opacity-40'}`} />
-                    <h4 className={`text-sm font-black truncate uppercase tracking-tight text-foreground`}>{item.item}</h4>
+                    <h4 className={`text-sm font-black truncate uppercase tracking-tight text-foreground`}>{item.item_name}</h4>
                   </div>
-                  {!defaultItems.includes(item.item) && (
-                    <Button variant="ghost" size="icon" onClick={() => removeItemFromList(originalIndex)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10">
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="icon" onClick={() => removeItemFromList(index)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -305,17 +293,17 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                     <div className="flex items-center justify-between">
                       <label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Qty</label>
                       <div className="flex gap-1">
-                        <button onClick={() => adjustQuantity(originalIndex, -1)} className="h-5 w-5 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
+                        <button onClick={() => adjustQuantity(index, -1)} className="h-5 w-5 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
                           <Minus className="h-2.5 w-2.5" />
                         </button>
-                        <button onClick={() => adjustQuantity(originalIndex, 1)} className="h-5 w-5 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
+                        <button onClick={() => adjustQuantity(index, 1)} className="h-5 w-5 flex items-center justify-center rounded bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors">
                           <Plus className="h-2.5 w-2.5" />
                         </button>
                       </div>
                     </div>
                     <Input
                       value={item.quantity}
-                      onChange={(e) => handleChange(originalIndex, 'quantity', e.target.value)}
+                      onChange={(e) => handleChange(index, 'quantity', e.target.value)}
                       className="h-10 text-xs font-black bg-muted/20 border-none text-center rounded-xl"
                       placeholder="0"
                       disabled={isSubmitting}
@@ -327,7 +315,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                       <Input
                         type="number"
                         value={item.price}
-                        onChange={(e) => handleChange(originalIndex, 'price', e.target.value)}
+                        onChange={(e) => handleChange(index, 'price', e.target.value)}
                         className="h-10 text-xs font-black text-success bg-muted/20 border-none pr-8 rounded-xl"
                         placeholder="0"
                         disabled={isSubmitting}
@@ -339,7 +327,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
                 <div className="pt-2">
                   <Button 
-                    onClick={() => handleRecordItem(originalIndex)}
+                    onClick={() => handleRecordItem(index)}
                     disabled={!hasData || isSubmitting}
                     variant={hasData ? "default" : "outline"}
                     className={`w-full h-10 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all ${
@@ -412,7 +400,9 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <User className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-medium text-foreground">{getStaffName(record)}</span>
+                          <span className="font-medium text-foreground">
+                            {record.users ? `${record.users.first_name} ${record.users.last_name}` : 'Me'}
+                          </span>
                           {record.users?.role && (
                              <Badge variant="outline" className="text-[10px] h-4 px-1">{record.users.role}</Badge>
                           )}
@@ -467,9 +457,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
         </table>
       </div>
 
-      <div className="print:break-before-page">
-        <ItemServingsManager />
-      </div>
+
     </div>
   );
 };

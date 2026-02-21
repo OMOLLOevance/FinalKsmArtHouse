@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkDatabaseHealth, supabase } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
+import { supabase } from '@/lib/supabase';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const tables = ['users', 'customers', 'gym_members', 'restaurant_sales'];
     const healthResults = [];
