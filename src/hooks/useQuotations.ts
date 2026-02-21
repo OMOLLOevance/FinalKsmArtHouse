@@ -54,7 +54,8 @@ export const useQuotationsQuery = (filterUserId?: string | null, month?: number 
       let url = `/api/quotations?userId=${userId}`;
       if (filterUserId) url += `&filterUserId=${filterUserId}`;
       if (month !== undefined && month !== 'all' && year) {
-        const monthNum = typeof month === 'number' ? month + 1 : parseInt(month) + 1;
+        // The UI (QuotationManager) already sends 1-indexed months (1-12)
+        const monthNum = typeof month === 'number' ? month : parseInt(month);
         url += `&month=${monthNum}&year=${year}`;
       }
       const response = await apiClient.get<{ data: any[] }>(url);

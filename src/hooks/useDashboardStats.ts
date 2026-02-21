@@ -71,7 +71,7 @@ export const useDashboardStats = () => {
         const [customersRes, gymMembersRes, saunaBookingsRes, restaurantRes] = await Promise.all([
           apiClient.get<{data: MinimalCustomer[]}>(buildUrl('/api/customers', 'id,service_status')).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalGymMember[]}>(buildUrl('/api/gym', 'status,expiry_date,payment_amount,created_at')).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalSaunaBooking[]}>(buildUrl('/api/sauna', 'status,amount,created_at')).catch(() => ({ data: [] })),
+          apiClient.get<{data: MinimalSaunaBooking[]}>(buildUrl('/api/sauna', 'status,amount,date')).catch(() => ({ data: [] })),
           apiClient.get<{data: MinimalRestaurantSale[]}>(buildUrl('/api/restaurant', 'total_amount,created_at')).catch(() => ({ data: [] }))
         ]);
 
