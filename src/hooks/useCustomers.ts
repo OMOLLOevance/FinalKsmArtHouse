@@ -57,14 +57,17 @@ export interface DecorItem {
   african_lampshades: number;
 }
 
-export const useCustomersQuery = (month?: number | 'all', year?: number) => {
+// Internal helpers (no longer exported to avoid collision)
+const useCustomersQueryInternal = (month?: number | 'all', year?: number) => {
   const { userId, isAuthenticated } = useAuth();
   
   return useQuery({
-    queryKey: ['customers', userId, month, year],
+    queryKey: ['customers-legacy', userId, month, year],
     queryFn: async (): Promise<Customer[]> => {
       let url = '/api/customers';
       const params = new URLSearchParams();
+      
+      if (userId) params.append('userId', userId);
       
       if (month !== undefined && month !== 'all' && year) {
         const monthNum = typeof month === 'number' ? month + 1 : parseInt(month) + 1;
@@ -93,7 +96,7 @@ export const useCustomersQuery = (month?: number | 'all', year?: number) => {
   });
 };
 
-export const useCreateCustomerMutation = () => {
+const useCreateCustomerMutationInternal = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -117,7 +120,7 @@ export const useCreateCustomerMutation = () => {
   });
 };
 
-export const useUpdateCustomerMutation = () => {
+const useUpdateCustomerMutationInternal = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -142,7 +145,7 @@ export const useUpdateCustomerMutation = () => {
   });
 };
 
-export const useDeleteCustomerMutation = () => {
+const useDeleteCustomerMutationInternal = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -234,11 +237,12 @@ export const useSyncDataMutation = () => {
   });
 };
 
-export const useCustomers = (month?: number | 'all', year?: number) => {
-  const customersQuery = useCustomersQuery(month, year);
-  const createMutation = useCreateCustomerMutation();
-  const updateMutation = useUpdateCustomerMutation();
-  const deleteMutation = useDeleteCustomerMutation();
+// Renamed to avoid confusion, but kept internal if ever needed
+export const useCustomersLegacy = (month?: number | 'all', year?: number) => {
+  const customersQuery = useCustomersQueryInternal(month, year);
+  const createMutation = useCreateCustomerMutationInternal();
+  const updateMutation = useUpdateCustomerMutationInternal();
+  const deleteMutation = useDeleteCustomerMutationInternal();
   const syncMutation = useSyncDataMutation();
 
   return {

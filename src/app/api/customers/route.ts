@@ -29,12 +29,18 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
+    const userIdParam = searchParams.get('userId');
     const filterUserId = searchParams.get('filterUserId');
     const discovery = searchParams.get('discovery') === 'true';
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const { client, userId, isManager } = await getClientWithRole(token);
-    if (!userId) {
+    // userId is required for scoping
+    if (!userIdParam) {
+      return NextResponse.json({ error: 'userId parameter is required' }, { status: 400 });
+    }
+
+    const { client, userId: sessionUserId, isManager } = await getClientWithRole(token);
+    if (!sessionUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -47,13 +53,13 @@ export async function GET(request: NextRequest) {
 
     let query = finalClient.from('customers').select(fields);
 
-    // Apply User Scoping
+    // Apply Scoping
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
     } else if (discovery && isManager) {
       // Discovery mode for managers: no user_id filter (show all data)
     } else {
-      query = query.eq('user_id', userId);
+      query = query.eq('user_id', userIdParam);
     }
 
     // Apply month/year filter if provided

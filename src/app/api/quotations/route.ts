@@ -48,31 +48,38 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month');
     const year = searchParams.get('year');
+    const userIdParam = searchParams.get('userId');
     const filterUserId = searchParams.get('filterUserId');
     const discovery = searchParams.get('discovery') === 'true';
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const { client, userId, isManager } = await getClientWithRole(token);
-    if (!userId) {
+    // userId is required for scoping
+    if (!userIdParam) {
+      return NextResponse.json({ error: 'userId parameter is required' }, { status: 400 });
+    }
+
+    const { client, userId: sessionUserId, isManager } = await getClientWithRole(token);
+    if (!sessionUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const finalClient = client || supabase;
 
-    // Enforce Access Control
+    // Enforce Access Control for filterUserId
     if (filterUserId && !isManager) {
       return NextResponse.json({ error: 'Forbidden: Managers only' }, { status: 403 });
     }
 
     let query = finalClient.from('quotations').select('*');
 
-    // Apply User Scoping
+    // Apply Scoping
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
     } else if (discovery && isManager) {
-      // Discovery mode for managers: no user_id filter (show all data)
+      // Discovery mode for managers allows seeing all (no user_id filter)
     } else {
-      query = query.eq('user_id', userId);
+      // Standard scoping to requested userId
+      query = query.eq('user_id', userIdParam);
     }
 
     // Apply month/year filter if provided
@@ -82,7 +89,7 @@ export async function GET(request: NextRequest) {
       
       if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
         // Use UTC dates to avoid timezone boundary issues
-        // [startOfMonth, nextMonthStart)
+        // Range: [startOfMonth, nextMonthStart)
         const startOfMonth = new Date(Date.UTC(yearNum, monthNum - 1, 1));
         const nextMonthStart = new Date(Date.UTC(yearNum, monthNum, 1));
         
