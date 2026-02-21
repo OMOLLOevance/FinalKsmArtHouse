@@ -194,6 +194,7 @@ export async function GET(req: NextRequest) {
     const month = searchParams.get('month');
     const year = searchParams.get('year');
     const filterUserId = searchParams.get('filterUserId');
+    const discovery = searchParams.get('discovery') === 'true';
     const token = req.headers.get('authorization')?.replace('Bearer ', '');
 
     const { client, userId, isManager } = await getClientWithRole(token);
@@ -213,6 +214,8 @@ export async function GET(req: NextRequest) {
     // Apply User Scoping
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
+    } else if (discovery && isManager) {
+      // Discovery mode for managers: no user_id filter (show all data)
     } else {
       query = query.eq('user_id', userId);
     }

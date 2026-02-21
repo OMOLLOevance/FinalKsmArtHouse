@@ -49,16 +49,15 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month');
     const year = searchParams.get('year');
     const filterUserId = searchParams.get('filterUserId');
+    const discovery = searchParams.get('discovery') === 'true';
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const { client, user } = await getClientWithRole(token);
-    if (!user) {
+    const { client, userId, isManager } = await getClientWithRole(token);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const finalClient = client || supabase;
-    const userRole = await getUserRole(user.id, finalClient);
-    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
 
     // Enforce Access Control
     if (filterUserId && !isManager) {
@@ -70,8 +69,10 @@ export async function GET(request: NextRequest) {
     // Apply User Scoping
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
+    } else if (discovery && isManager) {
+      // Discovery mode for managers: no user_id filter (show all data)
     } else {
-      query = query.eq('user_id', user.id);
+      query = query.eq('user_id', userId);
     }
 
     // Apply month/year filter if provided
