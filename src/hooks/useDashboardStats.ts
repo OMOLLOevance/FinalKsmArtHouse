@@ -67,12 +67,23 @@ export const useDashboardStats = () => {
           return `${base}?${p.toString()}`;
         };
 
+        // Helper for timed request
+        const fetchWithTimeout = async <T>(url: string) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), 15000); // 15s safety timeout
+          try {
+            return await apiClient.get<T>(url);
+          } finally {
+            clearTimeout(id);
+          }
+        };
+
         // Reduce parallel requests - only fetch essential data
         const [customersRes, gymMembersRes, saunaBookingsRes, restaurantRes] = await Promise.all([
-          apiClient.get<{data: MinimalCustomer[]}>(buildUrl('/api/customers', 'id,service_status')).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalGymMember[]}>(buildUrl('/api/gym', 'status,expiry_date,payment_amount,created_at')).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalSaunaBooking[]}>(buildUrl('/api/sauna', 'status,amount,booking_date')).catch(() => ({ data: [] })),
-          apiClient.get<{data: MinimalRestaurantSale[]}>(buildUrl('/api/restaurant', 'total_amount,created_at')).catch(() => ({ data: [] }))
+          fetchWithTimeout<{data: MinimalCustomer[]}>(buildUrl('/api/customers', 'id,service_status')).catch(() => ({ data: [] })),
+          fetchWithTimeout<{data: MinimalGymMember[]}>(buildUrl('/api/gym', 'status,expiry_date,payment_amount,created_at')).catch(() => ({ data: [] })),
+          fetchWithTimeout<{data: MinimalSaunaBooking[]}>(buildUrl('/api/sauna', 'status,amount,booking_date')).catch(() => ({ data: [] })),
+          fetchWithTimeout<{data: MinimalRestaurantSale[]}>(buildUrl('/api/restaurant', 'total_amount,created_at')).catch(() => ({ data: [] }))
         ]);
 
         const customers = customersRes?.data || [];

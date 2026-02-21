@@ -191,7 +191,7 @@ const InvestorDashboard: React.FC = () => {
       </div>
 
       {/* Revenue Trend Chart */}
-      <Card className="p-8 glass-card border-primary/5 shadow-2xl min-w-0">
+      <Card className="p-8 glass-card border-primary/5 shadow-2xl overflow-hidden">
         <div className="flex flex-col space-y-4 mb-6">
           <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">
             Revenue Trend
@@ -200,9 +200,10 @@ const InvestorDashboard: React.FC = () => {
             6-Month Performance Overview
           </p>
         </div>
-        <div style={{ width: '100%', height: 300, minHeight: 300 }}>
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-            <AreaChart data={stats.revenueHistory}>
+        <div className="w-full h-[300px] relative">
+          <div className="absolute inset-0">
+            <ResponsiveContainer width="100%" height="100%" debounce={1}>
+              <AreaChart data={stats.revenueHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>

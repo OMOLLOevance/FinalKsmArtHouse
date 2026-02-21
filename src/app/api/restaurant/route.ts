@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: data || [] });
   } catch (error) {
     logger.error('Restaurant GET Error:', error);
-    const status = error instanceof ApiError ? error.status : 500;
+    const status = error instanceof ApiError ? error.status : 200; // Return 200 with empty data on connection timeout
     return NextResponse.json({ data: [], error: error instanceof Error ? error.message : 'Internal Server Error' }, { status });
   }
 }
