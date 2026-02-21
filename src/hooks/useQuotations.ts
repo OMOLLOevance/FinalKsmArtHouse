@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 
 export interface QuotationItem {
   id: string;
@@ -47,18 +48,29 @@ export interface Quotation {
 
 export const useQuotationsQuery = (filterUserId?: string | null, month?: number | 'all', year?: number) => {
   const { userId, isAuthenticated } = useAuth();
+  const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
   
   return useQuery({
     queryKey: ['quotations', userId, filterUserId, month, year],
     queryFn: async () => {
-      let url = `/api/quotations?userId=${userId}`;
-      if (filterUserId) url += `&filterUserId=${filterUserId}`;
+      const isManagement = isDirectorOrInvestor() || isOperationsManager();
+      
+      const params = new URLSearchParams();
+      if (userId) params.append('userId', userId);
+      if (filterUserId) params.append('filterUserId', filterUserId);
+      // If user is manager and no specific staff member is selected, enable discovery to see everything
+      if (isManagement && !filterUserId) params.append('discovery', 'true');
+      
       if (month !== undefined && month !== 'all' && year) {
         // The UI (QuotationManager) already sends 1-indexed months (1-12)
         const monthNum = typeof month === 'number' ? month : parseInt(month);
-        url += `&month=${monthNum}&year=${year}`;
+        params.append('month', monthNum.toString());
+        params.append('year', year.toString());
       }
+      
+      const url = `/api/quotations?${params.toString()}`;
       const response = await apiClient.get<{ data: any[] }>(url);
+      
       // Map API snake_case to Frontend camelCase
       return response.data.map(q => ({
         id: q.id,
