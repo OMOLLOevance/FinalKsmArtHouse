@@ -53,8 +53,9 @@ export const useQuotationsQuery = (filterUserId?: string | null, month?: number 
     queryFn: async () => {
       let url = `/api/quotations?userId=${userId}`;
       if (filterUserId) url += `&filterUserId=${filterUserId}`;
-      if (month && month !== 'all' && year) {
-        url += `&month=${month}&year=${year}`;
+      if (month !== undefined && month !== 'all' && year) {
+        const monthNum = typeof month === 'number' ? month + 1 : parseInt(month) + 1;
+        url += `&month=${monthNum}&year=${year}`;
       }
       const response = await apiClient.get<{ data: any[] }>(url);
       // Map API snake_case to Frontend camelCase

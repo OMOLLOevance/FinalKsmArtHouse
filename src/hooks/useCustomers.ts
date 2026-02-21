@@ -66,8 +66,9 @@ export const useCustomersQuery = (month?: number | 'all', year?: number) => {
       let url = '/api/customers';
       const params = new URLSearchParams();
       
-      if (month && month !== 'all' && year) {
-        params.append('month', month.toString());
+      if (month !== undefined && month !== 'all' && year) {
+        const monthNum = typeof month === 'number' ? month + 1 : parseInt(month) + 1;
+        params.append('month', monthNum.toString());
         params.append('year', year.toString());
       }
       

@@ -53,15 +53,15 @@ export async function GET(request: NextRequest) {
 
     // Apply month/year filter if provided
     if (month && month !== 'all' && year) {
-      const monthNum = parseInt(month);
+      const monthNum = parseInt(month); // Expected 1-12
       const yearNum = parseInt(year);
       
       if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
-        // Filter by month and year using created_at
-        const startDate = new Date(yearNum, monthNum - 1, 1).toISOString();
-        const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59).toISOString();
+        // Filter by month and year using event_date
+        const startDate = new Date(yearNum, monthNum - 1, 1).toISOString().split('T')[0];
+        const endDate = new Date(yearNum, monthNum, 0).toISOString().split('T')[0];
         
-        query = query.gte('created_at', startDate).lte('created_at', endDate);
+        query = query.gte('event_date', startDate).lte('event_date', endDate);
       }
     }
 

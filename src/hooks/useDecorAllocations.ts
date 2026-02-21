@@ -45,7 +45,8 @@ export const useDecorAllocationsQuery = (month: number, year: number, filterUser
   return useQuery({
     queryKey: ['decor-allocations', month, year, userId, filterUserId],
     queryFn: async () => {
-      let url = `/api/decor-allocations?userId=${userId}&month=${month}&year=${year}`;
+      const monthNum = month + 1;
+      let url = `/api/decor-allocations?userId=${userId}&month=${monthNum}&year=${year}`;
       if (filterUserId) url += `&filterUserId=${filterUserId}`;
       const response = await apiClient.get<{ data: DecorAllocation[] }>(url);
       return response.data;

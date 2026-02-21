@@ -98,8 +98,8 @@ export async function GET(request: NextRequest) {
     }
     
     if (monthStr) {
-      const month = parseInt(monthStr);
-      if (!isNaN(month)) query = query.eq('month', month + 1);
+      const month = parseInt(monthStr); // Now expecting 1-indexed from standard hooks
+      if (!isNaN(month)) query = query.eq('month', month);
     }
     
     if (yearStr) {
