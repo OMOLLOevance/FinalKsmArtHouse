@@ -235,6 +235,7 @@ const InvestorDashboard: React.FC = () => {
               />
             </AreaChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </Card>
 
