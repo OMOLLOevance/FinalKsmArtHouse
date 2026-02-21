@@ -6,9 +6,9 @@ import { logger } from '@/lib/logger';
 
 const BookingSchema = z.object({
   user_id: z.string().uuid(),
-  date: z.string(),
-  time: z.string(),
-  client: z.string(),
+  booking_date: z.string(),
+  booking_time: z.string(),
+  client_name: z.string(),
   service: z.string().optional().nullable(),
   duration: z.number().default(0),
   amount: z.number().default(0),
@@ -18,21 +18,15 @@ const BookingSchema = z.object({
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const rawFields = searchParams.get('fields') || '*';
+  const fields = searchParams.get('fields') || '*';
   const limit = parseInt(searchParams.get('limit') || '100');
   const offset = parseInt(searchParams.get('offset') || '0');
-
-  // Map requested fields to actual DB columns if they use legacy names
-  let fields = rawFields
-    .replace('booking_date', 'date')
-    .replace('booking_time', 'time')
-    .replace('client_name', 'client');
 
   try {
     let query = supabase
       .from('sauna_bookings')
       .select(fields)
-      .order('date', { ascending: false })
+      .order('booking_date', { ascending: false })
       .range(offset, offset + limit - 1);
 
     const { data, error } = await query;
@@ -53,9 +47,9 @@ export async function POST(request: NextRequest) {
 
     const dataToValidate = {
       user_id: userId,
-      date: body.date || body.booking_date,
-      time: body.time || body.booking_time,
-      client: body.client || body.client_name,
+      booking_date: body.booking_date || body.date,
+      booking_time: body.booking_time || body.time,
+      client_name: body.client_name || body.client,
       service: body.service,
       duration: Number(body.duration || 0),
       amount: Number(body.amount || 0),

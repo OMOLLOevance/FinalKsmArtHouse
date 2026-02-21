@@ -5,9 +5,9 @@ import { logger } from '@/lib/logger';
 
 // Validation schemas
 export const SaunaBookingSchema = z.object({
-  date: z.string().min(1),
-  time: z.string().min(1),
-  client: z.string().min(1),
+  booking_date: z.string().min(1),
+  booking_time: z.string().min(1),
+  client_name: z.string().min(1),
   service: z.string().optional(),
   duration: z.number().min(1),
   amount: z.number().min(0),
@@ -24,7 +24,7 @@ class SaunaService {
       if (filterUserId) url += `&filterUserId=${filterUserId}`;
 
       const response = await apiClient.get<{ data: any[] }>(url);
-      return (response?.data || []).map(this.mapDbToFrontend);
+      return (response?.data || []).map(this.mapDbToFrontend.bind(this));
     } catch (error) {
       logger.error('SaunaService.getSaunaBookings failed:', error);
       return [];
@@ -70,9 +70,9 @@ class SaunaService {
   private mapDbToFrontend(dbBooking: any): SaunaBooking {
     return {
       id: dbBooking.id,
-      date: dbBooking.booking_date || dbBooking.date,
-      time: dbBooking.booking_time || dbBooking.time,
-      client: dbBooking.client_name || dbBooking.client,
+      date: dbBooking.booking_date,
+      time: dbBooking.booking_time,
+      client: dbBooking.client_name,
       duration: dbBooking.duration || 60,
       amount: Number(dbBooking.amount || 0),
       status: dbBooking.status || 'booked',
