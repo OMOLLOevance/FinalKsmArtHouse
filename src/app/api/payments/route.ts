@@ -43,11 +43,10 @@ export async function POST(req: NextRequest) {
   }
   const token = authHeader.split(' ')[1];
 
-  const { client, user } = await getClientWithRole(token);
-  if (!user) {
+  const { client, userId } = await getClientWithRole(token);
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = user.id;
 
   try {
     // Create a Supabase client with the service role key for certain operations
@@ -197,14 +196,12 @@ export async function GET(req: NextRequest) {
     const filterUserId = searchParams.get('filterUserId');
     const token = req.headers.get('authorization')?.replace('Bearer ', '');
 
-    const { client, user } = await getClientWithRole(token);
-    if (!user) {
+    const { client, userId, isManager } = await getClientWithRole(token);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const finalClient = client || supabase;
-    const userRole = await getUserRole(user.id, finalClient);
-    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
 
     // Enforce Access Control
     if (filterUserId && !isManager) {
@@ -217,7 +214,7 @@ export async function GET(req: NextRequest) {
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
     } else {
-      query = query.eq('user_id', user.id);
+      query = query.eq('user_id', userId);
     }
 
     // Apply service-specific filters

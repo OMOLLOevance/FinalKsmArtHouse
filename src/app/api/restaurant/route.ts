@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
 
 // Initialize Admin Client if Service Role Key is available
 const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -29,18 +30,6 @@ const RestaurantSaleSchema = z.object({
   expenses: z.number().min(0).default(0),
 });
 
-import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
-
-const RestaurantSaleSchema = z.object({
-  user_id: z.string().uuid(),
-  sale_date: z.string(),
-  item_name: z.string().min(1),
-  quantity: z.number().int().min(1),
-  unit_price: z.number().min(0),
-  total_amount: z.number().min(0),
-  expenses: z.number().min(0).default(0),
-});
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -52,14 +41,12 @@ export async function GET(request: NextRequest) {
     const filterUserId = searchParams.get('filterUserId');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    const { client, user } = await getClientWithRole(token);
-    if (!user) {
+    const { client, userId, isManager } = await getClientWithRole(token);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const finalClient = client || supabase;
-    const userRole = await getUserRole(user.id, finalClient);
-    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
 
     // Enforce Access Control
     if (filterUserId && !isManager) {
@@ -75,7 +62,7 @@ export async function GET(request: NextRequest) {
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
     } else {
-      query = query.eq('user_id', user.id);
+      query = query.eq('user_id', userId);
     }
 
     // Apply month/year filter if provided

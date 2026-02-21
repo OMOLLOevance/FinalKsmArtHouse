@@ -20,9 +20,9 @@ const CateringItemSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const { client, user } = await getClientWithRole(token);
+    const { client, userId } = await getClientWithRole(token);
     
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
