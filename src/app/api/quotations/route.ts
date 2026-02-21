@@ -94,12 +94,14 @@ export async function GET(request: NextRequest) {
         const nextMonthStart = new Date(Date.UTC(yearNum, monthNum, 1));
         
         query = query
-          .gte('created_at', startOfMonth.toISOString())
-          .lt('created_at', nextMonthStart.toISOString());
+          .gte('event_date', startOfMonth.toISOString().split('T')[0])
+          .lt('event_date', nextMonthStart.toISOString().split('T')[0]);
       }
     }
 
-    query = query.order('created_at', { ascending: false });
+    query = query
+      .order('event_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false });
 
     const { data, error } = await query;
 
