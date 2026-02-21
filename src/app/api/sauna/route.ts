@@ -23,22 +23,50 @@ export async function GET(request: NextRequest) {
   const fields = searchParams.get('fields') || '*';
   const limit = parseInt(searchParams.get('limit') || '100');
   const offset = parseInt(searchParams.get('offset') || '0');
+  const month = searchParams.get('month');
+  const year = searchParams.get('year');
   const filterUserId = searchParams.get('filterUserId');
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
   try {
     const { client, user } = await getClientWithRole(token);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const finalClient = client || supabase;
-    const userRole = user ? await getUserRole(user.id, finalClient) : 'staff';
+    const userRole = await getUserRole(user.id, finalClient);
     const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
+
+    // Enforce Access Control
+    if (filterUserId && !isManager) {
+      return NextResponse.json({ error: 'Forbidden: Managers only' }, { status: 403 });
+    }
 
     let query = finalClient.from('sauna_bookings').select(fields);
 
-    // Apply User Filtering
-    if (filterUserId && isManager) {
+    // Apply User Scoping
+    if (filterUserId) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager && user) {
+    } else {
       query = query.eq('user_id', user.id);
+    }
+
+    // Apply month/year filter if provided
+    if (month && month !== 'all' && year) {
+      const monthNum = parseInt(month); // Expected 1-12
+      const yearNum = parseInt(year);
+      
+      if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
+        // Use UTC dates to avoid timezone boundary issues
+        // [startOfMonth, nextMonthStart)
+        const startOfMonth = new Date(Date.UTC(yearNum, monthNum - 1, 1));
+        const nextMonthStart = new Date(Date.UTC(yearNum, monthNum, 1));
+        
+        query = query
+          .gte('booking_date', startOfMonth.toISOString().split('T')[0])
+          .lt('booking_date', nextMonthStart.toISOString().split('T')[0]);
+      }
     }
 
     query = query.order('booking_date', { ascending: false })

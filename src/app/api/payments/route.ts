@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-// import { getAuth } from '@clerk/nextjs/server'; // REMOVE THIS
+import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
+import { supabase } from '@/lib/supabase';
 
 const BasePaymentSchema = z.object({
   amount_paid: z.number().positive(),
@@ -42,25 +43,14 @@ export async function POST(req: NextRequest) {
   }
   const token = authHeader.split(' ')[1];
 
-  // Create a Supabase client that can verify the user's token
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use anon key for client to verify token
-    {
-      auth: { persistSession: false }, // Do not persist session on server-side
-    }
-  );
-
-  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
-
-  if (authError || !user) {
-    logger.error('Payments POST Auth Error:', authError);
+  const { client, user } = await getClientWithRole(token);
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = user.id;
 
   try {
-    // Create a Supabase client with the service role key for RLS bypass
+    // Create a Supabase client with the service role key for certain operations
     const supabaseServiceRole = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -75,12 +65,22 @@ export async function POST(req: NextRequest) {
             .eq('id', body.quotation_id)
             .single();
 
+        if (quotationError) {
+            logger.error('Payments POST Quotation Fetch Error:', quotationError);
+            return NextResponse.json({ error: 'Failed to fetch quotation details' }, { status: 500 });
+        }
+
         if (quotation && quotation.customer_email) {
             const { data: existingCustomer, error: customerError } = await supabaseServiceRole
                 .from('customers')
                 .select('id')
                 .eq('contact', quotation.customer_email)
                 .single();
+
+            if (customerError && customerError.code !== 'PGRST116') { // PGRST116 means no rows found
+                logger.error('Payments POST Existing Customer Fetch Error:', customerError);
+                return NextResponse.json({ error: 'Failed to check for existing customer' }, { status: 500 });
+            }
 
             if (existingCustomer) {
                 body.customer_id = existingCustomer.id;
@@ -94,6 +94,11 @@ export async function POST(req: NextRequest) {
                     })
                     .select('id')
                     .single();
+                
+                if (newCustomerError) {
+                    logger.error('Payments POST New Customer Create Error:', newCustomerError);
+                    return NextResponse.json({ error: 'Failed to create new customer' }, { status: 500 });
+                }
                 
                 if (newCustomer) {
                     body.customer_id = newCustomer.id;
@@ -182,42 +187,38 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const token = authHeader.split(' ')[1];
-
-  // Create a Supabase client that can verify the user's token
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use anon key for client to verify token
-    {
-      auth: { persistSession: false }, // Do not persist session on server-side
-    }
-  );
-
-  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
-
-  if (authError || !user) {
-    logger.error('Payments GET Auth Error:', authError);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const userId = user.id;
-
   try {
-    // Create a Supabase client with the service role key for RLS bypass
-    const supabaseServiceRole = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     const { searchParams } = new URL(req.url);
     const quotationId = searchParams.get('quotationId');
     const gymMemberId = searchParams.get('gymMemberId');
     const saunaBookingId = searchParams.get('saunaBookingId');
+    const month = searchParams.get('month');
+    const year = searchParams.get('year');
+    const filterUserId = searchParams.get('filterUserId');
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
 
-    let query = supabaseServiceRole.from('payments').select('*').eq('user_id', userId);
+    const { client, user } = await getClientWithRole(token);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const finalClient = client || supabase;
+    const userRole = await getUserRole(user.id, finalClient);
+    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
+
+    // Enforce Access Control
+    if (filterUserId && !isManager) {
+      return NextResponse.json({ error: 'Forbidden: Managers only' }, { status: 403 });
+    }
+
+    let query = finalClient.from('payments').select('*');
+
+    // Apply User Scoping
+    if (filterUserId) {
+      query = query.eq('user_id', filterUserId);
+    } else {
+      query = query.eq('user_id', user.id);
+    }
 
     // Apply service-specific filters
     if (quotationId) {
@@ -226,6 +227,23 @@ export async function GET(req: NextRequest) {
       query = query.eq('gym_member_id', gymMemberId);
     } else if (saunaBookingId) {
       query = query.eq('sauna_booking_id', saunaBookingId);
+    }
+
+    // Apply month/year filter if provided
+    if (month && month !== 'all' && year) {
+      const monthNum = parseInt(month); // Expected 1-12
+      const yearNum = parseInt(year);
+      
+      if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
+        // Use UTC dates to avoid timezone boundary issues
+        // [startOfMonth, nextMonthStart)
+        const startOfMonth = new Date(Date.UTC(yearNum, monthNum - 1, 1));
+        const nextMonthStart = new Date(Date.UTC(yearNum, monthNum, 1));
+        
+        query = query
+          .gte('payment_date', startOfMonth.toISOString().split('T')[0])
+          .lt('payment_date', nextMonthStart.toISOString().split('T')[0]);
+      }
     }
 
     const { data, error } = await query.order('payment_date', { ascending: false });

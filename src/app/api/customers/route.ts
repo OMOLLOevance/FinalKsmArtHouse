@@ -33,16 +33,25 @@ export async function GET(request: NextRequest) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     const { client, user } = await getClientWithRole(token);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const finalClient = client || supabase;
-    const userRole = user ? await getUserRole(user.id, finalClient) : 'staff';
+    const userRole = await getUserRole(user.id, finalClient);
     const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
+
+    // Enforce Access Control
+    if (filterUserId && !isManager) {
+      return NextResponse.json({ error: 'Forbidden: Managers only' }, { status: 403 });
+    }
 
     let query = finalClient.from('customers').select(fields);
 
-    // Apply User Filtering
-    if (filterUserId && isManager) {
+    // Apply User Scoping
+    if (filterUserId) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager && user) {
+    } else {
       query = query.eq('user_id', user.id);
     }
 
@@ -52,11 +61,14 @@ export async function GET(request: NextRequest) {
       const yearNum = parseInt(year);
       
       if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
-        // Filter by month and year using event_date
-        const startDate = new Date(yearNum, monthNum - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(yearNum, monthNum, 0).toISOString().split('T')[0];
+        // Use UTC dates to avoid timezone boundary issues
+        // [startOfMonth, nextMonthStart)
+        const startOfMonth = new Date(Date.UTC(yearNum, monthNum - 1, 1));
+        const nextMonthStart = new Date(Date.UTC(yearNum, monthNum, 1));
         
-        query = query.gte('event_date', startDate).lte('event_date', endDate);
+        query = query
+          .gte('event_date', startOfMonth.toISOString().split('T')[0])
+          .lt('event_date', nextMonthStart.toISOString().split('T')[0]);
       }
     }
 

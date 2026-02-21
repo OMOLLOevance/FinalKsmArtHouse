@@ -29,59 +29,74 @@ const RestaurantSaleSchema = z.object({
   expenses: z.number().min(0).default(0),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
+import { getClientWithRole, getUserRole } from '@/lib/auth-utils';
+
+const RestaurantSaleSchema = z.object({
+  user_id: z.string().uuid(),
+  sale_date: z.string(),
+  item_name: z.string().min(1),
+  quantity: z.number().int().min(1),
+  unit_price: z.number().min(0),
+  total_amount: z.number().min(0),
+  expenses: z.number().min(0).default(0),
+});
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const filterUserId = searchParams.get('filterUserId');
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const month = searchParams.get('month');
+    const year = searchParams.get('year');
+    const filterUserId = searchParams.get('filterUserId');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // Default to authenticated client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
+    const { client, user } = await getClientWithRole(token);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        const role = await getUserRole(user.id, authClient);
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
+    const finalClient = client || supabase;
+    const userRole = await getUserRole(user.id, finalClient);
+    const isManager = ['director', 'investor', 'operations_manager'].includes(userRole);
+
+    // Enforce Access Control
+    if (filterUserId && !isManager) {
+      return NextResponse.json({ error: 'Forbidden: Managers only' }, { status: 403 });
     }
 
     // Map frontend field names to database column names safely
     const selectFields = fields.split(',').map(f => f.trim() === 'date' ? 'sale_date' : f).join(',');
 
-    // RLS policies will handle the filtering based on user role
-    let query = client
-      .from('restaurant_sales')
-      .select(selectFields)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    let query = finalClient.from('restaurant_sales').select(selectFields);
 
-    // RBAC Filtering Logic
+    // Apply User Scoping
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager && userId) {
-      query = query.eq('user_id', userId);
+    } else {
+      query = query.eq('user_id', user.id);
     }
+
+    // Apply month/year filter if provided
+    if (month && month !== 'all' && year) {
+      const monthNum = parseInt(month); // Expected 1-12
+      const yearNum = parseInt(year);
+      
+      if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
+        // Use UTC dates to avoid timezone boundary issues
+        // [startOfMonth, nextMonthStart)
+        const startOfMonth = new Date(Date.UTC(yearNum, monthNum - 1, 1));
+        const nextMonthStart = new Date(Date.UTC(yearNum, monthNum, 1));
+        
+        query = query
+          .gte('sale_date', startOfMonth.toISOString().split('T')[0])
+          .lt('sale_date', nextMonthStart.toISOString().split('T')[0]);
+      }
+    }
+
+    query = query.order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     const { data, error } = await query;
 
@@ -149,7 +164,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
+    const { id } = body;
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {

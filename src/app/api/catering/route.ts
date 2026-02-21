@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { getClientWithRole } from '@/lib/auth-utils';
 
 const CateringItemSchema = z.object({
   user_id: z.string().uuid(),
@@ -30,27 +17,18 @@ const CateringItemSchema = z.object({
   available: z.boolean().default(true),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userIdParam = searchParams.get('userId');
-    const filterUserId = searchParams.get('filterUserId');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const { client, user } = await getClientWithRole(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Use supabase directly for simplicity
-    const client = supabase;
+    const finalClient = client || supabase;
 
-    let query = client.from('catering_items').select('*').order('created_at', { ascending: false });
+    let query = finalClient.from('catering_items').select('*').order('created_at', { ascending: false });
 
     const { data, error } = await query;
 
@@ -69,7 +47,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     
     // Handle inventory data separate from service items
     if (body.inventory_data) {
@@ -109,11 +86,10 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const client = supabase;
 
     const { data, error } = await client
       .from('catering_items')
@@ -142,11 +118,10 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const client = supabase;
 
     const { error } = await client
       .from('catering_items')
