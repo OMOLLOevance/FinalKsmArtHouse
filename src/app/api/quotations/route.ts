@@ -115,15 +115,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const { userId: sessionUserId } = await getClientWithRole(token || undefined);
+
+    if (!sessionUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     
-    // Add default user_id if missing
-    const dataWithDefaults = {
+    // Ensure user_id comes from session
+    const dataToValidate = {
       ...body,
-      user_id: body.user_id || '00000000-0000-0000-0000-000000000001'
+      user_id: sessionUserId
     };
     
-    let validatedData = QuotationSchema.parse(dataWithDefaults);
+    let validatedData = QuotationSchema.parse(dataToValidate);
 
     const { data, error } = await supabase
       .from('quotations')

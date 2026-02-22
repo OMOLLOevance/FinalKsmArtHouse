@@ -54,7 +54,6 @@ const CustomerDataForm: React.FC<CustomerDataFormProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    console.log('Customer Data Payload:', formData);
     
     // Simulate API call
     setTimeout(() => {

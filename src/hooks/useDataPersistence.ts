@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
-export const useDataPersistence = <T>(key: string, defaultValue: T): [T, (value: T) => void] => {
+export const useDataPersistence = <T,>(key: string, defaultValue: T): [T, (value: T) => void] => {
   const { user } = useAuth();
   
   // Initialize state directly from localStorage if available

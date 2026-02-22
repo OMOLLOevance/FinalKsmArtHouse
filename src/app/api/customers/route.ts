@@ -94,11 +94,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const { userId: sessionUserId } = await getClientWithRole(token || undefined);
+
+    if (!sessionUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
     
     const dataToValidate = {
-      user_id: body.userId || body.user_id || '00000000-0000-0000-0000-000000000001', // Default test user
+      user_id: sessionUserId,
       name: body.name || body.full_name,
       contact: body.contact || body.phone || body.email,
       location: body.location || body.address,
@@ -115,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     const validatedData = CustomerSchema.parse(dataToValidate);
 
-    const { client } = await getClientWithRole(token);
+    const { client } = await getClientWithRole(token || undefined);
     const finalClient = client || supabase; // Fallback to direct supabase
 
     const { data, error } = await finalClient
