@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ArrowLeft, Printer, Calendar, Utensils, Plus, Minus, CheckCircle2, Receipt, User, Loader2, Search, ListPlus, X } from 'lucide-react';
 
 import { useRestaurantInventory } from '@/hooks/useRestaurantInventory';
@@ -19,7 +20,19 @@ interface RestaurantManagementProps {
 }
 
 const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10));
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  // Drive selectedDate from URL search parameter
+  const selectedDate = searchParams.get('date') || new Date().toISOString().substring(0, 10);
+
+  const setSelectedDate = (date: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('date', date);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
   const [selectedMonth] = useState(() => {
     const date = new Date();
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;

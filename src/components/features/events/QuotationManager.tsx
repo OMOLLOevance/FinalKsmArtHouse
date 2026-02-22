@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ArrowLeft, Plus, Search, FileText, Edit, Trash2, Printer, X, Loader, Database, ChevronDown, ChevronUp, Sparkles, Download, FileDown, CheckCircle, Clock } from 'lucide-react';
 import { useQuotations } from '@/hooks/useQuotations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,9 +91,28 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const { userId } = useAuth();
   const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
   const { isOnline } = useNetworkStatus();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  
+  // Drive selectedMonth and selectedYear from URL search parameters
+  const selectedMonthValue = searchParams.get('month') || 'all';
+  const selectedMonth = selectedMonthValue === 'all' ? 'all' : parseInt(selectedMonthValue);
+  const selectedYear = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
+
+  const setSelectedMonth = (month: number | 'all') => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('month', month.toString());
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  const setSelectedYear = (year: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('year', year.toString());
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   const { quotations, loading, createQuotation, updateQuotation, deleteQuotation, fetchQuotations } = useQuotations(filterUserId, selectedMonth, selectedYear);
   const [showForm, setShowForm] = useState(false);

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Plus, Printer, Calendar, ChevronLeft, ChevronRight, Save, Sparkles, FileText, Check, Settings, Lightbulb, Package, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -49,10 +50,28 @@ interface AdvancedCustomerManagementProps {
 
 const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({ onBack }) => {
   const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  // Drive currentMonth and currentYear from URL search parameters
+  const currentMonth = parseInt(searchParams.get('month') || new Date().getMonth().toString());
+  const currentYear = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
+
+  const setCurrentMonth = (month: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('month', month.toString());
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  const setCurrentYear = (year: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('year', year.toString());
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
   const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isConfigOpen, setIsConfigOpen] = useState(false);

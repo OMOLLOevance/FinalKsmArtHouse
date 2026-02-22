@@ -3,6 +3,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2, ArrowLeft, Save, Waves, X, Search, Calendar, Package } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { 
   useSaunaBookingsQuery, 
   useCreateSaunaBookingMutation, 
@@ -31,6 +32,9 @@ interface SaunaManagementProps {
 const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   
   // RBAC
   const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
@@ -38,7 +42,15 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  
+  // Drive selectedMonth from URL search parameter
+  const selectedMonth = searchParams.get('month') || new Date().toISOString().slice(0, 7);
+
+  const setSelectedMonth = (month: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('month', month);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   const { 
     data: bookings, 

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2, ArrowLeft, Save, DollarSign, Users, TrendingUp, Calendar, Mail, AlertTriangle, MessageCircle, Send, Waves, X, Search } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { GymFinance, GymMember } from '@/types';
 import { useGymMembersQuery, useCreateGymMemberMutation, useUpdateGymMemberMutation, useDeleteGymMemberMutation, useGymFinancesQuery, useCreateGymFinanceMutation, useUpdateGymFinanceMutation, useDeleteGymFinanceMutation } from '@/hooks/use-gym-api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
@@ -49,6 +50,18 @@ interface GymManagementProps {
 const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
+  // Drive activeTab from URL search parameter
+  const activeTab = (searchParams.get('tab') as 'finances' | 'members') || 'finances';
+
+  const setActiveTab = (tab: 'finances' | 'members') => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
   
   // RBAC
   const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
@@ -89,7 +102,6 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   const updateMemberMutation = useUpdateGymMemberMutation();
   const deleteMemberMutation = useDeleteGymMemberMutation();
 
-  const [activeTab, setActiveTab] = useState<'finances' | 'members'>('finances');
   const [isAdding, setIsAdding] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [displayCount, setDisplayCount] = useState(12);
