@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense, lazy } from 'react';
 import { Utensils, Palette, Users, Wrench, Music, FileText, ArrowLeft, DollarSign, ClipboardList } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -25,8 +25,23 @@ interface EventManagementProps {
 }
 
 const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
-  const [activeModule, setActiveModule] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
+  // Drive activeModule from URL search parameter
+  const activeModule = searchParams.get('module');
+
+  const setActiveModule = (moduleId: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (moduleId) {
+      params.set('module', moduleId);
+    } else {
+      params.delete('module');
+    }
+    // Use replace to avoid polluting history with every module switch
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   const handleModuleClick = (moduleId: string) => {
     if (moduleId === 'customers') {
