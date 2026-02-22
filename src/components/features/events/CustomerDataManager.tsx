@@ -52,7 +52,7 @@ interface CustomerDataRecord {
   createdAt: string;
   date: string;
   location: string;
-  locationCategory: 'Indoor' | 'Outdoor' | 'Tent' | 'Other';
+  customLocation?: string;
   clientName: string;
   // Numeric quantities
   doubleTent: number;
@@ -76,10 +76,20 @@ interface CustomerDataManagerProps {
   onBack: () => void;
 }
 
+const LOCATIONS = [
+  "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo/Marakwet", "Embu", "Garissa", "Homa Bay", 
+  "Isiolo", "Kajiado", "Kakamega", "Kericho", "Kiambu", "Kilifi", "Kirinyaga", "Kisii", 
+  "Kisumu", "Kitui", "Kwale", "Laikipia", "Lamu", "Machakos", "Makueni", "Mandera", 
+  "Marsabit", "Meru", "Migori", "Mombasa", "Murang'a", "Nairobi", "Nakuru", "Nandi", 
+  "Narok", "Nyamira", "Nyandarua", "Nyeri", "Samburu", "Siaya", "Taita/Taveta", 
+  "Tana River", "Tharaka-Nithi", "Trans Nzoia", "Turkana", "Uasin Gishu", "Vihiga", 
+  "Wajir", "West Pokot", "Other"
+];
+
 const INITIAL_FORM_STATE: Omit<CustomerDataRecord, 'id' | 'createdAt'> = {
   date: '',
-  location: '',
-  locationCategory: 'Indoor',
+  location: 'Kisumu',
+  customLocation: '',
   clientName: '',
   doubleTent: 0,
   singleTent: 0,
@@ -99,17 +109,23 @@ const INITIAL_FORM_STATE: Omit<CustomerDataRecord, 'id' | 'createdAt'> = {
 };
 
 const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => {
-  const [records, setRecords] = useDataPersistence<CustomerDataRecord[]>('customer-data', []);
+  const [records, setRecords] = useDataPersistence<CustomerDataRecord[]>('customer-data-records', []);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingRecord, setViewingRecord] = useState<CustomerDataRecord | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
+  const recentClients = useMemo(() => {
+    const clients = Array.from(new Set(records.map(r => r.clientName)));
+    return clients.slice(0, 10);
+  }, [records]);
+
   const filteredRecords = useMemo(() => {
     return records.filter(record => 
       record.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.location.toLowerCase().includes(searchQuery.toLowerCase())
+      record.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (record.customLocation && record.customLocation.toLowerCase().includes(searchQuery.toLowerCase()))
     ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [records, searchQuery]);
 
@@ -135,6 +151,11 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
     
     if (!formData.date || !formData.location || !formData.clientName) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (formData.location === 'Other' && !formData.customLocation) {
+      toast.error('Please specify the custom location');
       return;
     }
 
@@ -217,7 +238,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
         <CardContent>
           <form onSubmit={handleSave} className="space-y-8">
             {/* Core Info Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Event Date *</Label>
                 <div className="relative">
@@ -232,47 +253,69 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Client Name *</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Enter client name" 
-                    name="clientName" 
-                    value={formData.clientName} 
-                    onChange={handleInputChange} 
-                    className="pl-10 h-11 font-bold rounded-xl bg-background/50 border-primary/10 focus:border-primary/30"
-                    required
-                  />
+                <div className="space-y-2">
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Enter client name" 
+                      name="clientName" 
+                      value={formData.clientName} 
+                      onChange={handleInputChange} 
+                      className="pl-10 h-11 font-bold rounded-xl bg-background/50 border-primary/10 focus:border-primary/30"
+                      required
+                    />
+                  </div>
+                  {recentClients.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <p className="text-[9px] font-bold uppercase text-muted-foreground w-full">Recent Clients:</p>
+                      {recentClients.map(client => (
+                        <Button 
+                          key={client} 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-[9px] font-black uppercase rounded-full bg-primary/5 hover:bg-primary/10"
+                          onClick={() => handleSelectChange('clientName', client)}
+                        >
+                          {client}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Location *</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Venue name/address" 
-                    name="location" 
-                    value={formData.location} 
-                    onChange={handleInputChange} 
-                    className="pl-10 h-11 font-bold rounded-xl bg-background/50 border-primary/10 focus:border-primary/30"
-                    required
-                  />
+                <div className="space-y-2">
+                  <Select value={formData.location} onValueChange={(val) => handleSelectChange('location', val)}>
+                    <SelectTrigger className="h-11 font-bold rounded-xl bg-background/50 border-primary/10">
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LOCATIONS.map(loc => (
+                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {formData.location === 'Other' && (
+                    <div className="relative animate-in slide-in-from-top-1 duration-200">
+                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Specify custom location" 
+                        name="customLocation" 
+                        value={formData.customLocation} 
+                        onChange={handleInputChange} 
+                        className="pl-10 h-11 font-bold rounded-xl bg-background/50 border-primary/10 focus:border-primary/30"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Location Type</Label>
-                <Select value={formData.locationCategory} onValueChange={(val) => handleSelectChange('locationCategory', val)}>
-                  <SelectTrigger className="h-11 font-bold rounded-xl bg-background/50 border-primary/10">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Indoor">Indoor</SelectItem>
-                    <SelectItem value="Outdoor">Outdoor</SelectItem>
-                    <SelectItem value="Tent">Tent</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
@@ -371,8 +414,9 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                       <TableCell className="font-black text-sm uppercase">{record.clientName}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-bold text-xs">{record.location}</span>
-                          <span className="text-[9px] uppercase font-bold text-muted-foreground">{record.locationCategory}</span>
+                          <span className="font-bold text-xs">
+                            {record.location === 'Other' ? record.customLocation : record.location}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -420,12 +464,10 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                   <p className="font-bold">{viewingRecord.date}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Location Type</p>
-                  <p className="font-bold">{viewingRecord.locationCategory}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Venue/Address</p>
-                  <p className="font-bold">{viewingRecord.location}</p>
+                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Location</p>
+                  <p className="font-bold">
+                    {viewingRecord.location === 'Other' ? viewingRecord.customLocation : viewingRecord.location}
+                  </p>
                 </div>
               </div>
 
