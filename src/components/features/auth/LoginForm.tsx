@@ -10,17 +10,18 @@ import SuccessDialog from '@/components/ui/SuccessDialog';
 
 interface LoginFormProps {
   onLogin?: () => void;
+  initialMode?: 'login' | 'signup';
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' }) => {
   const { login, signup } = useAuth();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: 'staff' as 'staff' | 'operations_manager' | 'director',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           });
           setShowSuccessDialog(true);
         } else {
-          setMessage({ type: 'error', text: result.message || 'Access denied: Invalid credentials provided. Please verify and try again.' });
+          // Handle specific Supabase errors
+          let errorText = result.message || 'Access denied: Invalid credentials provided.';
+          if (errorText.includes('Invalid login credentials')) {
+            errorText = 'Access Denied: The email or password provided is incorrect.';
+          }
+          setMessage({ type: 'error', text: errorText });
         }
       } else {
         if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
@@ -64,21 +70,33 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           return;
         }
 
+        if (formData.password !== formData.confirmPassword) {
+          setMessage({ type: 'error', text: 'Validation Error: Passwords do not match.' });
+          setLoading(false);
+          return;
+        }
+
         const result = await signup({
           email: formData.email,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          role: formData.role,
+          role: 'staff', // Locked to staff for security
         }, formData.password);
 
         if (result.success) {
           setSuccessData({
             title: 'Onboarding Successful',
-            message: `Welcome to the team! Your professional profile is ready and you are now authenticated.`
+            message: `Your professional profile has been created. Please check your email (${formData.email}) to verify your account before logging in.`
           });
           setShowSuccessDialog(true);
         } else {
-          setMessage({ type: 'error', text: result.message || 'Registration failed: An internal system error occurred during profile creation.' });
+          let errorText = result.message || 'Registration failed.';
+          if (errorText.includes('User already registered')) {
+            errorText = 'Registration Blocked: This email address is already associated with an account.';
+          } else if (errorText.includes('valid email')) {
+            errorText = 'Format Error: Please provide a valid corporate email address.';
+          }
+          setMessage({ type: 'error', text: errorText });
         }
       }
     } catch (err: any) {
@@ -110,50 +128,32 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         <CardContent className="space-y-6 pt-2">
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
-                  <div className="space-y-1.5">
-                    <label htmlFor="firstName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      placeholder="Enter first name"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label htmlFor="lastName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Last Name</label>
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      placeholder="Enter last name"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-500 delay-100">
-                  <label htmlFor="role" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Professional Role</label>
-                  <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="w-full h-11 px-3 py-2 border border-primary/5 bg-muted/20 rounded-md text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-foreground"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className="space-y-1.5">
+                  <label htmlFor="firstName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    placeholder="Enter first name"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
                     required
-                  >
-                    <option value="staff" className="bg-background">Staff Member</option>
-                    <option value="operations_manager" className="bg-background">Operations Manager</option>
-                    <option value="director" className="bg-background">Director / Investor</option>
-                  </select>
+                  />
                 </div>
-              </>
+                <div className="space-y-1.5">
+                  <label htmlFor="lastName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-left block">Last Name</label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    placeholder="Enter last name"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    className="h-10 bg-muted/20 border-primary/5 focus:border-primary/30"
+                    required
+                  />
+                </div>
+              </div>
             )}
 
             <div className="space-y-1.5">
@@ -177,7 +177,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
             <div className="space-y-1.5">
               <label htmlFor="password" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">
-                Access Token
+                {mode === 'login' ? 'Access Token' : 'Create Passphrase'}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-primary opacity-50" />
@@ -199,7 +199,31 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {mode === 'signup' && (
+                <p className="text-[9px] text-muted-foreground mt-1 ml-1">Minimum 6 characters required for compliance.</p>
+              )}
             </div>
+
+            {mode === 'signup' && (
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-500">
+                <label htmlFor="confirmPassword" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">
+                  Confirm Passphrase
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-primary opacity-50" />
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Repeat passphrase"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="pl-10 pr-10 h-11 bg-muted/20 border-primary/5 focus:border-primary/30"
+                    required
+                  />
+                </div>
+              </div>
+            )}
 
             {message && (
               <div className={`p-3 rounded-xl flex items-start gap-3 text-xs font-bold animate-in zoom-in-95 duration-300 ${
@@ -232,8 +256,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             variant="ghost" 
             className="w-full h-11 hover:bg-primary/5 text-muted-foreground hover:text-primary font-bold text-xs rounded-xl transition-all" 
             onClick={() => {
-              setMode(mode === 'login' ? 'signup' : 'login');
+              const nextMode = mode === 'login' ? 'signup' : 'login';
+              setMode(nextMode);
               setMessage(null);
+              // Update URL to reflect mode change without full reload
+              window.history.replaceState({}, '', `/${nextMode}`);
             }}
             type="button"
           >

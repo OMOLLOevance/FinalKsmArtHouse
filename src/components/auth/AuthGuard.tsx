@@ -19,12 +19,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only redirect after loading is complete and we have definitive auth status
     if (!isLoading) {
-      if (!isAuthenticated && pathname !== '/login') {
+      const isPublicRoute = pathname === '/login' || pathname === '/signup';
+      
+      if (!isAuthenticated && !isPublicRoute) {
         logger.info(`Unauthorized access attempt to ${pathname}, redirecting to /login`);
         router.replace('/login'); // Use replace instead of push to avoid back button issues
       } 
-      else if (isAuthenticated && pathname === '/login') {
-        logger.info('Authenticated user on login page, redirecting to dashboard');
+      else if (isAuthenticated && isPublicRoute) {
+        logger.info('Authenticated user on public page, redirecting to dashboard');
         router.replace('/'); // Use replace instead of push
       } else if (isAuthenticated) {
         // Check role-based clearance only for authenticated users
@@ -42,8 +44,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return <PageLoader text="Verifying Credentials..." />;
   }
 
-  // If not authenticated and not on login page, don't render anything (redirect will happen)
-  if (!isAuthenticated && pathname !== '/login') {
+  // If not authenticated and not on a public page, don't render anything (redirect will happen)
+  const isPublicRoute = pathname === '/login' || pathname === '/signup';
+  if (!isAuthenticated && !isPublicRoute) {
     return <PageLoader text="Redirecting to login..." />;
   }
 

@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
-            role: userData.role || 'staff'
+            role: 'staff' // Securely force 'staff' role at signup
           }
         }
       });

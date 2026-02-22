@@ -3,7 +3,7 @@
 import LoginForm from '@/components/features/auth/LoginForm';
 import { Sparkles } from 'lucide-react';
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background animated-bg relative overflow-hidden px-4">
       {/* Visual confirmation of update: Diagonal accent */}
@@ -29,7 +29,7 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md">
-        <LoginForm initialMode="login" />
+        <LoginForm initialMode="signup" />
       </div>
 
       <p className="mt-6 sm:mt-8 text-[10px] uppercase font-bold tracking-widest text-muted-foreground text-center opacity-50">
