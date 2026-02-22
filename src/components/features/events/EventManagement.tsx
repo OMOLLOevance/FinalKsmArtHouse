@@ -18,7 +18,7 @@ const AllPaymentsList = lazy(() => import('./AllPaymentsList'));
 const DecorManagement = lazy(() => import('../DecorManagement'));
 const CustomerRequirements = lazy(() => import('../CustomerRequirements'));
 const ClientArea = lazy(() => import('./ClientArea'));
-const CustomerDataForm = lazy(() => import('./CustomerDataForm'));
+const CustomerDataManager = lazy(() => import('./CustomerDataManager'));
 
 interface EventManagementProps {
   onBack?: () => void;
@@ -128,7 +128,7 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
       case 'client-area':
         return <ClientArea onBack={() => setActiveModule(null)} />;
       case 'customer-data':
-        return <CustomerDataForm onBack={() => setActiveModule(null)} />;
+        return <CustomerDataManager onBack={() => setActiveModule(null)} />;
       case 'requirements':
         return <CustomerRequirements onBack={() => setActiveModule(null)} />;
       case 'quotation':
