@@ -53,11 +53,6 @@ export async function GET(request: NextRequest) {
     const discovery = searchParams.get('discovery') === 'true';
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // userId is required for scoping
-    if (!userIdParam) {
-      return NextResponse.json({ error: 'userId parameter is required' }, { status: 400 });
-    }
-
     const { client, userId: sessionUserId, isManager } = await getClientWithRole(token);
     if (!sessionUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,8 +73,9 @@ export async function GET(request: NextRequest) {
     } else if (discovery && isManager) {
       // Discovery mode for managers allows seeing all (no user_id filter)
     } else {
-      // Standard scoping to requested userId
-      query = query.eq('user_id', userIdParam);
+      // Standard scoping: use userIdParam if provided, otherwise fallback to sessionUserId
+      const effectiveUserId = userIdParam || sessionUserId;
+      query = query.eq('user_id', effectiveUserId);
     }
 
     // Apply month/year filter if provided

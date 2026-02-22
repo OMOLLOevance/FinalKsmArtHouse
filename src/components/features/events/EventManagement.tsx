@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, Suspense, lazy } from 'react';
-import { Utensils, Palette, Users, Wrench, Music, FileText, ArrowLeft, DollarSign } from 'lucide-react';
+import { Utensils, Palette, Users, Wrench, Music, FileText, ArrowLeft, DollarSign, ClipboardList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
@@ -18,6 +18,7 @@ const AllPaymentsList = lazy(() => import('./AllPaymentsList'));
 const DecorManagement = lazy(() => import('../DecorManagement'));
 const CustomerRequirements = lazy(() => import('../CustomerRequirements'));
 const ClientArea = lazy(() => import('./ClientArea'));
+const CustomerDataForm = lazy(() => import('./CustomerDataForm'));
 
 interface EventManagementProps {
   onBack?: () => void;
@@ -77,6 +78,14 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
       description: 'Manage client information and event details' 
     },
     { 
+      id: 'customer-data', 
+      title: 'Customer Data', 
+      icon: ClipboardList, 
+      color: 'text-amber-600 dark:text-amber-400', 
+      bg: 'bg-amber-100 dark:bg-amber-900/20',
+      description: 'Capture customer event setup data' 
+    },
+    { 
       id: 'requirements', 
       title: 'Requirements', 
       icon: FileText, 
@@ -118,6 +127,8 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
         return <CustomerManager onBack={() => setActiveModule(null)} />;
       case 'client-area':
         return <ClientArea onBack={() => setActiveModule(null)} />;
+      case 'customer-data':
+        return <CustomerDataForm onBack={() => setActiveModule(null)} />;
       case 'requirements':
         return <CustomerRequirements onBack={() => setActiveModule(null)} />;
       case 'quotation':
