@@ -154,6 +154,16 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       return;
     }
 
+    // Check for duplicate client name (case-insensitive)
+    const isDuplicate = records.some(r => 
+      r.clientName.toLowerCase() === formData.clientName.toLowerCase() && r.id !== editingId
+    );
+
+    if (isDuplicate) {
+      toast.error('Client name already exists. Please use a unique name or edit the existing record.');
+      return;
+    }
+
     if (formData.location === 'Other' && !formData.customLocation) {
       toast.error('Please specify the custom location');
       return;
