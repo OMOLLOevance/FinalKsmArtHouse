@@ -82,13 +82,13 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       logger.error('Customers GET Error:', error);
-      return NextResponse.json({ data: [], error: error.message }, { status: 200 });
+      return NextResponse.json({ data: [], error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ data: data || [] });
   } catch (error) {
     logger.error('Customers GET Error:', error);
-    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 200 });
+    return NextResponse.json({ data: [], error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
