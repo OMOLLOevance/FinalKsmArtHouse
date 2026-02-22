@@ -4,7 +4,22 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const useDataPersistence = <T>(key: string, defaultValue: T): [T, (value: T) => void] => {
   const { user } = useAuth();
-  const [data, setData] = useState<T>(defaultValue);
+  
+  // Initialize state directly from localStorage if available
+  const [data, setData] = useState<T>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (error) {
+          console.error('Error parsing stored data:', error);
+        }
+      }
+    }
+    return defaultValue;
+  });
+
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
@@ -12,22 +27,24 @@ export const useDataPersistence = <T>(key: string, defaultValue: T): [T, (value:
       const handleOnline = () => setIsOnline(true);
       const handleOffline = () => setIsOnline(false);
       
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === key && e.newValue) {
+          try {
+            setData(JSON.parse(e.newValue));
+          } catch (error) {
+            console.error('Error parsing storage event data:', error);
+          }
+        }
+      };
+
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
-      
-      // Load from localStorage on mount
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        try {
-          setData(JSON.parse(stored));
-        } catch (error) {
-          console.error('Error parsing stored data:', error);
-        }
-      }
+      window.addEventListener('storage', handleStorageChange);
       
       return () => {
         window.removeEventListener('online', handleOnline);
         window.removeEventListener('offline', handleOffline);
+        window.removeEventListener('storage', handleStorageChange);
       };
     }
   }, [key]);
