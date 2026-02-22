@@ -105,7 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
@@ -135,13 +134,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('Login error:', error);
       return { success: false, message: error?.message || 'Login failed' };
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signup = async (userData: Omit<User, 'id' | 'createdAt'>, password: string): Promise<{ success: boolean; message: string }> => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
@@ -168,13 +164,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('Signup error:', error);
       return { success: false, message: error?.message || 'Signup failed' };
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const logout = async (): Promise<void> => {
-    setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -183,8 +176,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const errorMessage = error?.message || 'Logout failed';
       console.error('Logout error:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

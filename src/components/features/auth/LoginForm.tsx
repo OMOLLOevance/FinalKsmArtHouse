@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import SuccessDialog from '@/components/ui/SuccessDialog';
+import { toast } from 'sonner';
 
 interface LoginFormProps {
   onLogin?: () => void;
@@ -36,14 +37,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
 
     try {
       if (formData.password.length < 6) {
-          setMessage({ type: 'error', text: 'Security requirement: Password must be at least 6 characters long.' });
+          const errorMsg = 'Security requirement: Password must be at least 6 characters long.';
+          setMessage({ type: 'error', text: errorMsg });
+          toast.error(errorMsg);
           setLoading(false);
           return;
       }
 
       if (mode === 'login') {
         if (!formData.email || !formData.password) {
-          setMessage({ type: 'error', text: 'Authentication incomplete: Please provide your email and password.' });
+          const errorMsg = 'Authentication incomplete: Please provide your email and password.';
+          setMessage({ type: 'error', text: errorMsg });
+          toast.error(errorMsg);
           setLoading(false);
           return;
         }
@@ -58,20 +63,25 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
         } else {
           // Handle specific Supabase errors
           let errorText = result.message || 'Access denied: Invalid credentials provided.';
-          if (errorText.includes('Invalid login credentials')) {
+          if (errorText.toLowerCase().includes('invalid login credentials') || errorText.toLowerCase().includes('invalid credentials')) {
             errorText = 'Access Denied: The email or password provided is incorrect.';
           }
           setMessage({ type: 'error', text: errorText });
+          toast.error(errorText);
         }
       } else {
         if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-          setMessage({ type: 'error', text: 'Registration incomplete: All identity fields are required.' });
+          const errorMsg = 'Registration incomplete: All identity fields are required.';
+          setMessage({ type: 'error', text: errorMsg });
+          toast.error(errorMsg);
           setLoading(false);
           return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-          setMessage({ type: 'error', text: 'Validation Error: Passwords do not match.' });
+          const errorMsg = 'Validation Error: Passwords do not match.';
+          setMessage({ type: 'error', text: errorMsg });
+          toast.error(errorMsg);
           setLoading(false);
           return;
         }
@@ -97,10 +107,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
             errorText = 'Format Error: Please provide a valid corporate email address.';
           }
           setMessage({ type: 'error', text: errorText });
+          toast.error(errorText);
         }
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: 'System Error: We encountered an unexpected issue during the authentication process.' });
+      const errorMsg = 'System Error: We encountered an unexpected issue during the authentication process.';
+      setMessage({ type: 'error', text: errorMsg });
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
