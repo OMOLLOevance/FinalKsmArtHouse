@@ -756,10 +756,10 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       `}} />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={onBack}>
+          <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
-          <h2 className="text-2xl font-bold tracking-tight">Quotations</h2>
+          <h1 className="text-2xl font-black uppercase text-primary tracking-tight">Quotations</h1>
         </div>
         <div className="flex items-center gap-2">
           {/* Month Filter */}

@@ -89,9 +89,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             Verification required for: {error instanceof Error ? error.message : 'System Integrity'}
           </p>
           <div className="flex justify-center gap-2">
-            <Button variant="outline" onClick={() => window.location.reload()}>Retry Link</Button>
+            <Button type="button" variant="outline" onClick={() => window.location.reload()}>Retry Link</Button>
             {isDirector && (
-              <Button onClick={() => setShowDatabaseSetup(true)}>Initialize Setup</Button>
+              <Button type="button" onClick={() => setShowDatabaseSetup(true)}>Initialize Setup</Button>
             )}
           </div>
         </div>
@@ -203,16 +203,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="flex items-center space-x-2">
             {isManager && (
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setShowDatabaseStatus(!showDatabaseStatus)}
-                className="hidden sm:flex items-center border-primary/20 hover:bg-primary/10 font-black text-[10px] uppercase tracking-widest h-9"
+                className="hidden sm:flex items-center border-primary/20 hover:bg-primary/10 font-black text-[10px] uppercase tracking-widest h-10 px-4 rounded-xl"
               >
                 <Database className="h-3 w-3 mr-2 text-primary" />
                 System Integrity
               </Button>
             )}
-            <Badge variant="outline" className="h-9 px-4 border-primary/20 bg-primary/5 text-primary font-black uppercase tracking-widest text-[10px] rounded-xl shadow-sm">
+            <Badge variant="outline" className="h-10 px-4 border-primary/20 bg-primary/5 text-primary font-black uppercase tracking-widest text-[10px] rounded-xl shadow-sm">
               {user?.role} MODE
             </Badge>
           </div>
@@ -229,16 +230,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {modules.map((module) => (
           <Card 
             key={module.id}
-            className="cursor-pointer group card-premium border-primary/10 transition-all duration-500 glass-card hover:shadow-2xl hover:shadow-primary/10 rounded-2xl"
+            className="cursor-pointer group card-premium border-primary/10 transition-all duration-500 glass-card hover:shadow-2xl hover:shadow-primary/10 rounded-2xl overflow-hidden"
             onClick={() => handleModuleClick(module.id)}
           >
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 p-6">
               <div className="p-4 rounded-2xl bg-primary/5 group-hover:bg-primary group-hover:rotate-[360deg] transition-all duration-700 ease-in-out shadow-inner">
                 <module.icon className="h-7 w-7 text-primary group-hover:text-white transition-colors" />
               </div>
               <Activity className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6 pt-0">
               <h3 className="font-black text-lg mb-1 tracking-tight text-foreground group-hover:text-primary transition-colors uppercase">{module.title}</h3>
               <p className="text-[10px] font-bold text-muted-foreground/80 mb-6 line-clamp-2 leading-relaxed uppercase tracking-wider">{module.description}</p>
               <div className="flex items-center justify-between pt-4 border-t border-primary/5">
@@ -253,10 +254,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {summarySections.map((section, idx) => (
           <Card key={idx} className="glass-card border-none shadow-none bg-muted/10 rounded-2xl overflow-hidden">
-            <CardHeader className="pb-2 border-b border-primary/5 mb-4 bg-muted/5 p-4">
+            <CardHeader className="pb-2 border-b border-primary/5 mb-4 bg-muted/5 p-6">
               <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-primary/70">{section.title}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 p-4 pt-0">
+            <CardContent className="space-y-4 p-6 pt-0">
               {section.items.map((item, iIdx) => (
                 <div key={iIdx} className="flex justify-between items-center bg-muted/30 p-2.5 rounded-xl border border-white/5 hover:bg-muted/50 transition-colors">
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{item.label}</span>

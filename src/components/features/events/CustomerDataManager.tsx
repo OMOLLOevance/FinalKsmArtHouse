@@ -59,13 +59,13 @@ interface CustomerDataRecord {
   singleTent: number;
   gazeboTent: number;
   frameTent: number;
-  blineTent: number;
+  bLineTent: number;
   pergulaTent: number;
   roundTable: number;
   longTent: number;
   chavaraiSeat: number;
   luxeSeat: number;
-  metalicSeat: number;
+  metallicSeat: number;
   glassCharger: number;
   plasticSeat: number;
   banquetSeat: number;
@@ -95,13 +95,13 @@ const INITIAL_FORM_STATE: Omit<CustomerDataRecord, 'id' | 'createdAt'> = {
   singleTent: 0,
   gazeboTent: 0,
   frameTent: 0,
-  blineTent: 0,
+  bLineTent: 0,
   pergulaTent: 0,
   roundTable: 0,
   longTent: 0,
   chavaraiSeat: 0,
   luxeSeat: 0,
-  metalicSeat: 0,
+  metallicSeat: 0,
   glassCharger: 0,
   plasticSeat: 0,
   banquetSeat: 0,
@@ -206,9 +206,9 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
   const getTotalItems = (record: CustomerDataRecord) => {
     return (
       record.doubleTent + record.singleTent + record.gazeboTent + 
-      record.frameTent + record.blineTent + record.pergulaTent + 
+      record.frameTent + record.bLineTent + record.pergulaTent + 
       record.roundTable + record.longTent + record.chavaraiSeat + 
-      record.luxeSeat + record.metalicSeat + record.glassCharger + 
+      record.luxeSeat + record.metallicSeat + record.glassCharger + 
       record.plasticSeat + record.banquetSeat + record.crBackSeat
     );
   };
@@ -218,14 +218,14 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" size="icon" onClick={onBack} className="rounded-full h-10 w-10">
+          <Button variant="outline" size="icon" onClick={onBack} className="rounded-full h-10 w-10" aria-label="Back to Event Management">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h2 className="text-3xl font-black tracking-tighter text-foreground uppercase flex items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tighter text-foreground uppercase flex items-center gap-2">
               <ClipboardList className="h-8 w-8 text-primary" />
               Customer Data
-            </h2>
+            </h1>
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground opacity-70">
               Manage setup specifications and logistics
             </p>
@@ -331,28 +331,29 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
 
             {/* Inventory Section */}
             <div className="space-y-4 pt-4 border-t border-primary/5">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Inventory Specifications</h3>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Inventory Specifications</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {[
                   { id: 'doubleTent', label: 'Double Tent' },
                   { id: 'singleTent', label: 'Single Tent' },
                   { id: 'gazeboTent', label: 'Gazebo Tent' },
                   { id: 'frameTent', label: 'Frame Tent' },
-                  { id: 'blineTent', label: 'B-Line Tent' },
+                  { id: 'bLineTent', label: 'B-Line Tent' },
                   { id: 'pergulaTent', label: 'Pergola Tent' },
                   { id: 'longTent', label: 'Long Tent' },
                   { id: 'roundTable', label: 'Round Table' },
                   { id: 'chavaraiSeat', label: 'Chavarai Seat' },
                   { id: 'luxeSeat', label: 'Luxe Seat' },
-                  { id: 'metalicSeat', label: 'Metalic Seat' },
+                  { id: 'metallicSeat', label: 'Metallic Seat' },
                   { id: 'glassCharger', label: 'Glass Charger' },
                   { id: 'plasticSeat', label: 'Plastic Seat' },
                   { id: 'banquetSeat', label: 'Banquet Seat' },
                   { id: 'crBackSeat', label: 'CR Back Seat' },
                 ].map((item) => (
                   <div key={item.id} className="space-y-1.5">
-                    <Label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{item.label}</Label>
+                    <Label htmlFor={item.id} className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{item.label}</Label>
                     <Input 
+                      id={item.id}
                       type="number" 
                       name={item.id} 
                       value={formData[item.id as keyof typeof formData]} 
@@ -482,20 +483,20 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary border-b border-primary/10 pb-2">Inventory Breakdown</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary border-b border-primary/10 pb-2">Inventory Breakdown</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4">
                   {[
                     { id: 'doubleTent', label: 'Double Tent' },
                     { id: 'singleTent', label: 'Single Tent' },
                     { id: 'gazeboTent', label: 'Gazebo Tent' },
                     { id: 'frameTent', label: 'Frame Tent' },
-                    { id: 'blineTent', label: 'B-Line Tent' },
+                    { id: 'bLineTent', label: 'B-Line Tent' },
                     { id: 'pergulaTent', label: 'Pergola Tent' },
                     { id: 'longTent', label: 'Long Tent' },
                     { id: 'roundTable', label: 'Round Table' },
                     { id: 'chavaraiSeat', label: 'Chavarai Seat' },
                     { id: 'luxeSeat', label: 'Luxe Seat' },
-                    { id: 'metalicSeat', label: 'Metalic Seat' },
+                    { id: 'metallicSeat', label: 'Metallic Seat' },
                     { id: 'glassCharger', label: 'Glass Charger' },
                     { id: 'plasticSeat', label: 'Plastic Seat' },
                     { id: 'banquetSeat', label: 'Banquet Seat' },

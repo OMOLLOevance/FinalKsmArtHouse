@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import ClientAreaForm, { IClientForm } from './ClientAreaForm';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { ArrowLeft, Edit, Trash } from 'lucide-react';
 import {
   Table,
@@ -26,6 +27,7 @@ import {
   DialogClose,
 } from "@/components/ui/Dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { cn } from '@/lib/utils';
 
 
 interface ClientAreaProps {
@@ -135,45 +137,49 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <Button variant="outline" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
+        <Button type="button" variant="outline" size="icon" onClick={onBack} className="rounded-full h-10 w-10" aria-label="Back">
+          <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h2 className="text-2xl font-bold">Client Area</h2>
-          <p className="text-muted-foreground">Manage client information and event details.</p>
+          <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Client Area</h1>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Manage client information and event details.</p>
         </div>
       </div>
 
       <ClientAreaForm onSubmit={handleSubmit} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Client History</CardTitle>
+      <Card className="rounded-2xl overflow-hidden border-primary/10 shadow-xl">
+        <CardHeader className="p-6">
+          <CardTitle className="text-xl font-black uppercase tracking-tight text-primary">Client History</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 pt-0">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead>Client Name</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Account Manager</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Client Name</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Date</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Account Manager</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Status</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {clients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell>{client.clientName}</TableCell>
-                  <TableCell>{client.date}</TableCell>
-                  <TableCell>{client.accountManager}</TableCell>
-                  <TableCell className={getStatusColorClass(client.status)}>{client.status}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="icon" onClick={() => handleEdit(client)}>
+                <TableRow key={client.id} className="hover:bg-primary/[0.02] transition-colors group">
+                  <TableCell className="font-black text-sm uppercase px-4 py-4 truncate max-w-[200px]" title={client.clientName}>{client.clientName}</TableCell>
+                  <TableCell className="font-bold text-xs px-4 py-4">{client.date}</TableCell>
+                  <TableCell className="font-bold text-xs px-4 py-4">{client.accountManager}</TableCell>
+                  <TableCell className={cn("px-4 py-4", getStatusColorClass(client.status))}>
+                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-none bg-muted/50">
+                      {client.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-4 py-4 text-right">
+                    <div className="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => handleEdit(client)} className="h-8 w-8 hover:text-primary" aria-label="Edit status">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="destructive" size="icon" onClick={() => handleDelete(client)}>
+                      <Button type="button" variant="destructive" size="icon" onClick={() => handleDelete(client)} className="h-8 w-8" aria-label="Delete client">
                         <Trash className="h-4 w-4" />
                       </Button>
                     </div>
@@ -210,8 +216,8 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
               </Select>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingClient(null)}>Cancel</Button>
-              <Button onClick={confirmEdit}>Save</Button>
+              <Button type="button" variant="outline" onClick={() => setEditingClient(null)} className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]">Cancel</Button>
+              <Button type="button" onClick={confirmEdit} className="h-11 px-8 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">Save</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -219,16 +225,17 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
 
       {deletingClient && (
          <Dialog open={!!deletingClient} onOpenChange={() => setDeletingClient(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Client</DialogTitle>
-              <CardDescription>Are you sure you want to delete this client? This action cannot be undone.</CardDescription>
+          <DialogContent className="rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
+            <div className="h-1.5 w-full bg-destructive" />
+            <DialogHeader className="p-6 pb-2">
+              <DialogTitle className="text-xl font-black uppercase tracking-tight text-destructive">Delete Client</DialogTitle>
+              <CardDescription className="font-bold text-sm opacity-70 border-none shadow-none">Are you sure you want to delete this client? This action cannot be undone.</CardDescription>
             </DialogHeader>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 gap-2 bg-muted/20">
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button type="button" variant="outline" className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]">Cancel</Button>
               </DialogClose>
-              <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+              <Button type="button" variant="destructive" onClick={confirmDelete} className="h-11 px-8 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-destructive/20">Delete</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/Badge';
 import { DollarSign, Search, CreditCard, Receipt, User, History } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
@@ -157,52 +158,55 @@ export const EventPaymentForm: React.FC = () => {
   };
 
   return (
-    <Card className="border-primary/10 shadow-xl overflow-hidden">
-      <CardHeader className="bg-primary/5 border-b border-primary/10">
+    <Card className="border-primary/10 shadow-xl overflow-hidden rounded-2xl">
+      <CardHeader className="bg-primary/5 border-b border-primary/10 p-6">
         <div className="flex items-center space-x-3">
-          <Receipt className="h-5 w-5 text-primary" />
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Receipt className="h-5 w-5 text-primary" />
+          </div>
           <div>
-            <CardTitle>Payment Record</CardTitle>
-            <CardDescription>Log financial details for services</CardDescription>
+            <CardTitle className="text-xl font-black uppercase tracking-tight">Payment Record</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Log financial details for services</CardDescription>
           </div>
         </div>
       </CardHeader>
       
       <form onSubmit={handleSubmit}>
-        <CardContent className="pt-6 space-y-6">
-          <div className="flex gap-4">
-            <div className="w-1/3">
-              <label htmlFor="serviceType" className="text-sm font-medium">Service Type</label>
+        <CardContent className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-2">
+              <Label htmlFor="serviceType" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Type</Label>
               <Select onValueChange={(value: ServiceType) => setServiceType(value)} defaultValue={serviceType}>
-                <SelectTrigger id="serviceType">
-                  <SelectValue placeholder="Select service type" />
+                <SelectTrigger id="serviceType" className="h-11 rounded-xl bg-background/50 border-primary/10">
+                  <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="quotation">Quotation</SelectItem>
-                  <SelectItem value="gym">Gym</SelectItem>
-                  <SelectItem value="sauna">Sauna</SelectItem>
+                  <SelectItem value="quotation">QUOTATION</SelectItem>
+                  <SelectItem value="gym">GYM</SelectItem>
+                  <SelectItem value="sauna">SAUNA</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-2/3">
-              <label htmlFor="searchTerm" className="text-sm font-medium flex items-center">
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="searchTerm" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center">
                 <Search className="h-3 w-3 mr-2 opacity-50" />
-                Search
-              </label>
+                Search Database
+              </Label>
               <Input
                 id="searchTerm"
                 name="searchTerm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={`Search ${serviceType}...`}
+                placeholder={`Search by name or number...`}
+                className="h-11 rounded-xl bg-background/50 border-primary/10"
               />
             </div>
           </div>
           
           {searchResults.length > 0 && (
-            <ul className="border rounded-md max-h-40 overflow-y-auto">
+            <ul className="border border-primary/5 rounded-2xl max-h-40 overflow-y-auto bg-muted/10 divide-y divide-primary/5">
               {searchResults.map((item: Quotation | GymMember | SaunaBooking) => (
-                <li key={item.id} onClick={() => handleSelectItem(item)} className="p-2 hover:bg-muted cursor-pointer">
+                <li key={item.id} onClick={() => handleSelectItem(item)} className="p-3 hover:bg-primary/5 cursor-pointer transition-colors text-sm font-bold uppercase tracking-tight">
                   {serviceType === 'quotation' && `${(item as Quotation).quotationNumber} - ${(item as Quotation).customerName}`}
                   {serviceType === 'gym' && (item as GymMember).name}
                   {serviceType === 'sauna' && `${(item as SaunaBooking).client} - ${new Date((item as SaunaBooking).date).toLocaleDateString()}`}
@@ -213,24 +217,43 @@ export const EventPaymentForm: React.FC = () => {
 
           {(selectedItem || lastSelectedItem) && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Details</h3>
-                  <div className="space-y-2">
-                    <p><strong>Client:</strong> {clientName}</p>
-                    <p><strong>Total Due:</strong> {formatCurrency(totalBudget)}</p>
-                    <p><strong>Amount Paid:</strong> {formatCurrency(totalPaid)}</p>
-                    <p><strong>Balance:</strong> {formatCurrency(balance)}</p>
-                    <p><strong>Remaining After This Payment:</strong> {formatCurrency(remainingBalance)}</p>
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary border-b border-primary/10 pb-2">Service Details</h3>
+                  <div className="space-y-3 bg-muted/20 p-4 rounded-2xl border border-primary/5 shadow-inner">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Client</span>
+                      <span className="text-sm font-black uppercase tracking-tight truncate max-w-[150px]" title={clientName}>{clientName}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-primary/5 pt-2">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Due</span>
+                      <span className="text-sm font-bold">{formatCurrency(totalBudget)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-primary/5 pt-2">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Paid To Date</span>
+                      <span className="text-sm font-black text-success">{formatCurrency(totalPaid)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-primary/10 pt-2">
+                      <span className="text-[10px] font-black text-primary uppercase">Current Balance</span>
+                      <span className="text-base font-black text-primary tracking-tighter">{formatCurrency(balance)}</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-black uppercase text-primary/70">Projected Balance</span>
+                      <span className={`text-sm font-black ${remainingBalance <= 0 ? 'text-success' : 'text-destructive'}`}>
+                        {formatCurrency(remainingBalance)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <fieldset disabled={isFullyPaid}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Payment</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                  <fieldset disabled={isFullyPaid} className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary border-b border-primary/10 pb-2">New Transaction</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label htmlFor="amountToPay" className="text-sm font-medium">Amount to Pay</label>
+                        <Label htmlFor="amountToPay" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Amount</Label>
                         <Input
                           id="amountToPay"
                           name="amountToPay"
@@ -240,30 +263,29 @@ export const EventPaymentForm: React.FC = () => {
                           value={amountPaid}
                           onChange={(e) => {
                             let value = Number(e.target.value);
-                            if (isNaN(value)) value = 0; // Handle invalid number input
-                            value = Math.max(0, value); // Ensure non-negative
+                            if (isNaN(value)) value = 0;
+                            value = Math.max(0, value);
 
-                            // For quotations, prevent entering an amount greater than the current balance
                             if (serviceType === 'quotation' && value > balance) {
-                              setAmountPaid(balance); // Cap at remaining balance
+                              setAmountPaid(balance);
                               toast.warning(`Payment capped at remaining balance: ${formatCurrency(balance)}`);
                             } else {
                               setAmountPaid(value);
                             }
                           }}
-                          className="font-bold text-success"
+                          className="h-11 font-black text-success rounded-xl bg-background/50 border-primary/10"
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Payment Method</label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Method</Label>
                         <div className="flex gap-2" role="group" aria-label="Payment method selection">
                           {(['cash', 'mpesa', 'bank'] as const).map((method) => (
                             <Button
                               key={method}
                               type="button"
                               variant={paymentMethod === method ? 'default' : 'outline'}
-                              className="flex-1 capitalize h-9 text-xs"
+                              className="flex-1 capitalize h-11 text-[10px] font-black rounded-xl"
                               onClick={() => setPaymentMethod(method)}
                               aria-pressed={paymentMethod === method}
                             >
@@ -274,13 +296,14 @@ export const EventPaymentForm: React.FC = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="paymentNotes" className="text-sm font-medium">Notes</label>
+                      <Label htmlFor="paymentNotes" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Transaction Notes</Label>
                       <Input
                         id="paymentNotes"
                         name="paymentNotes"
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Payment notes..."
+                        placeholder="Reference number or particulars..."
+                        className="h-11 rounded-xl bg-background/50 border-primary/10"
                       />
                     </div>
                   </fieldset>
@@ -288,32 +311,34 @@ export const EventPaymentForm: React.FC = () => {
               </div>
 
               {payments && payments.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    <History className="h-3 w-3 mr-2 opacity-50 inline-block" />
-                    Payment History
+                <div className="space-y-4 pt-4">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary border-b border-primary/10 pb-2 flex items-center">
+                    <History className="h-3 w-3 mr-2 opacity-50" />
+                    Transaction History
                   </h3>
-                  <ul className="border rounded-md max-h-40 overflow-y-auto">
-                    {payments.map(p => (
-                      <li key={p.id} className="p-2 border-b">
-                        <div className="flex justify-between">
-                          <span>{new Date(p.payment_date).toLocaleDateString()}</span>
-                          <span className="font-bold">{formatCurrency(p.amount_paid)}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">{p.payment_method} - {p.notes}</div>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="rounded-2xl border border-primary/5 overflow-hidden shadow-sm">
+                    <ul className="max-h-48 overflow-y-auto bg-muted/10 divide-y divide-primary/5">
+                      {payments.map(p => (
+                        <li key={p.id} className="p-4 hover:bg-background/50 transition-colors">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase">{new Date(p.payment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                            <span className="text-sm font-black text-primary">{formatCurrency(p.amount_paid)}</span>
+                          </div>
+                          <div className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">{p.payment_method} — {p.notes || 'No notes'}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </>
           )}
         </CardContent>
 
-        <CardFooter className="bg-muted/20 border-t p-6 flex justify-between items-center">
+        <CardFooter className="bg-muted/20 border-t p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           {(selectedItem || lastSelectedItem) && (
-            <Badge variant={balance <= 0 && totalBudget > 0 ? 'success' : 'outline'} className="h-6">
-              {balance <= 0 && totalBudget > 0 ? 'FULLY PAID' : 'PAYMENT PENDING'}
+            <Badge variant={balance <= 0 && totalBudget > 0 ? 'success' : 'outline'} className="h-8 px-4 font-black uppercase tracking-widest text-[9px] border-primary/20">
+              {balance <= 0 && totalBudget > 0 ? 'ACCOUNT SETTLED' : 'PAYMENT REQUIRED'}
             </Badge>
           )}
           <Button 
@@ -323,11 +348,11 @@ export const EventPaymentForm: React.FC = () => {
               !selectedItem || 
               amountPaid <= 0 || 
               (serviceType === 'quotation' && amountPaid > balance) ||
-              isFullyPaid // Keep this for visual feedback and initial state
+              isFullyPaid
             } 
-            className="min-w-[200px]"
+            className="w-full sm:w-auto h-12 px-12 rounded-xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20"
           >
-            {createPaymentMutation.isPending ? 'Processing...' : 'Save Record'}
+            {createPaymentMutation.isPending ? 'Processing...' : 'Commit Transaction'}
             <CreditCard className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>

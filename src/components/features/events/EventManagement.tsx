@@ -179,33 +179,33 @@ const EventManagement: React.FC<EventManagementProps> = ({ onBack }) => {
       <div className="flex items-center justify-between space-y-2">
         <div className="flex items-center space-x-2">
           {onBack && (
-            <Button variant="outline" size="sm" onClick={onBack} className="flex items-center">
+            <Button type="button" variant="outline" size="sm" onClick={onBack} className="flex items-center rounded-full">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
           )}
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Event Management</h2>
-            <p className="text-muted-foreground">Manage all aspects of your events</p>
+            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Event Management</h1>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70">Manage all aspects of your events</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {modules.map((module) => (
           <Card
             key={module.id}
             onClick={() => handleModuleClick(module.id)}
-            className="cursor-pointer group hover-lift hover-glow border-primary/5 transition-all duration-300"
+            className="cursor-pointer group hover-lift hover-glow border-primary/5 transition-all duration-300 rounded-2xl overflow-hidden"
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">{module.title}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 p-6">
+              <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors uppercase tracking-tight">{module.title}</CardTitle>
               <div className={`p-3 rounded-2xl ${module.bg} group-hover:scale-110 transition-transform duration-500`}>
                 <module.icon className={`h-6 w-6 ${module.color}`} />
               </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">{module.description}</p>
+            <CardContent className="p-6 pt-0">
+              <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors leading-relaxed">{module.description}</p>
             </CardContent>
           </Card>
         ))}

@@ -404,19 +404,19 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
       {/* Header with Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-xl font-bold tracking-tight text-primary uppercase">Weekly Customer Allocations</h3>
+          <h2 className="text-xl font-black tracking-tight text-primary uppercase">Weekly Customer Allocations</h2>
           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest opacity-60">
             {monthNames[month]} {year} • {allocations.length} records found
           </p>
         </div>
         <div className="flex items-center space-x-2">
           {selectedRows.size > 0 && canDeleteTransaction() && (
-            <Button variant="destructive" size="sm" onClick={handleDeleteSelected} disabled={saving} className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl">
+            <Button type="button" variant="destructive" size="sm" onClick={handleDeleteSelected} disabled={saving} className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl">
               <Trash2 className="h-4 w-4 mr-2" />
               Delete ({selectedRows.size})
             </Button>
           )}
-          <Button onClick={handleAddCustomer} disabled={saving} size="sm" className="h-9 px-6 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20">
+          <Button type="button" onClick={handleAddCustomer} disabled={saving} size="sm" className="h-9 px-6 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20">
             <Plus className="h-4 w-4 mr-2" />
             New Allocation
           </Button>

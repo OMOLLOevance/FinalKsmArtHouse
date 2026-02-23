@@ -386,20 +386,28 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
-          <h2 className="text-3xl font-bold tracking-tight text-primary">Catering</h2>
+          {onBack && (
+            <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          )}
+          <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Catering Management</h1>
         </div>
         <div className="flex items-center gap-2">
           {(isOperationsManager() || isDirectorOrInvestor()) && (
-            <div className="w-64">
+            <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 
                 onChange={setFilterUserId} 
-                className="bg-background/50"
+                className="bg-background/50 backdrop-blur-sm"
               />
             </div>
           )}
-          <Button onClick={() => setIsAdding(true)} size="sm"><Plus className="h-4 w-4 mr-2" /> Add Service Item</Button>
+          <Button type="button" onClick={() => setIsAdding(true)} className="h-10 px-6 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">
+            <Plus className="h-4 w-4 mr-2" /> 
+            Add Service Item
+          </Button>
         </div>
       </div>
 
@@ -545,12 +553,12 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
 
       {/* Inventory Section */}
       <Card className="border-primary/10 shadow-sm bg-transparent border-none shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between px-0 pb-4 mb-6 border-b border-primary/10">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between px-0 pb-4 mb-6 border-b border-primary/10 gap-4">
           <div>
-            <CardTitle className="text-2xl font-bold">Stock Inventory</CardTitle>
-            <CardDescription className="text-xs font-black uppercase tracking-widest opacity-70">Physical asset tracking</CardDescription>
+            <h2 className="text-2xl font-bold uppercase tracking-tight text-foreground">Stock Inventory</h2>
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Physical asset tracking</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleAddCategory}>
+          <Button type="button" variant="outline" size="sm" onClick={handleAddCategory} className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl border-primary/20">
             <Plus className="h-4 w-4 mr-2" /> New Category
           </Button>
         </CardHeader>
@@ -562,8 +570,8 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       {/* Service List Section */}
       <Card className="border-primary/10 shadow-sm bg-transparent border-none shadow-none">
         <CardHeader className="px-0 border-b border-primary/10 pb-4 mb-6">
-          <CardTitle className="text-2xl font-bold text-primary">Service Items List</CardTitle>
-          <CardDescription className="text-xs font-black uppercase tracking-widest opacity-70">Client billing items</CardDescription>
+          <h2 className="text-2xl font-bold text-primary uppercase tracking-tight">Service Items List</h2>
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Client billing items</p>
         </CardHeader>
         <CardContent className="px-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

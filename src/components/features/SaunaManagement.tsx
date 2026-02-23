@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
 import { StaffSelector } from '@/components/shared/StaffSelector';
@@ -182,20 +183,20 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           {onBack && (
-            <Button variant="outline" size="sm" onClick={onBack}>
+            <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           )}
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-primary">Sauna Management</h2>
+            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Sauna Management</h1>
             <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Wellness Operations</p>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 items-end md:items-center">
           {(isOperationsManager() || isDirectorOrInvestor()) && (
-            <div className="w-64">
+            <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 
                 onChange={setFilterUserId} 
@@ -204,12 +205,12 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
             </div>
           )}
 
-          <Button onClick={() => setInventoryOpen(true)} size="sm" variant="outline">
+          <Button type="button" onClick={() => setInventoryOpen(true)} size="sm" variant="outline" className="h-10 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest border-primary/20">
             <Package className="h-4 w-4 mr-2" />
             Manage Inventory
           </Button>
 
-          <Button onClick={() => setIsAdding(true)} size="sm">
+          <Button type="button" onClick={() => setIsAdding(true)} size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">
             <Plus className="h-4 w-4 mr-2" />
             Add Booking
           </Button>
@@ -217,26 +218,32 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-         <div className="flex-1 relative group">
-          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+         <div className="relative group">
+          <Label htmlFor="search" className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 mb-2">Search Clients</Label>
+          <Search className="absolute left-4 top-11 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
           <Input 
+            id="search"
             placeholder="Search clients..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-12 h-11 bg-muted/30 border-none rounded-2xl font-bold"
+            className="pl-12 h-11 bg-muted/30 border-none rounded-2xl font-bold w-full"
           />
         </div>
-        <div className="flex items-center gap-2 bg-muted/20 p-1.5 rounded-2xl border border-primary/5">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <Calendar className="h-4 w-4 text-primary opacity-70" />
+        <div className="space-y-2">
+          <Label htmlFor="month" className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Filter Month</Label>
+          <div className="flex items-center gap-2 bg-muted/20 p-1.5 rounded-2xl border border-primary/5 h-11">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Calendar className="h-4 w-4 text-primary opacity-70" />
+            </div>
+            <input
+              id="month"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-transparent border-none font-bold h-8 text-sm focus:outline-none w-32"
+            />
           </div>
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-transparent border-none font-bold h-8 text-sm focus:outline-none w-32"
-          />
         </div>
       </div>
 

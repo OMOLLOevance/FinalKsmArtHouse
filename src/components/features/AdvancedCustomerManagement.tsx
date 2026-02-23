@@ -223,36 +223,39 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
           {onBack && (
-            <Button variant="outline" size="sm" onClick={onBack} className="flex items-center">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+            <Button type="button" variant="outline" size="icon" onClick={onBack} className="rounded-full h-10 w-10" aria-label="Back">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <span className="text-lg font-medium">Week of {currentYear}-{String(currentMonth + 1).padStart(2, '0')}</span>
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Advanced Customer Management</h1>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70">Week of {currentYear}-{String(currentMonth + 1).padStart(2, '0')}</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
           {(isOperationsManager() || isDirectorOrInvestor()) && (
-            <div className="w-64">
+            <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 
                 onChange={setFilterUserId} 
-                className="bg-background/50"
+                className="w-full bg-background/50 backdrop-blur-sm"
               />
             </div>
           )}
-          <div className="flex space-x-1">
+          <div className="flex space-x-1 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             {monthNames.map((month, index) => (
               <Button
                 key={month}
+                type="button"
                 variant={index === currentMonth ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setCurrentMonth(index)}
-                className="text-xs"
+                className="text-[10px] font-bold uppercase tracking-tight h-8 px-3 rounded-lg whitespace-nowrap"
               >
-                {month}
+                {month.substring(0, 3)}
               </Button>
             ))}
           </div>
@@ -272,26 +275,26 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
         filterUserId={filterUserId}
       />
 
-      <Card className="border-primary/10 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 mb-6">
+      <Card className="border-primary/10 shadow-sm rounded-2xl overflow-hidden glass-card">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 mb-6 p-6">
           <div>
-            <CardTitle className="text-xl font-bold text-primary flex items-center">
-              <Sparkles className="h-5 w-5 mr-2 text-primary/60" />
+            <CardTitle className="text-xl font-black uppercase tracking-tight text-primary flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary/60" />
               Decor & Lighting Items
             </CardTitle>
-            <p className="text-xs text-muted-foreground">{decorItems.length} customers configured</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">{decorItems.length} customers configured</p>
           </div>
-          <div className="flex space-x-2">
-            <Button onClick={() => { setActiveConfigTab('decor'); setIsConfigOpen(true); }} size="sm" variant="outline">
+          <div className="flex items-center gap-2 mt-4 sm:mt-0">
+            <Button type="button" onClick={() => { setActiveConfigTab('decor'); setIsConfigOpen(true); }} size="sm" variant="outline" className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl border-primary/20">
               <Package className="h-4 w-4 mr-2" /> Configure Decor
             </Button>
-            <Button onClick={() => { setActiveConfigTab('lighting'); setIsConfigOpen(true); }} size="sm" variant="outline">
+            <Button type="button" onClick={() => { setActiveConfigTab('lighting'); setIsConfigOpen(true); }} size="sm" variant="outline" className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl border-primary/20">
               <Lightbulb className="h-4 w-4 mr-2" /> Configure Lighting
             </Button>
           </div>
         </CardHeader>
         
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6 pt-0">
           {decorItems.map((item, index) => (
             <Card key={item.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300">
               <div className="bg-muted/30 px-4 py-2 border-b flex justify-between items-center">

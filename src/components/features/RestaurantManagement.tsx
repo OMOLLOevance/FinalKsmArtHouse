@@ -9,6 +9,7 @@ import { InventoryItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { formatCurrency } from '@/utils/formatters';
@@ -185,13 +186,13 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center space-x-2">
           {onBack && (
-            <Button variant="outline" size="sm" onClick={onBack} className="rounded-full">
+            <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           )}
           <div>
-            <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Daily Inventory</h2>
+            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Daily Inventory</h1>
             <p className="text-muted-foreground italic text-[10px] uppercase font-black tracking-[0.2em] opacity-70">Kitchen Asset & Resource Logs</p>
           </div>
         </div>
@@ -244,9 +245,10 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
             </div>
             <div className="flex gap-4">
               <Button 
+                type="button"
                 variant="outline" 
                 onClick={() => window.print()} 
-                className="h-14 px-10 font-black uppercase tracking-widest text-xs rounded-xl border-white/10 hover:bg-white hover:text-black transition-all shadow-2xl"
+                className="h-11 px-10 font-black uppercase tracking-widest text-xs rounded-xl border-white/10 hover:bg-white hover:text-black transition-all shadow-2xl"
               >
                 <Printer className="h-5 w-5 mr-3" /> Print Report
               </Button>
@@ -258,25 +260,31 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
       {/* Search and Quick Add */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
         <div className="relative group">
-          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Label htmlFor="search" className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 mb-2">Search Catalog</Label>
+          <Search className="absolute left-4 top-11 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
           <Input 
+            id="search"
             placeholder="Search items..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-12 h-12 bg-muted/30 border-none rounded-2xl font-bold"
+            className="pl-12 h-11 bg-muted/30 border-none rounded-2xl font-bold w-full"
           />
         </div>
-        <div className="flex gap-3">
-          <Input 
-            placeholder="Add new item name..." 
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
-            className="h-12 bg-muted/30 border-none rounded-2xl flex-1 font-bold pl-6"
-          />
-          <Button onClick={handleAddCustomItem} className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
-            <ListPlus className="h-4 w-4 mr-2" /> Add
-          </Button>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="newItem" className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Quick Add Item</Label>
+          <div className="flex gap-3">
+            <Input 
+              id="newItem"
+              placeholder="Add new item name..." 
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
+              className="h-11 bg-muted/30 border-none rounded-2xl flex-1 font-bold pl-6"
+            />
+            <Button type="button" onClick={handleAddCustomItem} className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
+              <ListPlus className="h-4 w-4 mr-2" /> Add
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -340,6 +348,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
                 <div className="pt-2">
                   <Button 
+                    type="button"
                     onClick={() => handleRecordItem(index)}
                     disabled={!hasData || isSubmitting}
                     variant={hasData ? "default" : "outline"}

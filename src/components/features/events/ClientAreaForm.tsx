@@ -28,76 +28,76 @@ const ClientAreaForm: React.FC<ClientAreaFormProps> = ({ onSubmit }) => {
   const { register, handleSubmit, control, formState: { errors } } = useForm<IClientForm>();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add New Client</CardTitle>
+    <Card className="rounded-2xl overflow-hidden border-primary/10 shadow-lg">
+      <CardHeader className="p-6">
+        <CardTitle className="text-xl font-black uppercase tracking-tight text-primary">Add New Client</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6 pt-0">
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input id="date" type="date" {...register('date', { required: true })} />
-            {errors.date && <p className="text-red-500 text-xs mt-1">Date is required.</p>}
+            <Label htmlFor="date" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Date</Label>
+            <Input id="date" type="date" {...register('date', { required: true })} className="h-11 rounded-xl bg-background/50 border-primary/10" />
+            {errors.date && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">Date is required.</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="accountManager">Account Manager</Label>
-            <Input id="accountManager" {...register('accountManager', { required: true })} />
-            {errors.accountManager && <p className="text-red-500 text-xs mt-1">Account Manager is required.</p>}
+            <Label htmlFor="accountManager" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Manager</Label>
+            <Input id="accountManager" placeholder="Enter manager name" {...register('accountManager', { required: true })} className="h-11 rounded-xl bg-background/50 border-primary/10" />
+            {errors.accountManager && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">Account Manager is required.</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="clientName">Client Name</Label>
-            <Input id="clientName" {...register('clientName', { required: true })} />
-            {errors.clientName && <p className="text-red-500 text-xs mt-1">Client Name is required.</p>}
+            <Label htmlFor="clientName" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Client Name</Label>
+            <Input id="clientName" placeholder="Enter client or organization" {...register('clientName', { required: true })} className="h-11 rounded-xl bg-background/50 border-primary/10" />
+            {errors.clientName && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">Client Name is required.</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input id="location" {...register('location', { required: true })} />
-            {errors.location && <p className="text-red-500 text-xs mt-1">Location is required.</p>}
+            <Label htmlFor="location" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Location</Label>
+            <Input id="location" placeholder="Event venue or address" {...register('location', { required: true })} className="h-11 rounded-xl bg-background/50 border-primary/10" />
+            {errors.location && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">Location is required.</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="numberOfParks">Number of Parks</Label>
-            <Input id="numberOfParks" type="number" {...register('numberOfParks', { required: true, valueAsNumber: true })} />
-            {errors.numberOfParks && <p className="text-red-500 text-xs mt-1">Number of Parks is required.</p>}
+            <Label htmlFor="numberOfParks" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Number of Parks</Label>
+            <Input id="numberOfParks" type="number" placeholder="0" {...register('numberOfParks', { required: true, valueAsNumber: true })} className="h-11 rounded-xl bg-background/50 border-primary/10" />
+            {errors.numberOfParks && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">Number of Parks is required.</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
-            <Input id="phoneNumber" type="tel" {...register('phoneNumber', { required: true })} />
-            {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">Phone Number is required.</p>}
+            <Label htmlFor="phoneNumber" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Phone Number</Label>
+            <Input id="phoneNumber" type="tel" placeholder="07XX XXX XXX" {...register('phoneNumber', { required: true })} className="h-11 rounded-xl bg-background/50 border-primary/10" />
+            {errors.phoneNumber && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">Phone Number is required.</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="typeOfEvents">Type of Events</Label>
-            <Input id="typeOfEvents" {...register('typeOfEvents', { required: true })} />
-            {errors.typeOfEvents && <p className="text-red-500 text-xs mt-1">Type of Events is required.</p>}
+            <Label htmlFor="typeOfEvents" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Type of Events</Label>
+            <Input id="typeOfEvents" placeholder="e.g. Wedding, Corporate" {...register('typeOfEvents', { required: true })} className="h-11 rounded-xl bg-background/50 border-primary/10" />
+            {errors.typeOfEvents && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">Type of Events is required.</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Status</Label>
             <Controller
               name="status"
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <SelectTrigger id="status">
+                  <SelectTrigger id="status" className="h-11 rounded-xl bg-background/50 border-primary/10">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="no-feedback">No Feedback</SelectItem>
-                    <SelectItem value="under-discussion">Under Discussion</SelectItem>
+                    <SelectItem value="confirmed">CONFIRMED</SelectItem>
+                    <SelectItem value="no-feedback">NO FEEDBACK</SelectItem>
+                    <SelectItem value="under-discussion">UNDER DISCUSSION</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
           </div>
 
-          <div className="md:col-span-2">
-            <Button type="submit" className="w-full">Save Client</Button>
+          <div className="md:col-span-2 pt-2">
+            <Button type="submit" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20">Save Client Profile</Button>
           </div>
         </form>
       </CardContent>
