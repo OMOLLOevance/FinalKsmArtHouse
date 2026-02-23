@@ -40,13 +40,18 @@ export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'g
   });
 };
 
-export const useAllPaymentsQuery = () => {
+export const useAllPaymentsQuery = (month?: string, year?: string) => {
   const { userId, isAuthenticated } = useAuth();
 
   return useQuery({
-    queryKey: ['payments', 'all'],
+    queryKey: ['payments', 'all', month, year],
     queryFn: async (): Promise<Payment[]> => {
-      const response = await apiClient.get<{ data: Payment[] }>('/api/payments');
+      const params = new URLSearchParams();
+      if (month) params.append('month', month);
+      if (year) params.append('year', year);
+      const url = `/api/payments${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      const response = await apiClient.get<{ data: Payment[] }>(url);
       return response.data;
     },
     enabled: !!userId && isAuthenticated,

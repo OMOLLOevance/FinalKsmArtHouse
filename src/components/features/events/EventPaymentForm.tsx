@@ -138,7 +138,7 @@ export const EventPaymentForm: React.FC = () => {
     } = {
       amount_paid: amountPaid,
       payment_method: paymentMethod,
-      payment_date: new Date().toISOString(),
+      payment_date: new Date().toISOString().split('T')[0],
       notes: notes,
       service_type: serviceType,
     };
