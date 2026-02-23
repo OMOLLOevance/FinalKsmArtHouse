@@ -759,51 +759,58 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
-          <h1 className="text-2xl font-black uppercase text-primary tracking-tight">Quotations</h1>
+          <div>
+            <h1 className="text-3xl font-black uppercase text-primary tracking-tight">Quotations</h1>
+            <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Price Proposals & Estimates</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Month Filter */}
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-            className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Months</option>
-            <option value="1">January</option>
-            <option value="2">February</option>
-            <option value="3">March</option>
-            <option value="4">April</option>
-            <option value="5">May</option>
-            <option value="6">June</option>
-            <option value="7">July</option>
-            <option value="8">August</option>
-            <option value="9">September</option>
-            <option value="10">October</option>
-            <option value="11">November</option>
-            <option value="12">December</option>
-          </select>
-          
-          {/* Year Filter */}
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {[selectedYear - 1, selectedYear, selectedYear + 1].map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-xl border border-primary/10 h-10">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 pl-2"
+            >
+              <option value="all">All Months</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+            
+            {/* Year Filter */}
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4"
+            >
+              {[selectedYear - 1, selectedYear, selectedYear + 1].map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
           
           {(isOperationsManager() || isDirectorOrInvestor()) && (
             <div className="w-64">
               <StaffSelector 
                 value={filterUserId} 
                 onChange={setFilterUserId} 
-                className="bg-background/50"
+                className="bg-background/50 backdrop-blur-sm"
               />
             </div>
           )}
-          <Button onClick={() => setShowForm(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[10px] h-9"><Plus className="h-4 w-4 mr-2" /> New Quotation</Button>
+          <Button type="button" onClick={() => setShowForm(true)} className="h-10 px-6 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 rounded-xl">
+            <Plus className="h-4 w-4 mr-2" /> New Quotation
+          </Button>
         </div>
       </div>
 

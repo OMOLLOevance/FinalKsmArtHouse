@@ -231,22 +231,25 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={onBack}>
+          <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight text-primary">Decor Management</h2>
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Decor Management</h1>
+            <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Aesthetics & Setups</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-center gap-3">
           {(isOperationsManager() || isDirectorOrInvestor()) && (
-            <div className="w-64">
+            <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 
                 onChange={setFilterUserId} 
-                className="bg-background/50"
+                className="bg-background/50 backdrop-blur-sm"
               />
             </div>
           )}
-          <Button onClick={() => { setIsNewCategory(false); setShowAddDialog(true); }} size="sm">
+          <Button type="button" onClick={() => { setIsNewCategory(false); setShowAddDialog(true); }} size="sm" className="h-10 px-6 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 rounded-xl">
             <Plus className="h-4 w-4 mr-2" /> Add Item
           </Button>
         </div>
