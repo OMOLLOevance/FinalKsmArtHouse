@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, Dumbbell, Utensils, Waves, Calendar, 
   Users, LogOut, Menu, X, ChevronDown, ChevronRight, 
-  Building2, Sparkles 
+  Building2, Sparkles, Lock, User 
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -35,6 +35,16 @@ const navItems = [
     children: [
       { id: 'customers', label: 'Customer Database', icon: Users, href: '/customers', roles: ['director', 'investor', 'operations_manager', 'admin'] },
     ]
+  },
+  {
+    id: 'admin',
+    label: 'System Administration',
+    icon: Lock,
+    isSection: true,
+    roles: ['admin', 'director', 'investor', 'operations_manager'],
+    children: [
+      { id: 'users', label: 'User Management', icon: Users, href: '/admin/users', roles: ['admin', 'director', 'investor', 'operations_manager'] },
+    ]
   }
 ];
 
@@ -47,6 +57,7 @@ const Sidebar = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     business: true,
     management: true,
+    admin: true,
   });
 
   // Filter items based on role - MUST be before any early returns
@@ -183,13 +194,22 @@ const Sidebar = () => {
                   <Badge variant="outline" className="text-[8px] uppercase font-bold py-0 px-1.5 border-primary/30 text-primary">{user.role}</Badge>
                 </div>
               </div>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold text-[10px] uppercase tracking-widest h-10"
-                onClick={logout}
-              >
-                <LogOut className="w-4 h-4 mr-2" /> Sign Out
-              </Button>
+              <div className="grid grid-cols-1 gap-1">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start font-semibold text-[10px] uppercase tracking-widest h-10 ${pathname === '/profile' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'}`}
+                  onClick={() => handleNavigation('/profile')}
+                >
+                  <User className="w-4 h-4 mr-2" /> My Profile
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold text-[10px] uppercase tracking-widest h-10"
+                  onClick={logout}
+                >
+                  <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="h-20 bg-muted animate-pulse rounded-2xl" />

@@ -10,11 +10,14 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   userId: string | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  signup: (userData: Omit<User, 'id' | 'createdAt'>, password: string) => Promise<{ success: boolean; message: string }>;
+  login: (_email: string, _password: string) => Promise<{ success: boolean; message?: string }>;
+  signup: (_userData: Omit<User, 'id' | 'createdAt'>, _password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (_email: string) => Promise<{ success: boolean; message: string }>;
   isLoading: boolean;
+  forcePasswordChange: boolean;
+  setForcePasswordChange: (value: boolean) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,28 +25,51 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Removed: const router = useRouter();
-  // Removed: const pathname = usePathname();
+  const [forcePasswordChange, setForcePasswordChange] = useState(false);
+
+  const fetchProfile = async (userId: string): Promise<{ must_change_password: boolean; role: string } | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('must_change_password, role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      return null;
+    }
+  };
 
   const checkAuthStatus = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        
         const userData: User = {
           id: session.user.id,
           email: session.user.email || '',
           firstName: session.user.user_metadata?.first_name || '',
           lastName: session.user.user_metadata?.last_name || '',
-          role: session.user.user_metadata?.role || 'staff',
-          createdAt: session.user.created_at || new Date().toISOString()
+          role: profile?.role as any || session.user.user_metadata?.role || 'staff',
+          createdAt: session.user.created_at || new Date().toISOString(),
+          mustChangePassword: profile?.must_change_password || false
         };
 
         setUser(userData);
+        if (profile?.must_change_password) {
+          setForcePasswordChange(true);
+        }
       } else {
         setUser(null);
       }
     } catch (error: any) {
-      const errorMessage = error?.message || 'Auth check failed';
       console.error('Auth check error:', error);
       setUser(null);
     } finally {
@@ -52,38 +78,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Set loading to true initially
     setIsLoading(true);
-    checkAuthStatus(); // Initial check
+    checkAuthStatus();
 
-    // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        // When signed in, update user data
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        
         const userData: User = {
           id: session.user.id,
           email: session.user.email || '',
           firstName: session.user.user_metadata?.first_name || '',
           lastName: session.user.user_metadata?.last_name || '',
-          role: session.user.user_metadata?.role || 'staff',
-          createdAt: session.user.created_at || new Date().toISOString()
+          role: profile?.role as any || session.user.user_metadata?.role || 'staff',
+          createdAt: session.user.created_at || new Date().toISOString(),
+          mustChangePassword: profile?.must_change_password || false
         };
         setUser(userData);
-        setIsLoading(false);      } else if (event === 'SIGNED_OUT' || !session) {
-        // When signed out or no session, clear user
-        setUser(null);
+        if (profile?.must_change_password) {
+          setForcePasswordChange(true);
+        }
         setIsLoading(false);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // On token refresh, maintain user data
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: session.user.user_metadata?.first_name || '',
-          lastName: session.user.user_metadata?.last_name || '',
-          role: session.user.user_metadata?.role || 'staff',
-          createdAt: session.user.created_at || new Date().toISOString()
-        };
-        setUser(userData);
+      } else if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setForcePasswordChange(false);
+        setIsLoading(false);
       }
     });
 
@@ -92,19 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [checkAuthStatus]);
 
-  // Removed: Redirect logic useEffect
-  // useEffect(() => {
-  //   if (!isLoading) {
-  //     if (!user && pathname !== '/login') {
-  //       router.push('/login');
-  //     } else if (user && pathname === '/login') {
-  //       router.push('/');
-  //     }
-  //   }
-  // }, [isLoading, user, pathname, router]);
 
-
-  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
@@ -117,16 +125,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (data.session?.user) {
+        const profile = await fetchProfile(data.session.user.id);
+        
         const userData: User = {
           id: data.session.user.id,
           email: data.session.user.email || '',
           firstName: data.session.user.user_metadata?.first_name || '',
           lastName: data.session.user.user_metadata?.last_name || '',
-          role: data.session.user.user_metadata?.role || 'staff',
-          createdAt: data.session.user.created_at || new Date().toISOString()
+          role: profile?.role as any || data.session.user.user_metadata?.role || 'staff',
+          createdAt: data.session.user.created_at || new Date().toISOString(),
+          mustChangePassword: profile?.must_change_password || false
         };
 
         setUser(userData);
+        if (profile?.must_change_password) {
+          setForcePasswordChange(true);
+        }
         return { success: true };
       }
       
@@ -135,9 +149,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Login error:', error);
       return { success: false, message: error?.message || 'Login failed' };
     }
-  };
+  }, []);
 
-  const signup = async (userData: Omit<User, 'id' | 'createdAt'>, password: string): Promise<{ success: boolean; message: string }> => {
+  const signup = useCallback(async (userData: Omit<User, 'id' | 'createdAt'>, password: string): Promise<{ success: boolean; message: string }> => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
@@ -146,7 +160,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
-            role: userData.role || 'staff'
+            role: userData.role || 'staff',
+            must_change_password: userData.mustChangePassword || false
           }
         }
       });
@@ -165,21 +180,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Signup error:', error);
       return { success: false, message: error?.message || 'Signup failed' };
     }
-  };
+  }, []);
 
-  const logout = async (): Promise<void> => {
+  const logout = useCallback(async (): Promise<void> => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
-      // Removed: router.push('/login'); // Redirect to login after logout
+      setForcePasswordChange(false);
     } catch (error: any) {
-      const errorMessage = error?.message || 'Logout failed';
       console.error('Logout error:', error);
     }
-  };
+  }, []);
 
-  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+  const resetPassword = useCallback(async (email: string): Promise<{ success: boolean; message: string }> => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
@@ -195,7 +209,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Reset password error:', error);
       return { success: false, message: error?.message || 'Failed to send reset link.' };
     }
-  };
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    await checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const isAuthenticated = !!user;
   const userId = user?.id || null;
@@ -208,8 +226,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signup,
     logout,
     resetPassword,
-    isLoading
-  }), [user, isAuthenticated, userId, isLoading]);
+    isLoading,
+    forcePasswordChange,
+    setForcePasswordChange,
+    refreshUser
+  }), [user, isAuthenticated, userId, isLoading, forcePasswordChange, login, signup, logout, resetPassword, refreshUser]);
 
   return (
     <AuthContext.Provider value={value}>

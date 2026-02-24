@@ -6,6 +6,7 @@ export interface User {
   role: 'staff' | 'operations_manager' | 'director' | 'investor' | 'admin';
   createdAt: string;
   lastLogin?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface AuthState {

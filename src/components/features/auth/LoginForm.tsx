@@ -6,13 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/Select';
 import SuccessDialog from '@/components/ui/SuccessDialog';
 import { toast } from 'sonner';
 
@@ -80,6 +73,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
           setShowSuccessDialog(true);
         } else {
           let errorText = result.message || 'Access Denied: The email or password provided is incorrect.';
+          
+          if (errorText.toLowerCase().includes('email not confirmed')) {
+            errorText = 'Security Protocol: Your email address has not been verified yet. Please check your inbox for the confirmation link.';
+          } else if (errorText.toLowerCase().includes('invalid login credentials')) {
+            errorText = 'Access Denied: The credentials provided do not match our secure records.';
+          }
+          
           setMessage({ type: 'error', text: errorText });
           toast.error(errorText);
         }
@@ -147,28 +147,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
                     <label htmlFor="lastName" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest ml-1">Last Name</label>
                     <Input id="lastName" placeholder="Last name" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required />
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="role" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest ml-1">Professional Role</label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(val) => setFormData({ ...formData, role: val })}
-                    disabled={mode === 'signup'}
-                  >
-                    <SelectTrigger id="role" className="w-full h-11 rounded-xl bg-muted/20 border-primary/5 font-semibold uppercase tracking-widest text-xs">
-                      <SelectValue placeholder="Select Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="staff">STAFF MEMBER</SelectItem>
-                      <SelectItem value="admin">ADMINISTRATOR</SelectItem>
-                      <SelectItem value="investor">INVESTOR</SelectItem>
-                      <SelectItem value="director">DIRECTOR</SelectItem>
-                      <SelectItem value="operations_manager">OPERATIONS MANAGER</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {mode === 'signup' && (
-                    <p className="text-[10px] text-muted-foreground ml-1 italic">* Roles are assigned by administrators after verification.</p>
-                  )}
                 </div>
               </>
             )}

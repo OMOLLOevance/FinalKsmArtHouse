@@ -12,6 +12,7 @@ import {
   Flame
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Separator } from '@/components/ui/separator';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
@@ -76,13 +77,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-import { useAuth } from '@/contexts/AuthContext'; // Add this import
-
-// ... other imports
+import { useAuth } from '@/contexts/AuthContext';
+import { useAdminStats } from '@/hooks/useAdminStats';
+import { ShieldCheck, ShieldAlert, Key } from 'lucide-react';
 
 const InvestorDashboard: React.FC = () => {
   const [isMounted, setIsMounted] = React.useState(false);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  const isAdmin = ['admin', 'director', 'investor', 'operations_manager'].includes(user?.role || '');
+  const { data: adminStats } = useAdminStats();
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -323,6 +327,66 @@ const InvestorDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {isAdmin && adminStats && (
+        <div className="space-y-6 mt-12 pt-12 border-t border-primary/5">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-6 h-6 text-primary" />
+            <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">Security Intelligence</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <MetricCard 
+              title="Security Compliance"
+              value={`${Math.round(((adminStats.totalUsers - adminStats.pendingReset) / adminStats.totalUsers) * 100)}%`}
+              change="Stable"
+              trend="up"
+              icon={<ShieldCheck className="w-5 h-5" />}
+              description="Users with verified custom passphrases"
+            />
+            <MetricCard 
+              title="System Access"
+              value={adminStats.totalUsers.toString()}
+              change="Authorized"
+              trend="up"
+              icon={<Users className="w-5 h-5" />}
+              description="Total professional identities in system"
+            />
+            <MetricCard 
+              title="Security Flags"
+              value={adminStats.pendingReset.toString()}
+              change={adminStats.pendingReset > 0 ? "Pending" : "Zero"}
+              trend={adminStats.pendingReset > 0 ? "down" : "up"}
+              icon={<ShieldAlert className="w-5 h-5" />}
+              description="Accounts requiring mandatory security update"
+            />
+          </div>
+
+          <Card className="p-6 glass-card border-none bg-amber-500/5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-500/10 rounded-2xl">
+                  <Key className="w-6 h-6 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg tracking-tight">Personnel Clearance Registry</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                    {adminStats.pendingReset} identities require credential re-validation
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="font-black uppercase tracking-widest text-[9px] border-amber-500/20 hover:bg-amber-500/10 text-amber-600"
+                onClick={() => window.location.href = '/admin/users'}
+              >
+                Manage Identities
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

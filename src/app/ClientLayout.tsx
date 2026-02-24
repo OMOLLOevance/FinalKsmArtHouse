@@ -7,6 +7,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { useRealtimeInvalidation } from '@/hooks/use-realtime-invalidation';
+import ForceChangePasswordDialog from '@/components/features/auth/ForceChangePasswordDialog';
 
 const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useRealtimeInvalidation();
@@ -22,6 +23,7 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             </div>
           </main>
         </div>
+        <ForceChangePasswordDialog />
         <Toaster />
         <SonnerToaster richColors closeButton position="top-right" />
       </AuthGuard>
