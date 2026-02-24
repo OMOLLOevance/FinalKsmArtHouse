@@ -18,10 +18,11 @@ interface QuotationCardProps {
   onMarkAsSent: (quotation: Quotation) => void;
   onEdit: (quotation: Quotation) => void;
   onDelete: (quotation: Quotation) => void;
+  filterUserId?: string | null;
 }
 
-const QuotationCard: React.FC<QuotationCardProps> = ({ quotation, onView, onApprove, onMarkAsSent, onEdit, onDelete }) => {
-  const { data: payments, isLoading: paymentsLoading } = usePaymentsQuery(quotation.id, 'quotation');
+const QuotationCard: React.FC<QuotationCardProps> = ({ quotation, onView, onApprove, onMarkAsSent, onEdit, onDelete, filterUserId }) => {
+  const { data: payments, isLoading: paymentsLoading } = usePaymentsQuery(quotation.id, 'quotation', filterUserId);
 
   const totalPaid = React.useMemo(() => {
     if (!payments) return 0;
@@ -42,11 +43,11 @@ const QuotationCard: React.FC<QuotationCardProps> = ({ quotation, onView, onAppr
   const getPaymentStatusIcon = () => {
     switch (paymentStatus) {
       case 'Fully Paid':
-        return <CheckCircle className="text-green-500" />;
+        return <CheckCircle className="text-green-500 h-4 w-4" />;
       case 'Partially Paid':
-        return <RefreshCw className="text-yellow-500" />;
+        return <RefreshCw className="text-yellow-500 h-4 w-4" />;
       default:
-        return <XCircle className="text-red-500" />;
+        return <XCircle className="text-red-500 h-4 w-4" />;
     }
   };
 

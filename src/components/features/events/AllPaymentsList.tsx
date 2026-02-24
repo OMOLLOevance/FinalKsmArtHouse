@@ -98,11 +98,13 @@ const PaymentRow: React.FC<{
 
 
 export const AllPaymentsList: React.FC = () => {
+  const { isManager } = useRoleGuard();
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(5, 7)); // MM
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString()); // YYYY
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
-  const { data: payments, isLoading: paymentsLoading, isError: paymentsError } = useAllPaymentsQuery(selectedMonth, selectedYear);
+  const { data: payments, isLoading: paymentsLoading, isError: paymentsError } = useAllPaymentsQuery(selectedMonth, selectedYear, filterUserId);
   const { data: quotations, isLoading: quotationsLoading, isError: quotationsError } = useQuotationsQuery();
   const { data: gymMembers, isLoading: gymMembersLoading, isError: gymMembersError } = useGymMembersQuery('');
   const { data: saunaBookings, isLoading: saunaBookingsLoading, isError: saunaBookingsError } = useSaunaBookingsQuery();
@@ -115,6 +117,11 @@ export const AllPaymentsList: React.FC = () => {
     if (!payments) return {};
     const totals: Record<string, number> = {};
     
+    // We need ALL payments for these references to calculate cumulative paid correctly
+    // However, the current hook only fetches for the selected month/year.
+    // To be truly accurate, the status should ideally come from the parent entity (quotation/member/booking)
+    // or we fetch all payments for the active references.
+    // For now, we'll use what we have, but we'll group them.
     payments.forEach(p => {
       const refId = p.quotation_id || p.gym_member_id || p.sauna_booking_id;
       if (refId) {
@@ -150,6 +157,15 @@ export const AllPaymentsList: React.FC = () => {
             <CardDescription className="text-sm text-muted-foreground">Complete history of all remittances received</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {isManager() && (
+              <div className="w-64">
+                <StaffSelector 
+                  value={filterUserId} 
+                  onChange={setFilterUserId} 
+                  className="bg-background/50 backdrop-blur-sm"
+                />
+              </div>
+            )}
             <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-xl border border-primary/10 h-10">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Calendar className="h-4 w-4 text-primary" />

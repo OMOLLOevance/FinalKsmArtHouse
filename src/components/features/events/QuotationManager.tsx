@@ -814,6 +814,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             onMarkAsSent={(quotation) => handleUpdateStatus(quotation.id, 'sent')}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            filterUserId={filterUserId}
           />
         ))}
         

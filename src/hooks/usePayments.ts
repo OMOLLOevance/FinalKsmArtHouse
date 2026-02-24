@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 
 export interface Payment {
   id: string;
@@ -18,21 +19,31 @@ export interface Payment {
   notes?: string;
 }
 
-export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'gym' | 'sauna') => {
+export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'gym' | 'sauna', filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
+  const { isManager } = useRoleGuard();
 
   return useQuery({
-    queryKey: ['payments', itemId, serviceType],
+    queryKey: ['payments', itemId, serviceType, filterUserId],
     queryFn: async (): Promise<Payment[]> => {
-      let url = '/api/payments';
+      const params = new URLSearchParams();
+      
       if (itemId && serviceType) {
         const paramMap = {
           quotation: 'quotationId',
           gym: 'gymMemberId',
           sauna: 'saunaBookingId'
         };
-        url += `?${paramMap[serviceType]}=${itemId}`;
+        params.append(paramMap[serviceType], itemId);
       }
+
+      if (filterUserId) {
+        params.append('filterUserId', filterUserId);
+      } else if (isManager()) {
+        params.append('discovery', 'true');
+      }
+
+      const url = `/api/payments?${params.toString()}`;
       const response = await apiClient.get<{ data: Payment[] }>(url);
       return response.data;
     },
@@ -40,17 +51,24 @@ export const usePaymentsQuery = (itemId?: string, serviceType?: 'quotation' | 'g
   });
 };
 
-export const useAllPaymentsQuery = (month?: string, year?: string) => {
+export const useAllPaymentsQuery = (month?: string, year?: string, filterUserId?: string | null) => {
   const { userId, isAuthenticated } = useAuth();
+  const { isManager } = useRoleGuard();
 
   return useQuery({
-    queryKey: ['payments', 'all', month, year],
+    queryKey: ['payments', 'all', month, year, filterUserId],
     queryFn: async (): Promise<Payment[]> => {
       const params = new URLSearchParams();
       if (month) params.append('month', month);
       if (year) params.append('year', year);
-      const url = `/api/payments${params.toString() ? `?${params.toString()}` : ''}`;
       
+      if (filterUserId) {
+        params.append('filterUserId', filterUserId);
+      } else if (isManager()) {
+        params.append('discovery', 'true');
+      }
+
+      const url = `/api/payments${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await apiClient.get<{ data: Payment[] }>(url);
       return response.data;
     },
@@ -74,23 +92,28 @@ export const useCreatePaymentMutation = ({ onSuccess: customOnSuccess }: { onSuc
     },
     onError: (error: any) => {
       let errorMessage = 'Failed to record payment.';
-      if (error.response?.data?.error) {
-        const { formErrors, fieldErrors } = error.response.data.error;
+      
+      const errorData = error.response?.data?.error;
+      
+      if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      } else if (errorData?.fieldErrors) {
+        // Handle Zod flattened error if necessary
         const messages: string[] = [];
-        if (formErrors.length > 0) {
-          messages.push(...formErrors);
-        }
-        for (const key in fieldErrors) {
-          if (fieldErrors[key]) {
-            messages.push(`${key}: ${fieldErrors[key].join(', ')}`);
+        for (const key in errorData.fieldErrors) {
+          if (errorData.fieldErrors[key]) {
+            messages.push(`${key}: ${errorData.fieldErrors[key].join(', ')}`);
           }
         }
         if (messages.length > 0) {
-          errorMessage = `Validation failed: ${messages.join('; ')}`;
+          errorMessage = messages.join('; ');
         }
       } else if (error.message) {
-        errorMessage = `Failed to record payment: ${error.message}`;
+        errorMessage = error.message;
       }
+      
       toast.error(errorMessage);
     },
   });
