@@ -152,6 +152,11 @@
     padding-right: env(safe-area-inset-right);
   }
 
+  /* Fix for unreadable native select/input text in dark mode */
+  input, select, textarea, option {
+    @apply bg-background text-foreground;
+  }
+
   /* GPU-Accelerated luxury background */
   .animated-bg {
     @apply bg-background relative overflow-hidden;

@@ -92,30 +92,30 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ onBack }) => {
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-muted/20 p-1.5 rounded-2xl border border-primary/5">
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-              className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 pl-2 cursor-pointer hover:text-primary transition-colors"
             >
               <option value="all">All Months</option>
               {monthNames.map((name, index) => (
-                <option key={index} value={index}>{name}</option>
+                <option key={index} value={index} className="bg-background text-foreground uppercase font-bold text-[10px]">{name}</option>
               ))}
             </select>
             
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="h-9 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 cursor-pointer hover:text-primary transition-colors"
             >
               {years.map(year => (
-                <option key={year} value={year}>{year}</option>
+                <option key={year} value={year} className="bg-background text-foreground uppercase font-bold text-[10px]">{year}</option>
               ))}
             </select>
           </div>
 
-          <Button onClick={() => setIsAdding(true)}>
+          <Button onClick={() => setIsAdding(true)} className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>

@@ -150,35 +150,35 @@ export const AllPaymentsList: React.FC = () => {
             <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Complete history of all remittances received</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 bg-background/50 p-1 rounded-xl border border-primary/10">
+            <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-xl border border-primary/10 h-10">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Calendar className="h-4 w-4 text-primary" />
               </div>
               <select 
                 value={selectedMonth} 
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-transparent border-none text-xs font-black uppercase focus:outline-none pr-4"
+                className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 pl-2 cursor-pointer hover:text-primary transition-colors"
               >
-                <option value="01">January</option>
-                <option value="02">February</option>
-                <option value="03">March</option>
-                <option value="04">April</option>
-                <option value="05">May</option>
-                <option value="06">June</option>
-                <option value="07">July</option>
-                <option value="08">August</option>
-                <option value="09">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
+                <option value="01" className="bg-background text-foreground uppercase font-bold text-[10px]">January</option>
+                <option value="02" className="bg-background text-foreground uppercase font-bold text-[10px]">February</option>
+                <option value="03" className="bg-background text-foreground uppercase font-bold text-[10px]">March</option>
+                <option value="04" className="bg-background text-foreground uppercase font-bold text-[10px]">April</option>
+                <option value="05" className="bg-background text-foreground uppercase font-bold text-[10px]">May</option>
+                <option value="06" className="bg-background text-foreground uppercase font-bold text-[10px]">June</option>
+                <option value="07" className="bg-background text-foreground uppercase font-bold text-[10px]">July</option>
+                <option value="08" className="bg-background text-foreground uppercase font-bold text-[10px]">August</option>
+                <option value="09" className="bg-background text-foreground uppercase font-bold text-[10px]">September</option>
+                <option value="10" className="bg-background text-foreground uppercase font-bold text-[10px]">October</option>
+                <option value="11" className="bg-background text-foreground uppercase font-bold text-[10px]">November</option>
+                <option value="12" className="bg-background text-foreground uppercase font-bold text-[10px]">December</option>
               </select>
               <select 
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-transparent border-none text-xs font-black uppercase focus:outline-none pr-4"
+                className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 cursor-pointer hover:text-primary transition-colors"
               >
                 {[2024, 2025, 2026, 2027].map(y => (
-                  <option key={y} value={y.toString()}>{y}</option>
+                  <option key={y} value={y.toString()} className="bg-background text-foreground uppercase font-bold text-[10px]">{y}</option>
                 ))}
               </select>
             </div>

@@ -241,7 +241,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-transparent border-none font-bold h-8 text-sm focus:outline-none w-32"
+              className="bg-transparent border-none font-bold h-8 text-[10px] font-black uppercase focus:outline-none w-32 cursor-pointer hover:text-primary transition-colors"
             />
           </div>
         </div>

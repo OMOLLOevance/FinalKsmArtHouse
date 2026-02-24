@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/Dialog';
 import { LoadingSpinner, SkeletonCard } from '@/components/ui/LoadingSpinner';
@@ -472,32 +473,40 @@ Thank you for being part of our fitness community!`
 
       <div className="mb-4 sm:mb-6 flex flex-col md:flex-row gap-4 items-start md:items-end">
         <div className="flex-1 w-full md:w-auto">
-          <label className="block text-xs sm:text-sm font-medium text-muted-foreground mb-2">
+          <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 mb-2">
             Select Month
           </label>
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm w-full h-11"
-          />
+          <div className="flex items-center gap-2 bg-muted/20 p-1.5 rounded-2xl border border-primary/5 h-11">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Calendar className="h-4 w-4 text-primary opacity-70" />
+            </div>
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-transparent border-none font-bold h-8 text-[10px] font-black uppercase focus:outline-none w-32 cursor-pointer hover:text-primary transition-colors"
+            />
+          </div>
         </div>
         
         <div className="flex-1 w-full md:w-auto relative group">
-          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <Input 
-            placeholder={activeTab === 'finances' ? "Search transactions..." : "Search members..."}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-12 h-11 bg-muted/30 border-none rounded-xl font-bold w-full"
-          />
+          <Search className="absolute left-4 top-11 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
+          <div className="space-y-2">
+            <Label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Search</Label>
+            <Input 
+              placeholder={activeTab === 'finances' ? "Search transactions..." : "Search members..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 h-11 bg-muted/30 border-none rounded-2xl font-bold w-full"
+            />
+          </div>
         </div>
 
         <Button
           onClick={() => setShowQuickExpense(!showQuickExpense)}
           variant="destructive"
           size="sm"
-          className="flex items-center h-11 px-6 font-bold w-full md:w-auto"
+          className="flex items-center h-11 px-6 font-black uppercase tracking-widest text-[10px] w-full md:w-auto rounded-2xl shadow-lg shadow-destructive/20"
         >
           <DollarSign className="h-4 w-4 mr-2" />
           Quick Expense
