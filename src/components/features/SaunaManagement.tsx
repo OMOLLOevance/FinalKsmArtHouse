@@ -346,7 +346,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                 {sessionInventory.map(item => (
                   <li key={item} className="flex justify-between items-center">
                     <span>{item}</span>
-                    <Button variant="ghost" size="xs" onClick={() => handleRemoveInventoryItem(item)}>
+                    <Button variant="ghost" size="xs" onClick={() => handleRemoveInventoryItem(item)} aria-label="Remove Item">
                       <X className="h-4 w-4" />
                     </Button>
                   </li>
@@ -459,7 +459,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
                         {item.status}
                       </Badge>
                       {canDeleteTransaction() && (
-                        <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                        <Button variant="ghost" size="xs" onClick={() => handleDelete(item.id)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" aria-label="Delete Booking">
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       )}

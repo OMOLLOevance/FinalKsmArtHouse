@@ -152,9 +152,26 @@
     padding-right: env(safe-area-inset-right);
   }
 
+  h1 {
+    @apply scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl;
+  }
+
+  h2 {
+    @apply scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0;
+  }
+
+  h3 {
+    @apply scroll-m-20 text-2xl font-semibold tracking-tight;
+  }
+
   /* Fix for unreadable native select/input text in dark mode */
   input, select, textarea, option {
     @apply bg-background text-foreground;
+  }
+
+  /* Improved Focus Outline */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
   }
 
   /* GPU-Accelerated luxury background */

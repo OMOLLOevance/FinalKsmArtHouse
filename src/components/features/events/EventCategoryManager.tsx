@@ -199,7 +199,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
     <div className="space-y-6 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
+          <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4" aria-label="Back">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <div>

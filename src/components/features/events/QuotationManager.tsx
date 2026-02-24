@@ -448,7 +448,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
       <div className="space-y-6">
         <div className="flex items-center justify-between print:hidden">
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={onBack}>
+            <Button variant="outline" size="sm" onClick={onBack} aria-label="Back">
               <ArrowLeft className="h-4 w-4 mr-2" /> Back
             </Button>
             <h2 className="text-2xl font-bold">{editingQuotation ? 'Edit Quotation' : 'New Quotation'}</h2>
@@ -835,7 +835,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
                 <DialogTitle className="text-xl font-black uppercase text-primary tracking-tight">Proposal Preview</DialogTitle>
                 <DialogDescription className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-50">Review client document before final export</DialogDescription>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setShowViewDialog(false)} className="rounded-full">
+              <Button variant="ghost" size="icon" onClick={() => setShowViewDialog(false)} className="rounded-full" aria-label="Close Preview">
                 <X className="h-5 w-5" />
               </Button>
             </div>

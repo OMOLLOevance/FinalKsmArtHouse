@@ -304,7 +304,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
                     <Utensils className={`h-4 w-4 transition-colors ${hasData ? 'text-primary' : 'text-muted-foreground opacity-40'}`} />
                     <h4 className={`text-sm font-black truncate uppercase tracking-tight text-foreground`}>{item.item_name}</h4>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => removeItemFromList(index)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10">
+                  <Button variant="ghost" size="icon" onClick={() => removeItemFromList(index)} className="h-6 w-6 text-destructive/40 hover:text-destructive hover:bg-destructive/10" aria-label="Remove Item">
                     <X className="h-3 w-3" />
                   </Button>
                 </div>

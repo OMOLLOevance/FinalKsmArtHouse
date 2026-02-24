@@ -52,12 +52,7 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
   const [deletingClient, setDeletingClient] = useState<IClientForm | null>(null);
 
   const handleSubmit = async (data: IClientForm) => {
-    const existingClient = clients.find(client => client.clientName === data.clientName);
-    if (existingClient) {
-      toast.error('Client with this name already exists.');
-      return;
-    }
-
+    // Removed duplicate check to allow repeated client names as requested
     createMutation.mutate(data, {
       onSuccess: () => {
         reset();
@@ -123,41 +118,43 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
           <CardTitle className="text-xl font-black uppercase tracking-tight text-primary">Client History</CardTitle>
         </CardHeader>
         <CardContent className="p-6 pt-0">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Client Name</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Date</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Account Manager</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12">Status</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map((client) => (
-                <TableRow key={client.id} className="hover:bg-primary/[0.02] transition-colors group">
-                  <TableCell className="font-black text-sm uppercase px-4 py-4 truncate max-w-[200px]" title={client.clientName}>{client.clientName}</TableCell>
-                  <TableCell className="font-bold text-xs px-4 py-4">{client.date}</TableCell>
-                  <TableCell className="font-bold text-xs px-4 py-4">{client.accountManager}</TableCell>
-                  <TableCell className={cn("px-4 py-4", getStatusColorClass(client.status))}>
-                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-none bg-muted/50">
-                      {client.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-4 py-4 text-right">
-                    <div className="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button type="button" variant="ghost" size="icon" onClick={() => handleEdit(client)} className="h-8 w-8 hover:text-primary" aria-label="Edit status">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button type="button" variant="destructive" size="icon" onClick={() => handleDelete(client)} className="h-8 w-8" aria-label="Delete client">
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12 whitespace-nowrap">Client Name</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12 whitespace-nowrap">Date</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12 whitespace-nowrap">Account Manager</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12 whitespace-nowrap">Status</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-4 h-12 text-right whitespace-nowrap">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {clients.map((client) => (
+                  <TableRow key={client.id} className="hover:bg-primary/[0.02] transition-colors group">
+                    <TableCell className="font-black text-sm uppercase px-4 py-4 truncate max-w-[200px]" title={client.clientName}>{client.clientName}</TableCell>
+                    <TableCell className="font-bold text-xs px-4 py-4 whitespace-nowrap">{client.date}</TableCell>
+                    <TableCell className="font-bold text-xs px-4 py-4 whitespace-nowrap">{client.accountManager}</TableCell>
+                    <TableCell className={cn("px-4 py-4 whitespace-nowrap", getStatusColorClass(client.status))}>
+                      <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-none bg-muted/50">
+                        {client.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-4 text-right whitespace-nowrap">
+                      <div className="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button type="button" variant="ghost" size="icon" onClick={() => handleEdit(client)} className="h-8 w-8 hover:text-primary" aria-label="Edit status">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button type="button" variant="destructive" size="icon" onClick={() => handleDelete(client)} className="h-8 w-8" aria-label="Delete client">
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
       

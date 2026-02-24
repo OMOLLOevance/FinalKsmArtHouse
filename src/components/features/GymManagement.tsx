@@ -341,11 +341,11 @@ Thank you for being part of our fitness community!`
                 <h4 className="text-sm font-bold truncate max-w-[150px]">{finance.description}</h4>
               </div>
               <div className="flex space-x-1">
-                <Button variant="ghost" size="xs" onClick={() => handleEditFinance(finance)} className="h-7 w-7 p-0 hover:bg-primary/10">
+                <Button variant="ghost" size="xs" onClick={() => handleEditFinance(finance)} className="h-7 w-7 p-0 hover:bg-primary/10" aria-label="Edit Finance">
                   <Edit className="h-3.5 w-3.5 text-primary/70" />
                 </Button>
                 {canDeleteTransaction() && (
-                  <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                  <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: finance.id, type: 'finance' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" aria-label="Delete Finance">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
@@ -383,14 +383,14 @@ Thank you for being part of our fitness community!`
                   </Badge>
                 </div>
                 <div className="flex items-center space-x-1 shrink-0 ml-2">
-                  <Button variant="ghost" size="xs" onClick={() => handleEditMember(member)} className="h-7 w-7 p-0 hover:bg-primary/10">
+                  <Button variant="ghost" size="xs" onClick={() => handleEditMember(member)} className="h-7 w-7 p-0 hover:bg-primary/10" aria-label="Edit Member">
                     <Edit className="h-3.5 w-3.5 text-primary/70" />
                   </Button>
-                  <Button variant="ghost" size="xs" onClick={() => sendWhatsAppNotification(member, 7)} className="h-7 w-7 p-0 text-green-600 hover:bg-green-50">
+                  <Button variant="ghost" size="xs" onClick={() => sendWhatsAppNotification(member, 7)} className="h-7 w-7 p-0 text-green-600 hover:bg-green-50" aria-label="Send Reminder">
                     <MessageCircle className="h-3.5 w-3.5" />
                   </Button>
                   {canDeleteTransaction() && (
-                    <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: member.id, type: 'member' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                    <Button variant="ghost" size="xs" onClick={() => setDeleteDialog({ isOpen: true, id: member.id, type: 'member' })} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" aria-label="Delete Member">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   )}

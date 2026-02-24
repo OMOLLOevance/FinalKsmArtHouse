@@ -547,16 +547,15 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                           </TableCell>
                           <TableCell className="text-right sticky right-0 bg-card z-20 border-b">
                             <div className="flex justify-end gap-1 px-1">
-                              <Button variant="ghost" size="icon" onClick={() => setViewingRecord(record)} className="h-6 w-6 hover:text-primary rounded-lg">
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(record)} className="h-6 w-6 hover:text-amber-600 rounded-lg">
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => setIsDeletingId(record.id)} className="h-6 w-6 hover:text-destructive rounded-lg">
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
+                                                          <Button variant="ghost" size="icon" onClick={() => setViewingRecord(record)} className="h-6 w-6 hover:text-primary rounded-lg" aria-label="View Details">
+                                                            <Eye className="h-3 w-3" />
+                                                          </Button>
+                                                          <Button variant="ghost" size="icon" onClick={() => handleEdit(record)} className="h-6 w-6 hover:text-amber-600 rounded-lg" aria-label="Edit Record">
+                                                            <Edit2 className="h-3 w-3" />
+                                                          </Button>
+                                                          <Button variant="ghost" size="icon" onClick={() => setIsDeletingId(record.id)} className="h-6 w-6 hover:text-destructive rounded-lg" aria-label="Delete Record">
+                                                            <Trash2 className="h-3 w-3" />
+                                                          </Button>                            </div>
                           </TableCell>
                         </TableRow>
                       ))

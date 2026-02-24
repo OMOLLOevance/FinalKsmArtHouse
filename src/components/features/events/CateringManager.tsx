@@ -312,7 +312,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
                         <Button size="sm" onClick={() => handleSaveItem(item, true)} className="h-9 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg bg-green-600 hover:bg-green-700 text-white transition-all hover:scale-105">
                           <CheckCircle className="h-3.5 w-3.5 mr-2" /> Approve
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/10" onClick={() => setPendingItems(prev => prev.filter(p => p.id !== item.id))}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/10" onClick={() => setPendingItems(prev => prev.filter(p => p.id !== item.id))} aria-label="Remove Pending Item">
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
@@ -355,7 +355,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
                               <Save className="h-3.5 w-3.5 mr-2" /> Commit
                             </Button>
                           )}
-                          <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteInventory.mutate(item.id)}>
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteInventory.mutate(item.id)} aria-label="Delete Item">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -387,7 +387,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           {onBack && (
-            <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4">
+            <Button type="button" variant="outline" size="sm" onClick={onBack} className="rounded-full h-10 px-4" aria-label="Back">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
