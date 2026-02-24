@@ -205,6 +205,15 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* Professional spacing for different viewports */
+  .section-padding {
+    @apply py-6 md:py-10 lg:py-12;
+  }
+  
+  .stack-layout {
+    @apply flex flex-col gap-4 md:gap-6 lg:gap-8;
+  }
 }
 
 @layer components {

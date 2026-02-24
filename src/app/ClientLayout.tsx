@@ -14,15 +14,13 @@ const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return (
     <ToastProvider>
       <AuthGuard>
-        <div className="flex h-screen bg-background">
+        <div className="flex h-screen bg-background overflow-hidden">
           <Sidebar />
-          <div className="flex-1 overflow-hidden print:overflow-visible">
-            <div className="h-full overflow-y-auto bg-background print:bg-white">
-              <div className="p-4 sm:p-6 pt-16 md:pt-6 print:p-0 print:pt-0">
-                {children}
-              </div>
+          <main className="flex-1 overflow-y-auto bg-background print:bg-white custom-scrollbar">
+            <div className="responsive-container py-20 md:py-8 lg:py-10 print:p-0">
+              {children}
             </div>
-          </div>
+          </main>
         </div>
         <Toaster />
         <SonnerToaster richColors closeButton position="top-right" />

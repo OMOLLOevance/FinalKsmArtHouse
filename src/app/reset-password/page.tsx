@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background animated-bg relative overflow-hidden px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background animated-bg relative overflow-y-auto overflow-x-hidden px-4 py-12">
       <div className="mb-8 text-center animate-in fade-in zoom-in duration-700">
         <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/20 mb-4">
           <Sparkles className="w-10 h-10 text-white" />
