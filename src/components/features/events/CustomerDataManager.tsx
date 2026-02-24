@@ -442,7 +442,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
 
       {/* List Card - Landscape Wide Table Layout */}
       <Card className="border-primary/5 shadow-xl glass-card overflow-hidden">
-        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
+        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-primary/5">
           <div>
             <CardTitle className="text-xl font-black uppercase tracking-tight">Saved Specifications</CardTitle>
             <CardDescription className="text-xs uppercase font-bold tracking-widest opacity-60">History of captured customer event data</CardDescription>
@@ -485,71 +485,85 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <div className="min-w-[1200px]"> {/* Wide format indicator */}
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-0 bg-background z-10 w-[100px]">Date</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-[100px] bg-background z-10 w-[200px]">Client Name</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest w-[150px]">Location</TableHead>
-                    
-                    {/* Render dynamic columns for items */}
-                    {dynamicItemKeys.map(key => (
-                      <TableHead key={key} className="text-[9px] font-bold uppercase text-center w-[100px]">{getItemLabel(key)}</TableHead>
-                    ))}
-                    
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-center sticky right-[100px] bg-background z-10 w-[100px]">Total</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-right sticky right-0 bg-background z-10 w-[100px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRecords.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={dynamicItemKeys.length + 5} className="h-64 text-center">
-                        <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
-                          <ClipboardList className="h-12 w-12" />
-                          <p className="text-[10px] font-black uppercase tracking-widest">No records found</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredRecords.map((record) => (
-                      <TableRow key={record.id} className="hover:bg-primary/[0.02] transition-colors">
-                        <TableCell className="font-bold text-xs sticky left-0 bg-background z-10">{record.event_date}</TableCell>
-                        <TableCell className="font-black text-sm uppercase sticky left-[100px] bg-background z-10">{record.name}</TableCell>
-                        <TableCell className="font-bold text-xs">{record.location}</TableCell>
-                        
-                        {/* Dynamic columns data */}
-                        {dynamicItemKeys.map(key => (
-                          <TableCell key={key} className="text-center font-bold text-xs">
-                            {record.requirements?.[key] || <span className="opacity-20">-</span>}
-                          </TableCell>
-                        ))}
+          <div className="relative group/table">
+            {/* Scroll Indicator - only visible if content overflows */}
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-20 pointer-events-none opacity-0 group-hover/table:opacity-100 transition-opacity flex items-center justify-end pr-1">
+              <div className="bg-primary/20 p-1 rounded-full animate-bounce-horizontal">
+                <Search className="h-3 w-3 text-primary rotate-90" />
+              </div>
+            </div>
 
-                        <TableCell className="text-center sticky right-[100px] bg-background z-10">
-                          <span className="px-2 py-1 rounded-full bg-primary/10 text-primary font-black text-[9px]">
-                            {getTotalItems(record)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right sticky right-0 bg-background z-10">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => setViewingRecord(record)} className="h-7 w-7 hover:text-primary">
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(record)} className="h-7 w-7 hover:text-amber-600">
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setIsDeletingId(record.id)} className="h-7 w-7 hover:text-destructive">
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+            <div className="overflow-x-auto custom-scrollbar">
+              <div className="min-w-max">
+                <Table className="border-separate border-spacing-0">
+                  <TableHeader className="bg-muted/50 sticky top-0 z-30">
+                    <TableRow>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-0 bg-card z-40 w-[100px] border-r border-b">Date</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-[100px] bg-card z-40 w-[180px] border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Client Name</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest min-w-[120px] border-b">Location</TableHead>
+                      
+                      {/* Render dynamic columns for items */}
+                      {dynamicItemKeys.map(key => (
+                        <TableHead key={key} className="text-[9px] font-bold uppercase text-center min-w-[80px] border-b whitespace-nowrap px-4">{getItemLabel(key)}</TableHead>
+                      ))}
+                      
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-center sticky right-[80px] bg-card z-40 w-[80px] border-l border-b shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-right sticky right-0 bg-card z-40 w-[80px] border-b">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRecords.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={dynamicItemKeys.length + 5} className="h-64 text-center">
+                          <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                            <ClipboardList className="h-12 w-12" />
+                            <p className="text-[10px] font-black uppercase tracking-widest">No records found</p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredRecords.map((record) => (
+                        <TableRow key={record.id} className="hover:bg-primary/[0.02] transition-colors group">
+                          <TableCell className="font-bold text-[10px] sticky left-0 bg-card z-20 border-r border-b">{record.event_date}</TableCell>
+                          <TableCell className="font-black text-xs uppercase sticky left-[100px] bg-card z-20 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate max-w-[180px]">{record.name}</TableCell>
+                          <TableCell className="font-bold text-[10px] border-b truncate max-w-[120px] px-4">{record.location}</TableCell>
+                          
+                          {/* Dynamic columns data */}
+                          {dynamicItemKeys.map(key => (
+                            <TableCell key={key} className="text-center font-bold text-[11px] border-b px-4">
+                              {record.requirements?.[key] || <span className="opacity-10">-</span>}
+                            </TableCell>
+                          ))}
+
+                          <TableCell className="text-center sticky right-[80px] bg-card z-20 border-l border-b shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-black text-[9px]">
+                              {getTotalItems(record)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right sticky right-0 bg-card z-20 border-b">
+                            <div className="flex justify-end gap-1 px-1">
+                              <Button variant="ghost" size="icon" onClick={() => setViewingRecord(record)} className="h-6 w-6 hover:text-primary rounded-lg">
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(record)} className="h-6 w-6 hover:text-amber-600 rounded-lg">
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => setIsDeletingId(record.id)} className="h-6 w-6 hover:text-destructive rounded-lg">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+            {/* Legend for clarity on mobile */}
+            <div className="p-3 bg-muted/10 border-t flex flex-wrap gap-4 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-primary/40"></div> Horizontal scroll for specs</div>
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-400/40"></div> Edit records at start</div>
             </div>
           </div>
         </CardContent>
