@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useMemo } from 'react';
 import { 
   ArrowLeft, 
@@ -13,8 +11,7 @@ import {
   ClipboardList,
   Calendar,
   MapPin,
-  User,
-  MoreVertical
+  User
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -43,34 +40,11 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/Dialog';
-import { useDataPersistence } from '@/hooks/useDataPersistence';
+import { useCustomerDataSync } from '@/hooks/useCustomerDataSync';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-
-interface CustomerDataRecord {
-  id: string;
-  createdAt: string;
-  date: string;
-  location: string;
-  customLocation?: string;
-  clientName: string;
-  // Numeric quantities
-  doubleTent: number;
-  singleTent: number;
-  gazeboTent: number;
-  frameTent: number;
-  bLineTent: number;
-  pergulaTent: number;
-  roundTable: number;
-  longTent: number;
-  chavaraiSeat: number;
-  luxeSeat: number;
-  metallicSeat: number;
-  glassCharger: number;
-  plasticSeat: number;
-  banquetSeat: number;
-  crBackSeat: number;
-}
+import { PageLoader } from '@/components/ui/LoadingSpinner';
 
 interface CustomerDataManagerProps {
   onBack: () => void;
@@ -86,7 +60,7 @@ const LOCATIONS = [
   "Wajir", "West Pokot", "Other"
 ];
 
-const INITIAL_FORM_STATE: Omit<CustomerDataRecord, 'id' | 'createdAt'> = {
+const INITIAL_FORM_STATE = {
   date: '',
   location: 'Kisumu',
   customLocation: '',
@@ -96,7 +70,7 @@ const INITIAL_FORM_STATE: Omit<CustomerDataRecord, 'id' | 'createdAt'> = {
   gazeboTent: 0,
   frameTent: 0,
   bLineTent: 0,
-  pergulaTent: 0,
+  pergolaTent: 0,
   roundTable: 0,
   longTent: 0,
   chavaraiSeat: 0,
@@ -109,24 +83,36 @@ const INITIAL_FORM_STATE: Omit<CustomerDataRecord, 'id' | 'createdAt'> = {
 };
 
 const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => {
-  const [records, setRecords] = useDataPersistence<CustomerDataRecord[]>('customer-data-records', []);
+  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const isManager = isOperationsManager() || isDirectorOrInvestor();
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  
+  const { 
+    records, 
+    isLoading, 
+    createRecord, 
+    updateRecord, 
+    deleteRecord,
+    isSaving 
+  } = useCustomerDataSync(selectedMonth, selectedYear);
+
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewingRecord, setViewingRecord] = useState<CustomerDataRecord | null>(null);
+  const [viewingRecord, setViewingRecord] = useState<any | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   const recentClients = useMemo(() => {
-    const clients = Array.from(new Set(records.map(r => r.clientName)));
+    const clients = Array.from(new Set(records.map(r => r.name)));
     return clients.slice(0, 10);
   }, [records]);
 
   const filteredRecords = useMemo(() => {
     return records.filter(record => 
-      record.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (record.customLocation && record.customLocation.toLowerCase().includes(searchQuery.toLowerCase()))
-    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      record.location.toLowerCase().includes(searchQuery.toLowerCase())
+    ).sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
   }, [records, searchQuery]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,21 +132,11 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
     setEditingId(null);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.date || !formData.location || !formData.clientName) {
       toast.error('Please fill in all required fields');
-      return;
-    }
-
-    // Check for duplicate client name (case-insensitive)
-    const isDuplicate = records.some(r => 
-      r.clientName.toLowerCase() === formData.clientName.toLowerCase() && r.id !== editingId
-    );
-
-    if (isDuplicate) {
-      toast.error('Client name already exists. Please use a unique name or edit the existing record.');
       return;
     }
 
@@ -169,49 +145,84 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       return;
     }
 
-    if (editingId) {
-      setRecords(records.map(r => r.id === editingId ? {
-        ...r,
-        ...formData,
-      } : r));
-      toast.success('Record updated successfully');
-    } else {
-      const newRecord: CustomerDataRecord = {
-        ...formData,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-      };
-      setRecords([...records, newRecord]);
-      toast.success('Customer data saved successfully');
+    const requirements = {
+      doubleTent: formData.doubleTent,
+      singleTent: formData.singleTent,
+      gazeboTent: formData.gazeboTent,
+      frameTent: formData.frameTent,
+      bLineTent: formData.bLineTent,
+      pergolaTent: formData.pergolaTent,
+      roundTable: formData.roundTable,
+      longTent: formData.longTent,
+      chavaraiSeat: formData.chavaraiSeat,
+      luxeSeat: formData.luxeSeat,
+      metallicSeat: formData.metallicSeat,
+      glassCharger: formData.glassCharger,
+      plasticSeat: formData.plasticSeat,
+      banquetSeat: formData.banquetSeat,
+      crBackSeat: formData.crBackSeat,
+    };
+
+    const recordData = {
+      name: formData.clientName,
+      event_date: formData.date,
+      location: formData.location === 'Other' ? formData.customLocation! : formData.location,
+      requirements
+    };
+
+    try {
+      if (editingId) {
+        await updateRecord({ id: editingId, ...recordData });
+      } else {
+        await createRecord(recordData);
+      }
+      resetForm();
+    } catch (err) {
+      // Error handled in hook
     }
-    
-    resetForm();
   };
 
-  const handleEdit = (record: CustomerDataRecord) => {
-    const { id, createdAt, ...rest } = record;
-    setFormData(rest);
-    setEditingId(id);
+  const handleEdit = (record: any) => {
+    setFormData({
+      date: record.event_date || '',
+      location: LOCATIONS.includes(record.location) ? record.location : 'Other',
+      customLocation: LOCATIONS.includes(record.location) ? '' : record.location,
+      clientName: record.name,
+      doubleTent: record.requirements?.doubleTent || 0,
+      singleTent: record.requirements?.singleTent || 0,
+      gazeboTent: record.requirements?.gazeboTent || 0,
+      frameTent: record.requirements?.frameTent || 0,
+      bLineTent: record.requirements?.bLineTent || 0,
+      pergolaTent: record.requirements?.pergolaTent || 0,
+      roundTable: record.requirements?.roundTable || 0,
+      longTent: record.requirements?.longTent || 0,
+      chavaraiSeat: record.requirements?.chavaraiSeat || 0,
+      luxeSeat: record.requirements?.luxeSeat || 0,
+      metallicSeat: record.requirements?.metallicSeat || 0,
+      glassCharger: record.requirements?.glassCharger || 0,
+      plasticSeat: record.requirements?.plasticSeat || 0,
+      banquetSeat: record.requirements?.banquetSeat || 0,
+      crBackSeat: record.requirements?.crBackSeat || 0,
+    });
+    setEditingId(record.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (isDeletingId) {
-      setRecords(records.filter(r => r.id !== isDeletingId));
+      await deleteRecord(isDeletingId);
       setIsDeletingId(null);
-      toast.success('Record deleted');
     }
   };
 
-  const getTotalItems = (record: CustomerDataRecord) => {
-    return (
-      record.doubleTent + record.singleTent + record.gazeboTent + 
-      record.frameTent + record.bLineTent + record.pergulaTent + 
-      record.roundTable + record.longTent + record.chavaraiSeat + 
-      record.luxeSeat + record.metallicSeat + record.glassCharger + 
-      record.plasticSeat + record.banquetSeat + record.crBackSeat
-    );
+  const getTotalItems = (record: any) => {
+    const req = record.requirements || {};
+    return Object.values(req).reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
   };
+
+  if (isLoading && records.length === 0) {
+    return <PageLoader text="Loading customer records..." />;
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
@@ -339,7 +350,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                   { id: 'gazeboTent', label: 'Gazebo Tent' },
                   { id: 'frameTent', label: 'Frame Tent' },
                   { id: 'bLineTent', label: 'B-Line Tent' },
-                  { id: 'pergulaTent', label: 'Pergola Tent' },
+                  { id: 'pergolaTent', label: 'Pergola Tent' },
                   { id: 'longTent', label: 'Long Tent' },
                   { id: 'roundTable', label: 'Round Table' },
                   { id: 'chavaraiSeat', label: 'Chavarai Seat' },
@@ -370,9 +381,9 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                 <X className="h-4 w-4 mr-2" />
                 Discard
               </Button>
-              <Button type="submit" className="w-full sm:w-auto h-12 px-12 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
+              <Button type="submit" disabled={isSaving} className="w-full sm:w-auto h-12 px-12 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
                 <Save className="h-4 w-4 mr-2" />
-                {editingId ? 'Update Record' : 'Save Customer Data'}
+                {isSaving ? 'Saving...' : (editingId ? 'Update Record' : 'Save Customer Data')}
               </Button>
             </div>
           </form>
@@ -386,14 +397,41 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
             <CardTitle className="text-xl font-black uppercase tracking-tight">Saved Specifications</CardTitle>
             <CardDescription className="text-xs uppercase font-bold tracking-widest opacity-60">History of captured customer event data</CardDescription>
           </div>
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search by client or venue..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 font-bold rounded-xl bg-background/50 border-primary/10"
-            />
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <div className="flex gap-2">
+              <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(val === 'all' ? 'all' : parseInt(val))}>
+                <SelectTrigger className="w-[120px] h-10 font-bold rounded-xl bg-background/50 border-primary/10">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Months</SelectItem>
+                  {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, i) => (
+                    <SelectItem key={m} value={i.toString()}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
+                <SelectTrigger className="w-[100px] h-10 font-bold rounded-xl bg-background/50 border-primary/10">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025, 2026].map(y => (
+                    <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search by client or venue..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 font-bold rounded-xl bg-background/50 border-primary/10"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -421,13 +459,11 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                 ) : (
                   filteredRecords.map((record) => (
                     <TableRow key={record.id} className="hover:bg-primary/[0.02] transition-colors">
-                      <TableCell className="font-bold text-xs">{record.date}</TableCell>
-                      <TableCell className="font-black text-sm uppercase">{record.clientName}</TableCell>
+                      <TableCell className="font-bold text-xs">{record.event_date}</TableCell>
+                      <TableCell className="font-black text-sm uppercase">{record.name}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-bold text-xs">
-                            {record.location === 'Other' ? record.customLocation : record.location}
-                          </span>
+                          <span className="font-bold text-xs">{record.location}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -463,7 +499,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
           <DialogHeader>
             <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Event Setup Details</DialogTitle>
             <DialogDescription className="text-xs uppercase font-bold tracking-widest text-primary">
-              Specifications for {viewingRecord?.clientName}
+              Specifications for {viewingRecord?.name}
             </DialogDescription>
           </DialogHeader>
           
@@ -472,13 +508,11 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
               <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-muted/30 border border-primary/5">
                 <div>
                   <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Date</p>
-                  <p className="font-bold">{viewingRecord.date}</p>
+                  <p className="font-bold">{viewingRecord.event_date}</p>
                 </div>
                 <div>
                   <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Location</p>
-                  <p className="font-bold">
-                    {viewingRecord.location === 'Other' ? viewingRecord.customLocation : viewingRecord.location}
-                  </p>
+                  <p className="font-bold">{viewingRecord.location}</p>
                 </div>
               </div>
 
@@ -491,7 +525,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                     { id: 'gazeboTent', label: 'Gazebo Tent' },
                     { id: 'frameTent', label: 'Frame Tent' },
                     { id: 'bLineTent', label: 'B-Line Tent' },
-                    { id: 'pergulaTent', label: 'Pergola Tent' },
+                    { id: 'pergolaTent', label: 'Pergola Tent' },
                     { id: 'longTent', label: 'Long Tent' },
                     { id: 'roundTable', label: 'Round Table' },
                     { id: 'chavaraiSeat', label: 'Chavarai Seat' },
@@ -502,8 +536,8 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                     { id: 'banquetSeat', label: 'Banquet Seat' },
                     { id: 'crBackSeat', label: 'CR Back Seat' },
                   ].map((item) => {
-                    const value = viewingRecord[item.id as keyof CustomerDataRecord];
-                    if (typeof value !== 'number' || value === 0) return null;
+                    const value = viewingRecord.requirements?.[item.id];
+                    if (!value || value === 0) return null;
                     return (
                       <div key={item.id} className="flex flex-col">
                         <span className="text-[9px] font-bold text-muted-foreground uppercase">{item.label}</span>
