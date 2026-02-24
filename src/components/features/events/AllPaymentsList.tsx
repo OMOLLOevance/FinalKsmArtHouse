@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Loader, AlertCircle, CheckCircle, RefreshCw, XCircle, Calendar, Search } from 'lucide-react';
 import { GymMember, SaunaBooking } from '@/types';
 import { Input } from '@/components/ui/Input';
+import { useRoleGuard } from '@/hooks/useRoleGuard';
+import { StaffSelector } from '@/components/shared/StaffSelector';
 
 const PaymentRow: React.FC<{
   payment: Payment;
