@@ -9,13 +9,12 @@ import { supabase } from '@/lib/supabase';
 
 export const useCustomersQuery = (month?: number | 'all', year?: number) => {
   const { userId, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
+  const { isManager } = useRoleGuard();
   
   return useQuery({
     queryKey: ['customers-combined', userId, month, year],
     queryFn: async () => {
       try {
-        const { isManager } = useRoleGuard();
         const isManagement = isManager();
         
         const params = new URLSearchParams();
