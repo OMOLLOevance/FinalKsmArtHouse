@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 
 const RESTRICTED_ROUTES: Record<string, string[]> = {
-  '/customers': ['admin', 'director', 'manager'],
+  '/customers': ['director', 'investor', 'operations_manager'],
 };
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {

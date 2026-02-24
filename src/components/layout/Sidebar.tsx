@@ -18,12 +18,12 @@ const navItems = [
     label: 'Operations',
     icon: Building2,
     isSection: true,
-    roles: ['admin', 'director', 'manager', 'staff'],
+    roles: ['director', 'investor', 'operations_manager', 'staff'],
     children: [
-      { id: 'events', label: 'Event Management', icon: Calendar, href: '/events', roles: ['admin', 'director', 'manager', 'staff'] },
-      { id: 'gym', label: 'Gym Management', icon: Dumbbell, href: '/gym', roles: ['admin', 'director', 'manager', 'staff'] },
-      { id: 'restaurant', label: 'Restaurant', icon: Utensils, href: '/restaurant', roles: ['admin', 'director', 'manager', 'staff'] },
-      { id: 'sauna', label: 'Sauna & Spa', icon: Waves, href: '/sauna', roles: ['admin', 'director', 'manager', 'staff'] },
+      { id: 'events', label: 'Event Management', icon: Calendar, href: '/events', roles: ['director', 'investor', 'operations_manager', 'staff'] },
+      { id: 'gym', label: 'Gym Management', icon: Dumbbell, href: '/gym', roles: ['director', 'investor', 'operations_manager', 'staff'] },
+      { id: 'restaurant', label: 'Restaurant', icon: Utensils, href: '/restaurant', roles: ['director', 'investor', 'operations_manager', 'staff'] },
+      { id: 'sauna', label: 'Sauna & Spa', icon: Waves, href: '/sauna', roles: ['director', 'investor', 'operations_manager', 'staff'] },
     ]
   },
   {
@@ -31,9 +31,9 @@ const navItems = [
     label: 'Client Relations',
     icon: Users,
     isSection: true,
-    roles: ['admin', 'director', 'manager'],
+    roles: ['director', 'investor', 'operations_manager'],
     children: [
-      { id: 'customers', label: 'Customer Database', icon: Users, href: '/customers', roles: ['admin', 'director', 'manager'] },
+      { id: 'customers', label: 'Customer Database', icon: Users, href: '/customers', roles: ['director', 'investor', 'operations_manager'] },
     ]
   }
 ];

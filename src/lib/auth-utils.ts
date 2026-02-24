@@ -32,14 +32,35 @@ export const createAdminClient = () => {
 // Shared user role helper
 export const getUserRole = async (userId: string, client: any): Promise<string> => {
   try {
-    const { data } = await client
+    // Prefer RPC for security and consistency
+    const { data, error: rpcError } = await client.rpc('get_user_role', { user_uuid: userId });
+    
+    if (!rpcError && data) {
+      return data;
+    }
+
+    // Fallback to selecting role from public.users
+    const { data: userData, error: tableError } = await client
       .from('users')
       .select('role')
       .eq('id', userId)
       .single();
-    return data?.role || 'staff';
+
+    if (userData?.role) {
+      return userData.role;
+    }
+
+    // Log warning if both fail instead of silent failure
+    console.warn('getUserRole: Failed to fetch role, falling back to staff', {
+      userId,
+      rpcError,
+      tableError
+    });
+    
+    return 'staff';
   } catch (error) {
-    return 'staff'; // Default fallback
+    console.warn('getUserRole: Unexpected error:', error);
+    return 'staff'; // Ultimate fallback
   }
 };
 

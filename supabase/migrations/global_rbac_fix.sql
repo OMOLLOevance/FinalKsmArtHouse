@@ -154,3 +154,22 @@ FOR ALL USING (
   auth.uid() = user_id OR 
   get_user_role(auth.uid()) IN ('operations_manager', 'director', 'investor')
 ) WITH CHECK (auth.uid() = user_id OR get_user_role(auth.uid()) IN ('operations_manager', 'director', 'investor'));
+
+---------------------------------------------------------
+-- USERS (Staff Profiles)
+---------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+DROP POLICY IF EXISTS "Managers can view all profiles" ON public.users;
+DROP POLICY IF EXISTS "RBAC read users" ON public.users;
+
+CREATE POLICY "RBAC read users" ON public.users
+FOR SELECT USING (
+  auth.uid() = id OR 
+  get_user_role(auth.uid()) IN ('operations_manager', 'director', 'investor')
+);
+
+-- Keep UPDATE restricted to own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+CREATE POLICY "Users can update own profile" ON public.users
+FOR UPDATE USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
