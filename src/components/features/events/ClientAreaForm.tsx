@@ -7,18 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-
-export interface IClientForm {
-  id?: number;
-  date: string;
-  accountManager: string;
-  clientName: string;
-  location: string;
-  numberOfParks: number;
-  phoneNumber: string;
-  typeOfEvents: string;
-  status?: 'confirmed' | 'no-feedback' | 'under-discussion';
-}
+import { IClientForm } from '@/hooks/useClientArea';
 
 interface ClientAreaFormProps {
   onSubmit: (data: IClientForm) => void;

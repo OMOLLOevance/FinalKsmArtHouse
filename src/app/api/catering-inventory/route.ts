@@ -115,7 +115,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Only directors and investors can delete
-    if (!['director', 'investor'].includes(userRole)) {
+    if (!['director', 'investor', 'admin'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete records' }, { status: 403 });
     }
 

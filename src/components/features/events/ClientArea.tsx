@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
-import ClientAreaForm, { IClientForm } from './ClientAreaForm';
+import ClientAreaForm from './ClientAreaForm';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ArrowLeft, Edit, Trash } from 'lucide-react';
@@ -15,19 +15,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from '@/lib/supabase';
+import { 
+  useClientsQuery, 
+  useCreateClientMutation, 
+  useUpdateClientMutation, 
+  useDeleteClientMutation,
+  IClientForm
+} from '@/hooks/useClientArea';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/Dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { cn } from '@/lib/utils';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 
 interface ClientAreaProps {
@@ -35,58 +42,27 @@ interface ClientAreaProps {
 }
 
 const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
-  const [clients, setClients] = useState<IClientForm[]>([]);
+  const { data: clients = [], isLoading } = useClientsQuery();
+  const createMutation = useCreateClientMutation();
+  const updateMutation = useUpdateClientMutation();
+  const deleteMutation = useDeleteClientMutation();
+  
   const { reset } = useForm<IClientForm>();
   const [editingClient, setEditingClient] = useState<IClientForm | null>(null);
   const [deletingClient, setDeletingClient] = useState<IClientForm | null>(null);
 
-  const fetchClients = async () => {
-    const { data, error } = await supabase.from('clients').select('*');
-    if (error) {
-      console.error('Error fetching clients:', error);
-    } else {
-      const formattedData = data.map(client => ({
-        ...client,
-        clientName: client.client_name,
-        accountManager: client.account_manager,
-        numberOfParks: client.number_of_parks,
-        phoneNumber: client.phone_number,
-        typeOfEvents: client.type_of_events,
-      }));
-      setClients(formattedData as IClientForm[]);
-    }
-  };
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
   const handleSubmit = async (data: IClientForm) => {
     const existingClient = clients.find(client => client.clientName === data.clientName);
     if (existingClient) {
-      alert('Client with this name already exists.');
+      toast.error('Client with this name already exists.');
       return;
     }
 
-    const { error } = await supabase.from('clients').insert([
-      {
-        date: data.date,
-        account_manager: data.accountManager,
-        client_name: data.clientName,
-        location: data.location,
-        number_of_parks: data.numberOfParks,
-        phone_number: data.phoneNumber,
-        type_of_events: data.typeOfEvents,
-        status: data.status,
-      },
-    ]);
-
-    if (error) {
-      console.error('Error inserting client:', error);
-    } else {
-      await fetchClients();
-      reset();
-    }
+    createMutation.mutate(data, {
+      onSuccess: () => {
+        reset();
+      }
+    });
   };
 
   const handleEdit = (client: IClientForm) => {
@@ -98,26 +74,18 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
   };
 
   const confirmDelete = async () => {
-    if (deletingClient) {
-      const { error } = await supabase.from('clients').delete().match({ id: deletingClient.id });
-      if (error) {
-        console.error('Error deleting client:', error);
-      } else {
-        await fetchClients();
-        setDeletingClient(null);
-      }
+    if (deletingClient?.id) {
+      deleteMutation.mutate(deletingClient.id, {
+        onSuccess: () => setDeletingClient(null)
+      });
     }
   };
   
   const confirmEdit = async () => {
-    if (editingClient) {
-      const { error } = await supabase.from('clients').update({ status: editingClient.status }).match({ id: editingClient.id });
-      if (error) {
-        console.error('Error updating client:', error);
-      } else {
-        await fetchClients();
-        setEditingClient(null);
-      }
+    if (editingClient?.id) {
+      updateMutation.mutate({ id: editingClient.id, status: editingClient.status }, {
+        onSuccess: () => setEditingClient(null)
+      });
     }
   };
 
@@ -133,6 +101,8 @@ const ClientArea: React.FC<ClientAreaProps> = ({ onBack }) => {
         return '';
     }
   };
+
+  if (isLoading) return <LoadingSpinner text="Synchronizing client data..." />;
 
   return (
     <div className="space-y-6">

@@ -280,7 +280,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Only directors and investors can delete
-    if (!['director', 'investor'].includes(userRole)) {
+    if (!['director', 'investor', 'admin'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete payments' }, { status: 403 });
     }
 
@@ -314,7 +314,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Only managers can update payments
-    if (!['director', 'investor', 'operations_manager'].includes(userRole)) {
+    if (!['director', 'investor', 'operations_manager', 'admin'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Manager clearance required for payment updates' }, { status: 403 });
     }
 

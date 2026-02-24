@@ -18,12 +18,12 @@ const navItems = [
     label: 'Operations',
     icon: Building2,
     isSection: true,
-    roles: ['director', 'investor', 'operations_manager', 'staff'],
+    roles: ['director', 'investor', 'operations_manager', 'admin', 'staff'],
     children: [
-      { id: 'events', label: 'Event Management', icon: Calendar, href: '/events', roles: ['director', 'investor', 'operations_manager', 'staff'] },
-      { id: 'gym', label: 'Gym Management', icon: Dumbbell, href: '/gym', roles: ['director', 'investor', 'operations_manager', 'staff'] },
-      { id: 'restaurant', label: 'Restaurant', icon: Utensils, href: '/restaurant', roles: ['director', 'investor', 'operations_manager', 'staff'] },
-      { id: 'sauna', label: 'Sauna & Spa', icon: Waves, href: '/sauna', roles: ['director', 'investor', 'operations_manager', 'staff'] },
+      { id: 'events', label: 'Event Management', icon: Calendar, href: '/events', roles: ['director', 'investor', 'operations_manager', 'admin', 'staff'] },
+      { id: 'gym', label: 'Gym Management', icon: Dumbbell, href: '/gym', roles: ['director', 'investor', 'operations_manager', 'admin', 'staff'] },
+      { id: 'restaurant', label: 'Restaurant', icon: Utensils, href: '/restaurant', roles: ['director', 'investor', 'operations_manager', 'admin', 'staff'] },
+      { id: 'sauna', label: 'Sauna & Spa', icon: Waves, href: '/sauna', roles: ['director', 'investor', 'operations_manager', 'admin', 'staff'] },
     ]
   },
   {
@@ -31,9 +31,9 @@ const navItems = [
     label: 'Client Relations',
     icon: Users,
     isSection: true,
-    roles: ['director', 'investor', 'operations_manager'],
+    roles: ['director', 'investor', 'operations_manager', 'admin'],
     children: [
-      { id: 'customers', label: 'Customer Database', icon: Users, href: '/customers', roles: ['director', 'investor', 'operations_manager'] },
+      { id: 'customers', label: 'Customer Database', icon: Users, href: '/customers', roles: ['director', 'investor', 'operations_manager', 'admin'] },
     ]
   }
 ];

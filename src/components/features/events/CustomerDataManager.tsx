@@ -60,26 +60,30 @@ const LOCATIONS = [
   "Wajir", "West Pokot", "Other"
 ];
 
+const DEFAULT_INVENTORY_ITEMS = [
+  { id: 'doubleTent', label: 'Double Tent' },
+  { id: 'singleTent', label: 'Single Tent' },
+  { id: 'gazeboTent', label: 'Gazebo Tent' },
+  { id: 'frameTent', label: 'Frame Tent' },
+  { id: 'bLineTent', label: 'B-Line Tent' },
+  { id: 'pergolaTent', label: 'Pergola Tent' },
+  { id: 'longTent', label: 'Long Tent' },
+  { id: 'roundTable', label: 'Round Table' },
+  { id: 'chavaraiSeat', label: 'Chavarai Seat' },
+  { id: 'luxeSeat', label: 'Luxe Seat' },
+  { id: 'metallicSeat', label: 'Metallic Seat' },
+  { id: 'glassCharger', label: 'Glass Charger' },
+  { id: 'plasticSeat', label: 'Plastic Seat' },
+  { id: 'banquetSeat', label: 'Banquet Seat' },
+  { id: 'crBackSeat', label: 'CR Back Seat' },
+];
+
 const INITIAL_FORM_STATE = {
   date: '',
   location: 'Kisumu',
   customLocation: '',
   clientName: '',
-  doubleTent: 0,
-  singleTent: 0,
-  gazeboTent: 0,
-  frameTent: 0,
-  bLineTent: 0,
-  pergolaTent: 0,
-  roundTable: 0,
-  longTent: 0,
-  chavaraiSeat: 0,
-  luxeSeat: 0,
-  metallicSeat: 0,
-  glassCharger: 0,
-  plasticSeat: 0,
-  banquetSeat: 0,
-  crBackSeat: 0,
+  requirements: {} as Record<string, number>,
 };
 
 const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => {
@@ -102,6 +106,19 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingRecord, setViewingRecord] = useState<any | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [newItemName, setNewItemName] = useState('');
+
+  // Extract all unique requirement keys from all records to handle dynamic columns
+  const dynamicItemKeys = useMemo(() => {
+    const keys = new Set<string>();
+    DEFAULT_INVENTORY_ITEMS.forEach(item => keys.add(item.id));
+    records.forEach(record => {
+      if (record.requirements) {
+        Object.keys(record.requirements).forEach(key => keys.add(key));
+      }
+    });
+    return Array.from(keys);
+  }, [records]);
 
   const recentClients = useMemo(() => {
     const clients = Array.from(new Set(records.map(r => r.name)));
@@ -117,10 +134,46 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
+    if (name.startsWith('req_')) {
+      const key = name.replace('req_', '');
+      setFormData(prev => ({
+        ...prev,
+        requirements: {
+          ...prev.requirements,
+          [key]: Math.max(0, parseInt(value) || 0)
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleAddCustomItem = () => {
+    if (!newItemName.trim()) {
+      toast.error('Item name cannot be empty');
+      return;
+    }
+    
+    // Convert label to camelCase ID
+    const id = newItemName.trim().replace(/\s+(.)/g, (match, group) => group.toUpperCase()).replace(/^(.)/, (match, group) => group.toLowerCase()).replace(/[^a-zA-Z0-9]/g, '');
+    
+    if (formData.requirements[id] !== undefined || DEFAULT_INVENTORY_ITEMS.some(i => i.id === id)) {
+      toast.error('Item already exists');
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? Math.max(0, parseInt(value) || 0) : value
+      requirements: {
+        ...prev.requirements,
+        [id]: 0
+      }
     }));
+    setNewItemName('');
+    toast.success(`Added ${newItemName} to the list`);
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -145,29 +198,11 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       return;
     }
 
-    const requirements = {
-      doubleTent: formData.doubleTent,
-      singleTent: formData.singleTent,
-      gazeboTent: formData.gazeboTent,
-      frameTent: formData.frameTent,
-      bLineTent: formData.bLineTent,
-      pergolaTent: formData.pergolaTent,
-      roundTable: formData.roundTable,
-      longTent: formData.longTent,
-      chavaraiSeat: formData.chavaraiSeat,
-      luxeSeat: formData.luxeSeat,
-      metallicSeat: formData.metallicSeat,
-      glassCharger: formData.glassCharger,
-      plasticSeat: formData.plasticSeat,
-      banquetSeat: formData.banquetSeat,
-      crBackSeat: formData.crBackSeat,
-    };
-
     const recordData = {
       name: formData.clientName,
       event_date: formData.date,
       location: formData.location === 'Other' ? formData.customLocation! : formData.location,
-      requirements
+      requirements: formData.requirements
     };
 
     try {
@@ -188,21 +223,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       location: LOCATIONS.includes(record.location) ? record.location : 'Other',
       customLocation: LOCATIONS.includes(record.location) ? '' : record.location,
       clientName: record.name,
-      doubleTent: record.requirements?.doubleTent || 0,
-      singleTent: record.requirements?.singleTent || 0,
-      gazeboTent: record.requirements?.gazeboTent || 0,
-      frameTent: record.requirements?.frameTent || 0,
-      bLineTent: record.requirements?.bLineTent || 0,
-      pergolaTent: record.requirements?.pergolaTent || 0,
-      roundTable: record.requirements?.roundTable || 0,
-      longTent: record.requirements?.longTent || 0,
-      chavaraiSeat: record.requirements?.chavaraiSeat || 0,
-      luxeSeat: record.requirements?.luxeSeat || 0,
-      metallicSeat: record.requirements?.metallicSeat || 0,
-      glassCharger: record.requirements?.glassCharger || 0,
-      plasticSeat: record.requirements?.plasticSeat || 0,
-      banquetSeat: record.requirements?.banquetSeat || 0,
-      crBackSeat: record.requirements?.crBackSeat || 0,
+      requirements: record.requirements || {}
     });
     setEditingId(record.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -223,6 +244,14 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
   if (isLoading && records.length === 0) {
     return <PageLoader text="Loading customer records..." />;
   }
+
+  // Get display label for an item key
+  const getItemLabel = (key: string) => {
+    const defaultItem = DEFAULT_INVENTORY_ITEMS.find(i => i.id === key);
+    if (defaultItem) return defaultItem.label;
+    // Format camelCase to Title Case
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
@@ -342,37 +371,58 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
 
             {/* Inventory Section */}
             <div className="space-y-4 pt-4 border-t border-primary/5">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Inventory Specifications</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Inventory Specifications</h2>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="New item name..."
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    className="h-8 text-[10px] w-40"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleAddCustomItem}
+                    className="h-8 text-[10px] font-black uppercase"
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Add Entry
+                  </Button>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {[
-                  { id: 'doubleTent', label: 'Double Tent' },
-                  { id: 'singleTent', label: 'Single Tent' },
-                  { id: 'gazeboTent', label: 'Gazebo Tent' },
-                  { id: 'frameTent', label: 'Frame Tent' },
-                  { id: 'bLineTent', label: 'B-Line Tent' },
-                  { id: 'pergolaTent', label: 'Pergola Tent' },
-                  { id: 'longTent', label: 'Long Tent' },
-                  { id: 'roundTable', label: 'Round Table' },
-                  { id: 'chavaraiSeat', label: 'Chavarai Seat' },
-                  { id: 'luxeSeat', label: 'Luxe Seat' },
-                  { id: 'metallicSeat', label: 'Metallic Seat' },
-                  { id: 'glassCharger', label: 'Glass Charger' },
-                  { id: 'plasticSeat', label: 'Plastic Seat' },
-                  { id: 'banquetSeat', label: 'Banquet Seat' },
-                  { id: 'crBackSeat', label: 'CR Back Seat' },
-                ].map((item) => (
+                {DEFAULT_INVENTORY_ITEMS.map((item) => (
                   <div key={item.id} className="space-y-1.5">
                     <Label htmlFor={item.id} className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{item.label}</Label>
                     <Input 
-                      id={item.id}
+                      id={`req_${item.id}`}
                       type="number" 
-                      name={item.id} 
-                      value={formData[item.id as keyof typeof formData]} 
+                      name={`req_${item.id}`} 
+                      value={formData.requirements[item.id] || 0} 
                       onChange={handleInputChange} 
                       className="h-10 font-bold rounded-xl bg-muted/20 border-transparent focus:bg-background focus:border-primary/20"
                     />
                   </div>
                 ))}
+                {/* Dynamic Items in current form */}
+                {Object.keys(formData.requirements)
+                  .filter(key => !DEFAULT_INVENTORY_ITEMS.some(i => i.id === key))
+                  .map(key => (
+                    <div key={key} className="space-y-1.5 animate-in zoom-in-95 duration-200">
+                      <Label htmlFor={key} className="text-[9px] font-bold text-primary uppercase ml-1">{getItemLabel(key)}</Label>
+                      <Input 
+                        id={`req_${key}`}
+                        type="number" 
+                        name={`req_${key}`} 
+                        value={formData.requirements[key] || 0} 
+                        onChange={handleInputChange} 
+                        className="h-10 font-bold rounded-xl bg-primary/5 border-primary/20 focus:bg-background focus:border-primary/30"
+                      />
+                    </div>
+                  ))
+                }
               </div>
             </div>
 
@@ -390,7 +440,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
         </CardContent>
       </Card>
 
-      {/* List Card */}
+      {/* List Card - Landscape Wide Table Layout */}
       <Card className="border-primary/5 shadow-xl glass-card overflow-hidden">
         <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
           <div>
@@ -436,59 +486,71 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Date</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Client Name</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Location</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Total Items</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRecords.length === 0 ? (
+            <div className="min-w-[1200px]"> {/* Wide format indicator */}
+              <Table>
+                <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableCell colSpan={5} className="h-64 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
-                        <ClipboardList className="h-12 w-12" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">No records found</p>
-                      </div>
-                    </TableCell>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-0 bg-background z-10 w-[100px]">Date</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-[100px] bg-background z-10 w-[200px]">Client Name</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest w-[150px]">Location</TableHead>
+                    
+                    {/* Render dynamic columns for items */}
+                    {dynamicItemKeys.map(key => (
+                      <TableHead key={key} className="text-[9px] font-bold uppercase text-center w-[100px]">{getItemLabel(key)}</TableHead>
+                    ))}
+                    
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-center sticky right-[100px] bg-background z-10 w-[100px]">Total</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-right sticky right-0 bg-background z-10 w-[100px]">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredRecords.map((record) => (
-                    <TableRow key={record.id} className="hover:bg-primary/[0.02] transition-colors">
-                      <TableCell className="font-bold text-xs">{record.event_date}</TableCell>
-                      <TableCell className="font-black text-sm uppercase">{record.name}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-xs">{record.location}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-black text-[10px]">
-                          {getTotalItems(record)} ITEMS
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => setViewingRecord(record)} className="h-8 w-8 hover:text-primary">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(record)} className="h-8 w-8 hover:text-amber-600">
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setIsDeletingId(record.id)} className="h-8 w-8 hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                </TableHeader>
+                <TableBody>
+                  {filteredRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={dynamicItemKeys.length + 5} className="h-64 text-center">
+                        <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                          <ClipboardList className="h-12 w-12" />
+                          <p className="text-[10px] font-black uppercase tracking-widest">No records found</p>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredRecords.map((record) => (
+                      <TableRow key={record.id} className="hover:bg-primary/[0.02] transition-colors">
+                        <TableCell className="font-bold text-xs sticky left-0 bg-background z-10">{record.event_date}</TableCell>
+                        <TableCell className="font-black text-sm uppercase sticky left-[100px] bg-background z-10">{record.name}</TableCell>
+                        <TableCell className="font-bold text-xs">{record.location}</TableCell>
+                        
+                        {/* Dynamic columns data */}
+                        {dynamicItemKeys.map(key => (
+                          <TableCell key={key} className="text-center font-bold text-xs">
+                            {record.requirements?.[key] || <span className="opacity-20">-</span>}
+                          </TableCell>
+                        ))}
+
+                        <TableCell className="text-center sticky right-[100px] bg-background z-10">
+                          <span className="px-2 py-1 rounded-full bg-primary/10 text-primary font-black text-[9px]">
+                            {getTotalItems(record)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right sticky right-0 bg-background z-10">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => setViewingRecord(record)} className="h-7 w-7 hover:text-primary">
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(record)} className="h-7 w-7 hover:text-amber-600">
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setIsDeletingId(record.id)} className="h-7 w-7 hover:text-destructive">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -66,7 +66,7 @@ export const getUserRole = async (userId: string, client: any): Promise<string> 
 
 // Check if user is manager
 export const isManager = (role: string): boolean => {
-  return ['director', 'investor', 'operations_manager'].includes(role);
+  return ['director', 'investor', 'operations_manager', 'admin'].includes(role);
 };
 
 // Get authenticated client with role escalation

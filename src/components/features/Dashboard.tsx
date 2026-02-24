@@ -52,7 +52,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
-  const isDirector = user?.role === 'director' || user?.role === 'investor';
+  const isDirector = user?.role === 'director' || user?.role === 'investor' || user?.role === 'admin';
   const isManager = user?.role === 'operations_manager' || isDirector;
 
   if (!isAuthenticated) {

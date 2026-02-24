@@ -53,6 +53,41 @@ export const useRealtimeInvalidation = () => {
           queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'decor_inventory' },
+        (payload) => {
+          logger.info('Realtime update: decor_inventory', payload);
+          queryClient.invalidateQueries({ queryKey: ['decor-inventory'] });
+          queryClient.invalidateQueries({ queryKey: ['decor-categories'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers' },
+        (payload) => {
+          logger.info('Realtime update: customers', payload);
+          queryClient.invalidateQueries({ queryKey: ['customer-data-records'] });
+          queryClient.invalidateQueries({ queryKey: ['customers'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quotations' },
+        (payload) => {
+          logger.info('Realtime update: quotations', payload);
+          queryClient.invalidateQueries({ queryKey: ['quotations'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'clients' },
+        (payload) => {
+          logger.info('Realtime update: clients', payload);
+          queryClient.invalidateQueries({ queryKey: ['clients'] });
+        }
+      )
       .subscribe();
 
     return () => {

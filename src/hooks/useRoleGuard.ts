@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useCallback, useMemo } from 'react';
 
-type UserRole = 'staff' | 'operations_manager' | 'director' | 'investor';
+type UserRole = 'staff' | 'operations_manager' | 'director' | 'investor' | 'admin';
 
 interface RolePermissions {
   canCreate: boolean;
@@ -32,6 +32,7 @@ export function useRoleGuard() {
         };
       case 'director':
       case 'investor':
+      case 'admin':
         return {
           canCreate: true,
           canReadAll: true,
@@ -51,8 +52,9 @@ export function useRoleGuard() {
   const canDeleteTransaction = useCallback(() => permissions.canDelete, [permissions]);
   const canViewAllTransactions = useCallback(() => permissions.canReadAll, [permissions]);
   const isStaff = useCallback(() => userRole === 'staff', [userRole]);
+  const isAdmin = useCallback(() => userRole === 'admin', [userRole]);
   const isOperationsManager = useCallback(() => userRole === 'operations_manager', [userRole]);
-  const isDirectorOrInvestor = useCallback(() => ['director', 'investor'].includes(userRole), [userRole]);
+  const isDirectorOrInvestor = useCallback(() => ['director', 'investor', 'admin'].includes(userRole), [userRole]);
 
   return useMemo(() => ({
     userRole,
@@ -60,7 +62,8 @@ export function useRoleGuard() {
     canDeleteTransaction,
     canViewAllTransactions,
     isStaff,
+    isAdmin,
     isOperationsManager,
     isDirectorOrInvestor,
-  }), [userRole, permissions, canDeleteTransaction, canViewAllTransactions, isStaff, isOperationsManager, isDirectorOrInvestor]);
+  }), [userRole, permissions, canDeleteTransaction, canViewAllTransactions, isStaff, isAdmin, isOperationsManager, isDirectorOrInvestor]);
 }

@@ -11,23 +11,7 @@ export interface CustomerDataRecord {
   event_date: string;
   location: string;
   name: string;
-  requirements: {
-    doubleTent: number;
-    singleTent: number;
-    gazeboTent: number;
-    frameTent: number;
-    bLineTent: number;
-    pergolaTent: number;
-    roundTable: number;
-    longTent: number;
-    chavaraiSeat: number;
-    luxeSeat: number;
-    metallicSeat: number;
-    glassCharger: number;
-    plasticSeat: number;
-    banquetSeat: number;
-    crBackSeat: number;
-  };
+  requirements: Record<string, number>;
 }
 
 export const useCustomerDataSync = (month?: number | 'all', year?: number) => {
