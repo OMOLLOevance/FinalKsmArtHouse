@@ -449,8 +449,8 @@ Thank you for being part of our fitness community!`
             </Button>
           )}
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Gym Management</h1>
-            <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Professional Operations</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-primary uppercase">Gym Management</h1>
+            <p className="text-sm text-muted-foreground italic">Professional Operations</p>
           </div>
         </div>
 

@@ -122,8 +122,8 @@ const Sidebar = () => {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-black tracking-tighter text-primary leading-none mb-1">KSM.ART</h1>
-                <p className="text-[9px] text-muted-foreground font-black tracking-[0.2em] uppercase opacity-60">Management Suite</p>
+                <h1 className="text-xl font-semibold tracking-tighter text-primary leading-none mb-1">KSM.ART</h1>
+                <p className="text-[10px] text-muted-foreground font-semibold tracking-[0.2em] uppercase opacity-60">Management Suite</p>
               </div>
             </div>
             <ThemeToggle />
@@ -137,7 +137,8 @@ const Sidebar = () => {
               <div key={item.id} className="space-y-2 py-2">
                 <button
                   onClick={() => toggleSection(item.id)}
-                  className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 hover:text-primary transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/50 hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+                  aria-expanded={isExpanded}
                 >
                   <span>{item.label}</span>
                   {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -151,11 +152,12 @@ const Sidebar = () => {
                         <button
                           key={child.id}
                           onClick={() => handleNavigation(child.href)}
-                          className={`w-full flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
+                          className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
                             isActive 
                               ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]' 
                               : 'text-muted-foreground hover:text-primary hover:bg-primary/5 hover:translate-x-1'
-                          }`}
+                          } focus-visible:ring-2 focus-visible:ring-primary`}
+                          aria-current={isActive ? 'page' : undefined}
                         >
                           <child.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-white' : 'text-primary/60'}`} />
                           <span>{child.label}</span>
@@ -173,17 +175,17 @@ const Sidebar = () => {
           {user ? (
             <div className="space-y-4">
               <div className="flex items-center space-x-3 px-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-primary-foreground text-sm font-black shadow-inner">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-primary-foreground text-sm font-bold shadow-inner">
                   {user.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black truncate text-foreground">{user.email?.split('@')[0]}</p>
-                  <Badge variant="outline" className="text-[8px] uppercase font-black py-0 px-1.5 border-primary/30 text-primary">{user.role}</Badge>
+                  <p className="text-sm font-semibold truncate text-foreground">{user.email?.split('@')[0]}</p>
+                  <Badge variant="outline" className="text-[8px] uppercase font-bold py-0 px-1.5 border-primary/30 text-primary">{user.role}</Badge>
                 </div>
               </div>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive font-black text-[10px] uppercase tracking-widest h-10"
+                className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold text-[10px] uppercase tracking-widest h-10"
                 onClick={logout}
               >
                 <LogOut className="w-4 h-4 mr-2" /> Sign Out

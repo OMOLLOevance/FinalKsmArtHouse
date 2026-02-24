@@ -267,11 +267,11 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-black tracking-tighter text-foreground uppercase flex items-center gap-2">
-              <ClipboardList className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+              <ClipboardList className="h-6 w-6 text-primary" />
               Customer Data
             </h1>
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground opacity-70">
+            <p className="text-sm text-muted-foreground">
               Manage setup specifications and logistics
             </p>
           </div>
@@ -279,14 +279,14 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       </div>
 
       {/* Form Card */}
-      <Card className="border-primary/10 shadow-2xl overflow-hidden glass-card">
+      <Card className="border-primary/10 shadow-sm overflow-hidden glass-card">
         <div className="h-1.5 w-full bg-gradient-to-r from-primary via-indigo-600 to-teal-500" />
         <CardHeader>
-          <CardTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold tracking-tight flex items-center gap-2">
             {editingId ? <Edit2 className="h-5 w-5 text-amber-500" /> : <Plus className="h-5 w-5 text-primary" />}
             {editingId ? 'Edit Record' : 'Capture New Setup Data'}
           </CardTitle>
-          <CardDescription className="text-xs uppercase font-bold tracking-widest opacity-60">
+          <CardDescription>
             Log specific inventory requirements for this event
           </CardDescription>
         </CardHeader>
@@ -377,20 +377,20 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
             {/* Inventory Section */}
             <div className="space-y-4 pt-4 border-t border-primary/5">
               <div className="flex items-center justify-between">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Inventory Specifications</h2>
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-primary">Inventory Specifications</h2>
                 <div className="flex gap-2">
                   <Input 
                     placeholder="New item name..."
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
-                    className="h-8 text-[10px] w-40"
+                    className="h-8 text-xs w-40"
                   />
                   <Button 
                     type="button" 
                     variant="outline" 
                     size="sm" 
                     onClick={handleAddCustomItem}
-                    className="h-8 text-[10px] font-black uppercase"
+                    className="h-8 text-xs font-semibold uppercase tracking-wider"
                   >
                     <Plus className="h-3 w-3 mr-1" /> Add Entry
                   </Button>
@@ -400,7 +400,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {DEFAULT_INVENTORY_ITEMS.map((item) => (
                   <div key={item.id} className="space-y-1.5">
-                    <Label htmlFor={item.id} className="text-[9px] font-bold text-muted-foreground uppercase ml-1">{item.label}</Label>
+                    <Label htmlFor={item.id} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider ml-1">{item.label}</Label>
                     <Input 
                       id={`req_${item.id}`}
                       type="number" 
@@ -416,7 +416,7 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                   .filter(key => !DEFAULT_INVENTORY_ITEMS.some(i => i.id === key))
                   .map(key => (
                     <div key={key} className="space-y-1.5 animate-in zoom-in-95 duration-200">
-                      <Label htmlFor={key} className="text-[9px] font-bold text-primary uppercase ml-1">{getItemLabel(key)}</Label>
+                      <Label htmlFor={key} className="text-[10px] font-semibold text-primary uppercase tracking-wider ml-1">{getItemLabel(key)}</Label>
                       <Input 
                         id={`req_${key}`}
                         type="number" 
@@ -446,11 +446,11 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       </Card>
 
       {/* List Card - Landscape Wide Table Layout */}
-      <Card className="border-primary/5 shadow-xl glass-card overflow-hidden">
+      <Card className="border-primary/5 shadow-sm overflow-hidden glass-card">
         <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-primary/5">
           <div>
-            <CardTitle className="text-xl font-black uppercase tracking-tight">Saved Specifications</CardTitle>
-            <CardDescription className="text-xs uppercase font-bold tracking-widest opacity-60">History of captured customer event data</CardDescription>
+            <CardTitle className="text-xl font-semibold tracking-tight">Saved Specifications</CardTitle>
+            <CardDescription>History of captured customer event data</CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <div className="flex gap-2">
@@ -498,22 +498,22 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
               </div>
             </div>
 
-            <div className="overflow-x-auto custom-scrollbar">
-              <div className="min-w-max">
+            <div className="w-full overflow-x-auto custom-scrollbar">
+              <div className="min-w-[1200px]">
                 <Table className="border-separate border-spacing-0">
                   <TableHeader className="bg-muted/50 sticky top-0 z-30">
                     <TableRow>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-0 bg-card z-40 w-[100px] border-r border-b">Date</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest sticky left-[100px] bg-card z-40 w-[180px] border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Client Name</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest min-w-[120px] border-b">Location</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider sticky left-0 bg-card z-40 w-[100px] border-r border-b">Date</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider sticky left-[100px] bg-card z-40 w-[180px] border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Client Name</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider min-w-[120px] border-b">Location</TableHead>
                       
                       {/* Render dynamic columns for items */}
                       {dynamicItemKeys.map(key => (
-                        <TableHead key={key} className="text-[9px] font-bold uppercase text-center min-w-[80px] border-b whitespace-nowrap px-4">{getItemLabel(key)}</TableHead>
+                        <TableHead key={key} className="text-xs font-semibold uppercase tracking-wider text-center min-w-[80px] border-b whitespace-nowrap px-4">{getItemLabel(key)}</TableHead>
                       ))}
                       
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-center sticky right-[80px] bg-card z-40 w-[80px] border-l border-b shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-right sticky right-0 bg-card z-40 w-[80px] border-b">Actions</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-center sticky right-[80px] bg-card z-40 w-[80px] border-l border-b shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-right sticky right-0 bg-card z-40 w-[80px] border-b">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -522,26 +522,26 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
                         <TableCell colSpan={dynamicItemKeys.length + 5} className="h-64 text-center">
                           <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
                             <ClipboardList className="h-12 w-12" />
-                            <p className="text-[10px] font-black uppercase tracking-widest">No records found</p>
+                            <p className="text-sm font-medium uppercase tracking-widest">No records found</p>
                           </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredRecords.map((record) => (
-                        <TableRow key={record.id} className="hover:bg-primary/[0.02] transition-colors group">
-                          <TableCell className="font-bold text-[10px] sticky left-0 bg-card z-20 border-r border-b">{record.event_date}</TableCell>
-                          <TableCell className="font-black text-xs uppercase sticky left-[100px] bg-card z-20 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate max-w-[180px]">{record.name}</TableCell>
-                          <TableCell className="font-bold text-[10px] border-b truncate max-w-[120px] px-4">{record.location}</TableCell>
+                        <TableRow key={record.id} className="hover:bg-muted/50 transition-colors group">
+                          <TableCell className="font-medium text-xs sticky left-0 bg-card z-20 border-r border-b">{record.event_date}</TableCell>
+                          <TableCell className="font-semibold text-xs uppercase sticky left-[100px] bg-card z-20 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate max-w-[180px]">{record.name}</TableCell>
+                          <TableCell className="font-medium text-xs border-b truncate max-w-[120px] px-4">{record.location}</TableCell>
                           
                           {/* Dynamic columns data */}
                           {dynamicItemKeys.map(key => (
-                            <TableCell key={key} className="text-center font-bold text-[11px] border-b px-4">
+                            <TableCell key={key} className="text-center font-bold text-xs border-b px-4">
                               {record.requirements?.[key] || <span className="opacity-10">-</span>}
                             </TableCell>
                           ))}
 
                           <TableCell className="text-center sticky right-[80px] bg-card z-20 border-l border-b shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-black text-[9px]">
+                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-xs">
                               {getTotalItems(record)}
                             </span>
                           </TableCell>
@@ -646,16 +646,16 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
       <Dialog open={!!isDeletingId} onOpenChange={() => setIsDeletingId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight">Confirm Deletion</DialogTitle>
-            <DialogDescription className="font-bold text-sm">
+            <DialogTitle className="text-lg font-semibold tracking-tight">Confirm Deletion</DialogTitle>
+            <DialogDescription className="font-medium text-sm">
               Are you absolutely sure you want to remove this record? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDeletingId(null)} className="font-black uppercase tracking-widest text-[10px] rounded-xl">
+            <Button variant="outline" onClick={() => setIsDeletingId(null)} className="font-semibold text-xs rounded-xl">
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete} className="font-black uppercase tracking-widest text-[10px] rounded-xl">
+            <Button variant="destructive" onClick={handleDelete} className="font-semibold text-xs rounded-xl">
               Delete Forever
             </Button>
           </DialogFooter>

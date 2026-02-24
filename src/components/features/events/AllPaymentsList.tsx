@@ -142,12 +142,12 @@ export const AllPaymentsList: React.FC = () => {
   }, [payments, searchTerm, quotations, gymMembers, saunaBookings]);
 
   return (
-    <Card className="mt-6 rounded-2xl overflow-hidden border-primary/10 shadow-xl">
+    <Card className="mt-6 rounded-2xl overflow-hidden border-primary/10 shadow-sm">
       <CardHeader className="bg-primary/5 border-b border-primary/10 p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-xl font-black uppercase tracking-tight">Financial Records</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Complete history of all remittances received</CardDescription>
+            <CardTitle className="text-xl font-semibold tracking-tight">Financial Records</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">Complete history of all remittances received</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-xl border border-primary/10 h-10">
@@ -157,7 +157,7 @@ export const AllPaymentsList: React.FC = () => {
               <select 
                 value={selectedMonth} 
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 pl-2 cursor-pointer hover:text-primary transition-colors"
+                className="bg-transparent border-none text-xs font-semibold uppercase focus:outline-none pr-4 pl-2 cursor-pointer hover:text-primary transition-colors"
               >
                 <option value="01" className="bg-background text-foreground uppercase font-bold text-[10px]">January</option>
                 <option value="02" className="bg-background text-foreground uppercase font-bold text-[10px]">February</option>
@@ -175,7 +175,7 @@ export const AllPaymentsList: React.FC = () => {
               <select 
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 cursor-pointer hover:text-primary transition-colors"
+                className="bg-transparent border-none text-xs font-semibold uppercase focus:outline-none pr-4 cursor-pointer hover:text-primary transition-colors"
               >
                 {[2024, 2025, 2026, 2027].map(y => (
                   <option key={y} value={y.toString()} className="bg-background text-foreground uppercase font-bold text-[10px]">{y}</option>
@@ -193,7 +193,7 @@ export const AllPaymentsList: React.FC = () => {
               placeholder="Search by reference, client or method..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 h-10 bg-background border-primary/10 rounded-xl text-xs font-bold"
+              className="pl-12 h-10 bg-background border-primary/10 rounded-xl text-xs font-semibold"
             />
           </div>
         </div>
@@ -201,13 +201,13 @@ export const AllPaymentsList: React.FC = () => {
         {isLoading && (
           <div className="flex items-center justify-center p-12">
             <Loader className="animate-spin text-primary h-8 w-8" />
-            <span className="ml-3 font-bold uppercase text-xs tracking-widest opacity-60">Synchronizing...</span>
+            <span className="ml-3 font-semibold uppercase text-xs tracking-widest opacity-60">Synchronizing...</span>
           </div>
         )}
         {isError && (
           <div className="flex items-center justify-center p-12 text-destructive">
             <AlertCircle className="h-6 w-6 mr-2" />
-            <span className="font-bold uppercase text-xs tracking-widest">Failed to retrieve records</span>
+            <span className="font-semibold uppercase text-xs tracking-widest">Failed to retrieve records</span>
           </div>
         )}
         {!isLoading && payments && quotations && gymMembers && saunaBookings && (
@@ -215,14 +215,14 @@ export const AllPaymentsList: React.FC = () => {
             <Table className="min-w-[1000px]">
               <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Date</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Status</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Type</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Reference</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Client</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Row Amount</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12 text-right">Cumulative</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12 text-right">Method</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12">Date</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12">Status</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12">Type</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12">Reference</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12">Client</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12">Row Amount</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12 text-right">Cumulative</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider px-6 h-12 text-right">Method</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -238,8 +238,12 @@ export const AllPaymentsList: React.FC = () => {
                 ))}
                 {filteredPayments.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground italic font-medium">
-                      No payment transactions found for the selected period.
+                    <TableCell colSpan={8} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                        <AlertCircle className="h-12 w-12" />
+                        <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">No payments found for this period</p>
+                        <p className="text-xs">Adjust your filters or record a new transaction in the module.</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}

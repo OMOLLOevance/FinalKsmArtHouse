@@ -392,11 +392,11 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
               Back
             </Button>
           )}
-          <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Catering Management</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-primary uppercase">Catering Management</h1>
         </div>
         <div className="flex items-center gap-2">
           {isManager() && (
-            <div className="w-full md:w-64">
+            <div className="w-64">
               <StaffSelector 
                 value={filterUserId} 
                 onChange={setFilterUserId} 

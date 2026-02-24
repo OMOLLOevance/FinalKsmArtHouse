@@ -760,8 +760,8 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <div>
-            <h1 className="text-3xl font-black uppercase text-primary tracking-tight">Quotations</h1>
-            <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Price Proposals & Estimates</p>
+            <h1 className="text-2xl font-semibold uppercase text-primary tracking-tight">Quotations</h1>
+            <p className="text-muted-foreground italic text-sm">Price Proposals & Estimates</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -770,7 +770,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 pl-2 cursor-pointer hover:text-primary transition-colors"
+              className="bg-transparent border-none text-xs font-semibold uppercase focus:outline-none pr-4 pl-2 cursor-pointer hover:text-primary transition-colors"
             >
               <option value="all" className="bg-background text-foreground uppercase font-bold text-[10px]">All Months</option>
               {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((name, index) => (
@@ -781,7 +781,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 cursor-pointer hover:text-primary transition-colors"
+              className="bg-transparent border-none text-xs font-semibold uppercase focus:outline-none pr-4 cursor-pointer hover:text-primary transition-colors"
             >
               {[selectedYear - 1, selectedYear, selectedYear + 1].map(year => (
                 <option key={year} value={year} className="bg-background text-foreground uppercase font-bold text-[10px]">{year}</option>

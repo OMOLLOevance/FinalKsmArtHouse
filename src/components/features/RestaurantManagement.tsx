@@ -192,8 +192,8 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
             </Button>
           )}
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Daily Inventory</h1>
-            <p className="text-muted-foreground italic text-[10px] uppercase font-black tracking-[0.2em] opacity-70">Kitchen Asset & Resource Logs</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-primary uppercase">Daily Inventory</h1>
+            <p className="text-sm text-muted-foreground italic">Kitchen Asset & Resource Logs</p>
           </div>
         </div>
 

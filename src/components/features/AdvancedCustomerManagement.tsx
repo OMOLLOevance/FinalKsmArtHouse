@@ -230,8 +230,8 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
             </Button>
           )}
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Advanced Customer Management</h1>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70">Week of {currentYear}-{String(currentMonth + 1).padStart(2, '0')}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-primary uppercase">Advanced Customer Management</h1>
+            <p className="text-sm text-muted-foreground italic">Week of {currentYear}-{String(currentMonth + 1).padStart(2, '0')}</p>
           </div>
         </div>
 
@@ -278,17 +278,17 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
       <Card className="border-primary/10 shadow-sm rounded-2xl overflow-hidden glass-card">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 mb-6 p-6">
           <div>
-            <CardTitle className="text-xl font-black uppercase tracking-tight text-primary flex items-center gap-2">
+            <CardTitle className="text-xl font-semibold tracking-tight text-primary flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary/60" />
               Decor & Lighting Items
             </CardTitle>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">{decorItems.length} customers configured</p>
+            <p className="text-sm text-muted-foreground">{decorItems.length} customers configured</p>
           </div>
           <div className="flex items-center gap-2 mt-4 sm:mt-0">
-            <Button type="button" onClick={() => { setActiveConfigTab('decor'); setIsConfigOpen(true); }} size="sm" variant="outline" className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl border-primary/20">
+            <Button type="button" onClick={() => { setActiveConfigTab('decor'); setIsConfigOpen(true); }} size="sm" variant="outline" className="h-9 px-4 font-semibold uppercase text-xs tracking-wider rounded-xl border-primary/20">
               <Package className="h-4 w-4 mr-2" /> Configure Decor
             </Button>
-            <Button type="button" onClick={() => { setActiveConfigTab('lighting'); setIsConfigOpen(true); }} size="sm" variant="outline" className="h-9 px-4 font-black uppercase text-[10px] tracking-widest rounded-xl border-primary/20">
+            <Button type="button" onClick={() => { setActiveConfigTab('lighting'); setIsConfigOpen(true); }} size="sm" variant="outline" className="h-9 px-4 font-semibold uppercase text-xs tracking-wider rounded-xl border-primary/20">
               <Lightbulb className="h-4 w-4 mr-2" /> Configure Lighting
             </Button>
           </div>
@@ -296,15 +296,15 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
         
         <CardContent className="space-y-6 p-6 pt-0">
           {decorItems.map((item, index) => (
-            <Card key={item.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300">
+            <Card key={item.id} className="overflow-hidden border-muted hover:border-primary/30 transition-all duration-300 shadow-sm">
               <div className="bg-muted/30 px-4 py-2 border-b flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-full">#{item.row_number}</span>
+                  <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">#{item.row_number}</span>
                   <div className="min-w-[200px]">
                     {renderEditableCell(item.customer_name, index, 'decor_customer_name', 'Enter Customer Name')}
                   </div>
                 </div>
-                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Custom Configuration</div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Custom Configuration</div>
               </div>
               
               <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">

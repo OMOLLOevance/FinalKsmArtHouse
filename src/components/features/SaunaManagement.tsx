@@ -189,8 +189,8 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
             </Button>
           )}
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Sauna Management</h1>
-            <p className="text-muted-foreground italic text-xs uppercase font-black tracking-widest opacity-70">Wellness Operations</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-primary uppercase">Sauna Management</h1>
+            <p className="text-sm text-muted-foreground italic">Wellness Operations</p>
           </div>
         </div>
 

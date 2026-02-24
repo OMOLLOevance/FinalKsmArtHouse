@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle, UserPlus, LogIn, Sparkles, Dumbbell, Utensils, Waves, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle, UserPlus, LogIn, Sparkles, Dumbbell, Utensils, Waves, Calendar, Loader } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -126,10 +126,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group hover:scale-110 transition-transform duration-500">
             <Sparkles className="w-6 h-6 text-primary animate-pulse" />
           </div>
-          <CardTitle className="text-foreground text-2xl font-black tracking-tight uppercase">
+          <CardTitle className="text-foreground text-2xl font-semibold tracking-tight uppercase">
             {mode === 'login' ? 'System Login' : mode === 'signup' ? 'Register Profile' : 'Reset Passphrase'}
           </CardTitle>
-          <CardDescription className="text-muted-foreground text-[10px] font-bold uppercase tracking-[0.2em] mt-1 opacity-70">
+          <CardDescription className="text-muted-foreground text-xs font-medium uppercase tracking-widest mt-1 opacity-70">
             {mode === 'login' ? 'Authorized personnel only' : mode === 'signup' ? 'Enterprise onboarding portal' : 'Security recovery protocol'}
           </CardDescription>
         </CardHeader>
@@ -140,21 +140,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label htmlFor="firstName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
+                    <label htmlFor="firstName" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest ml-1">First Name</label>
                     <Input id="firstName" placeholder="First name" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required />
                   </div>
                   <div className="space-y-1.5">
-                    <label htmlFor="lastName" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Last Name</label>
+                    <label htmlFor="lastName" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest ml-1">Last Name</label>
                     <Input id="lastName" placeholder="Last name" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="role" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Professional Role</label>
+                  <label htmlFor="role" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest ml-1">Professional Role</label>
                   <Select
                     value={formData.role}
                     onValueChange={(val) => setFormData({ ...formData, role: val })}
+                    disabled={mode === 'signup'}
                   >
-                    <SelectTrigger id="role" className="w-full h-11 rounded-xl bg-muted/20 border-primary/5 font-bold uppercase tracking-widest text-[10px]">
+                    <SelectTrigger id="role" className="w-full h-11 rounded-xl bg-muted/20 border-primary/5 font-semibold uppercase tracking-widest text-xs">
                       <SelectValue placeholder="Select Role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -165,32 +166,35 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
                       <SelectItem value="operations_manager">OPERATIONS MANAGER</SelectItem>
                     </SelectContent>
                   </Select>
+                  {mode === 'signup' && (
+                    <p className="text-[10px] text-muted-foreground ml-1 italic">* Roles are assigned by administrators after verification.</p>
+                  )}
                 </div>
               </>
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Corporate Email</label>
+              <label htmlFor="email" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest ml-1">Corporate Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-primary opacity-50" />
-                <Input id="email" type="email" placeholder="name@ksmarthouse.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pl-10 h-11" required />
+                <Input id="email" type="email" placeholder="name@ksmarthouse.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pl-10 h-11 font-medium" required />
               </div>
             </div>
 
             {mode !== 'reset' && (
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1">
-                  <label htmlFor="password" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest">
+                  <label htmlFor="password" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest">
                     {mode === 'login' ? 'Access Token' : 'Create Passphrase'}
                   </label>
                   {mode === 'login' && (
-                    <button type="button" onClick={() => setMode('reset')} className="text-[9px] font-black uppercase text-primary hover:underline">Forgot?</button>
+                    <button type="button" onClick={() => setMode('reset')} className="text-xs font-bold uppercase text-primary hover:underline">Forgot?</button>
                   )}
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-primary opacity-50" />
-                  <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Passphrase" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="pl-10 pr-10 h-11" required={(mode as any) !== 'reset'} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors">
+                  <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Passphrase" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="pl-10 pr-10 h-11 font-medium" required={(mode as any) !== 'reset'} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors" aria-label={showPassword ? "Hide password" : "Show password"}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
@@ -199,10 +203,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
 
             {mode === 'signup' && (
               <div className="space-y-1.5">
-                <label htmlFor="confirmPassword" className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Confirm Passphrase</label>
+                <label htmlFor="confirmPassword" className="text-xs font-semibold uppercase text-muted-foreground/70 tracking-widest ml-1">Confirm Passphrase</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-primary opacity-50" />
-                  <Input id="confirmPassword" type={showPassword ? 'text' : 'password'} placeholder="Repeat passphrase" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} className="pl-10 h-11" required />
+                  <Input id="confirmPassword" type={showPassword ? 'text' : 'password'} placeholder="Repeat passphrase" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} className="pl-10 h-11 font-medium" required />
                 </div>
               </div>
             )}
@@ -214,8 +218,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
               </div>
             )}
 
-            <Button type="submit" className="w-full h-12 shadow-xl shadow-primary/20 font-black uppercase tracking-widest text-[11px] mt-2" disabled={loading}>
-              {loading ? 'Processing...' : (mode === 'login' ? 'Verify Identity' : mode === 'signup' ? 'Establish Profile' : 'Request Recovery')}
+            <Button type="submit" className="w-full h-12 shadow-xl shadow-primary/20 font-bold uppercase tracking-widest text-xs mt-2" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                mode === 'login' ? 'Verify Identity' : mode === 'signup' ? 'Establish Profile' : 'Request Recovery'
+              )}
             </Button>
           </form>
 
@@ -223,14 +234,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-primary/5" />
             </div>
-            <div className="relative flex justify-center text-[9px] font-black uppercase tracking-[0.3em]">
+            <div className="relative flex justify-center text-[10px] font-semibold uppercase tracking-[0.2em]">
               <span className="bg-card px-4 text-muted-foreground/50">Gateway Protocol</span>
             </div>
           </div>
 
           <Button 
             variant="ghost" 
-            className="w-full h-11 hover:bg-primary/5 text-muted-foreground hover:text-primary font-bold text-xs rounded-xl transition-all" 
+            className="w-full h-11 hover:bg-primary/5 text-muted-foreground hover:text-primary font-semibold text-xs rounded-xl transition-all" 
             onClick={() => {
               const nextMode: 'login' | 'signup' | 'reset' = mode === 'reset' ? 'login' : (mode === 'login' ? 'signup' : 'login');
               setMode(nextMode);
@@ -246,7 +257,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, initialMode = 'login' })
           <div className="flex space-x-4 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
             <Calendar className="h-4 w-4" /><Dumbbell className="h-4 w-4" /><Utensils className="h-4 w-4" /><Waves className="h-4 w-4" />
           </div>
-          <p className="text-[8px] uppercase font-black tracking-[0.4em] text-muted-foreground opacity-40">Encrypted End-to-End</p>
+          <p className="text-[9px] uppercase font-bold tracking-[0.3em] text-muted-foreground opacity-40">Encrypted End-to-End</p>
         </CardFooter>
       </Card>
       
