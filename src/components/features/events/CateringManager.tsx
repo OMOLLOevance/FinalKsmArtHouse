@@ -38,7 +38,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
-  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { isManager } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
   const { items: serviceItems, loading: servicesLoading, error: servicesError, addItem, updateItem, deleteItem, refetch: fetchServices } = useCateringItems(filterUserId);
@@ -395,7 +395,7 @@ const CateringManager: React.FC<CateringManagerProps> = ({ onBack }) => {
           <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Catering Management</h1>
         </div>
         <div className="flex items-center gap-2">
-          {(isOperationsManager() || isDirectorOrInvestor()) && (
+          {isManager() && (
             <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 

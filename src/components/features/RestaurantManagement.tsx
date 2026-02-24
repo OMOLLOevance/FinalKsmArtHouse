@@ -47,7 +47,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
   const { data: masterItems, isLoading: masterItemsLoading } = useRestaurantMasterItemsQuery();
   const { showSuccess, showError } = useToast();
-  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { isManager } = useRoleGuard();
   
   const { inventory: dbRecords, loading: dbLoading, addInventoryItem, error: dbError } = useRestaurantInventory(selectedMonth, filterUserId);
 
@@ -199,7 +199,7 @@ const RestaurantManagement: React.FC<RestaurantManagementProps> = ({ onBack }) =
 
         <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
           {/* RBAC Staff Filter */}
-          {(isOperationsManager() || isDirectorOrInvestor()) && (
+          {isManager() && (
             <div className="w-64">
               <StaffSelector 
                 value={filterUserId} 

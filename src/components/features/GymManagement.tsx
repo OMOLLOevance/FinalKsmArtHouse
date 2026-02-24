@@ -65,7 +65,7 @@ const GymManagement: React.FC<GymManagementProps> = ({ onBack }) => {
   };
   
   // RBAC
-  const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { canDeleteTransaction, isManager } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   
   // Filters
@@ -455,7 +455,7 @@ Thank you for being part of our fitness community!`
         </div>
 
         {/* RBAC Staff Filter */}
-        {(isOperationsManager() || isDirectorOrInvestor()) && (
+        {isManager() && (
           <div className="w-64">
             <StaffSelector 
               value={filterUserId} 

@@ -48,12 +48,12 @@ export interface Quotation {
 
 export const useQuotationsQuery = (filterUserId?: string | null, month?: number | 'all', year?: number) => {
   const { userId, isAuthenticated } = useAuth();
-  const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
+  const { isManager } = useRoleGuard();
   
   return useQuery({
     queryKey: ['quotations', userId, filterUserId, month, year],
     queryFn: async () => {
-      const isManagement = isDirectorOrInvestor() || isOperationsManager();
+      const isManagement = isManager();
       
       const params = new URLSearchParams();
       if (userId) params.append('userId', userId);

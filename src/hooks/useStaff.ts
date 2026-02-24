@@ -14,9 +14,9 @@ export interface StaffMember {
 export function useStaff() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
-  const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
+  const { isManager } = useRoleGuard();
 
-  const canViewStaff = isDirectorOrInvestor() || isOperationsManager();
+  const canViewStaff = isManager();
 
   useEffect(() => {
     async function fetchStaff() {

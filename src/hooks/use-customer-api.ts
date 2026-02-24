@@ -15,7 +15,8 @@ export const useCustomersQuery = (month?: number | 'all', year?: number) => {
     queryKey: ['customers-combined', userId, month, year],
     queryFn: async () => {
       try {
-        const isManagement = isDirectorOrInvestor() || isOperationsManager();
+        const { isManager } = useRoleGuard();
+        const isManagement = isManager();
         
         const params = new URLSearchParams();
         if (userId) params.append('userId', userId);

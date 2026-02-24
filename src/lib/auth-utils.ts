@@ -32,14 +32,14 @@ export const createAdminClient = () => {
 // Shared user role helper
 export const getUserRole = async (userId: string, client: any): Promise<string> => {
   try {
-    // Prefer RPC for security and consistency
+    // 1. Prefer RPC for security and consistency
     const { data, error: rpcError } = await client.rpc('get_user_role', { user_uuid: userId });
     
     if (!rpcError && data) {
       return data;
     }
 
-    // Fallback to selecting role from public.users
+    // 2. Fallback to selecting role from public.users table if RPC fails
     const { data: userData, error: tableError } = await client
       .from('users')
       .select('role')
@@ -50,23 +50,22 @@ export const getUserRole = async (userId: string, client: any): Promise<string> 
       return userData.role;
     }
 
-    // Log warning if both fail instead of silent failure
-    console.warn('getUserRole: Failed to fetch role, falling back to staff', {
-      userId,
+    // 3. Log a clear warning if both methods fail to resolve the role
+    console.warn(`[AUTH] getUserRole: Failed to resolve role for user ${userId}. Defaulting to 'staff'.`, {
       rpcError,
       tableError
     });
     
     return 'staff';
   } catch (error) {
-    console.warn('getUserRole: Unexpected error:', error);
+    console.warn(`[AUTH] getUserRole: Unexpected exception for user ${userId}.`, error);
     return 'staff'; // Ultimate fallback
   }
 };
 
 // Check if user is manager
 export const isManager = (role: string): boolean => {
-  return ['director', 'investor', 'operations_manager', 'admin'].includes(role);
+  return ['admin', 'operations_manager', 'director', 'investor'].includes(role);
 };
 
 // Get authenticated client with role escalation

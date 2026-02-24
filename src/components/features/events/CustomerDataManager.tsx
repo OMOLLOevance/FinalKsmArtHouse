@@ -87,8 +87,7 @@ const INITIAL_FORM_STATE = {
 };
 
 const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => {
-  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
-  const isManager = isOperationsManager() || isDirectorOrInvestor();
+  const { isManager } = useRoleGuard();
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   

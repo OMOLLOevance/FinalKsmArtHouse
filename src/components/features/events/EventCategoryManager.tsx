@@ -25,7 +25,7 @@ interface ManagerProps {
 }
 
 const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title }) => {
-  const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { canDeleteTransaction, isManager } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [isNewItem, setIsNewItem] = useState(false);
@@ -209,7 +209,7 @@ const EventCategoryManager: React.FC<ManagerProps> = ({ onBack, category, title 
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-3">
-          {(isOperationsManager() || isDirectorOrInvestor()) && (
+          {isManager() && (
             <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 

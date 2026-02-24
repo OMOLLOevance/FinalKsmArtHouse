@@ -49,7 +49,7 @@ interface AdvancedCustomerManagementProps {
 }
 
 const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({ onBack }) => {
-  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { isManager } = useRoleGuard();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -236,7 +236,7 @@ const AdvancedCustomerManagement: React.FC<AdvancedCustomerManagementProps> = ({
         </div>
 
         <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
-          {(isOperationsManager() || isDirectorOrInvestor()) && (
+          {isManager() && (
             <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 

@@ -43,14 +43,14 @@ interface MinimalCateringItem { price_per_plate: number; min_order: number; desc
 
 export const useDashboardStats = () => {
   const { userId, isAuthenticated, isLoading: authLoading } = useAuth(); // Add authLoading
-  const { isDirectorOrInvestor, isOperationsManager } = useRoleGuard();
+  const { isManager } = useRoleGuard();
 
   return useQuery<DashboardStats>({
     queryKey: ['dashboard-stats', userId],
     enabled: !!userId && isAuthenticated && !authLoading, // ADD !authLoading
     queryFn: async () => {
       try {
-        const isManagement = isDirectorOrInvestor() || isOperationsManager();
+        const isManagement = isManager();
         
         // Construct clean query parameters
         const params = new URLSearchParams();

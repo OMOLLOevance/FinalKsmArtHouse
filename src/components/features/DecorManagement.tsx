@@ -39,7 +39,7 @@ const DEFAULT_DECOR_CATEGORIES = [
 ];
 
 const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
-  const { isOperationsManager, isDirectorOrInvestor, canDeleteTransaction } = useRoleGuard();
+  const { isManager, canDeleteTransaction } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
   const { data: items = [], isLoading } = useDecorInventoryQuery(filterUserId);
@@ -141,7 +141,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
     const value = item[field as keyof DecorInventoryItem];
     const isEditing = editingCell?.id === item.id && editingCell?.field === field;
     
-    const isReadOnly = filterUserId !== null && !isOperationsManager() && !isDirectorOrInvestor();
+    const isReadOnly = filterUserId !== null && !isManager();
 
     if (isEditing) {
       return (
@@ -240,7 +240,7 @@ const DecorManagement: React.FC<DecorManagementProps> = ({ onBack }) => {
           </div>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-3">
-          {(isOperationsManager() || isDirectorOrInvestor()) && (
+          {isManager() && (
             <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 

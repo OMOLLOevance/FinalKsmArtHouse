@@ -89,7 +89,7 @@ const FOOD_TEMPLATE: QuotationSection[] = [
 
 const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
   const { userId } = useAuth();
-  const { isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { isManager } = useRoleGuard();
   const { isOnline } = useNetworkStatus();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -789,7 +789,7 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
             </select>
           </div>
           
-          {(isOperationsManager() || isDirectorOrInvestor()) && (
+          {isManager() && (
             <div className="w-64">
               <StaffSelector 
                 value={filterUserId} 

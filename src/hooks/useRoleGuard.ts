@@ -55,6 +55,7 @@ export function useRoleGuard() {
   const isAdmin = useCallback(() => userRole === 'admin', [userRole]);
   const isOperationsManager = useCallback(() => userRole === 'operations_manager', [userRole]);
   const isDirectorOrInvestor = useCallback(() => ['director', 'investor', 'admin'].includes(userRole), [userRole]);
+  const isManager = useCallback(() => ['director', 'investor', 'admin', 'operations_manager'].includes(userRole), [userRole]);
 
   return useMemo(() => ({
     userRole,
@@ -65,5 +66,6 @@ export function useRoleGuard() {
     isAdmin,
     isOperationsManager,
     isDirectorOrInvestor,
-  }), [userRole, permissions, canDeleteTransaction, canViewAllTransactions, isStaff, isAdmin, isOperationsManager, isDirectorOrInvestor]);
+    isManager,
+  }), [userRole, permissions, canDeleteTransaction, canViewAllTransactions, isStaff, isAdmin, isOperationsManager, isDirectorOrInvestor, isManager]);
 }

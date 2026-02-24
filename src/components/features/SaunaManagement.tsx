@@ -38,7 +38,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
   const pathname = usePathname();
   
   // RBAC
-  const { canDeleteTransaction, isOperationsManager, isDirectorOrInvestor } = useRoleGuard();
+  const { canDeleteTransaction, isManager } = useRoleGuard();
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   
   // Filters
@@ -195,7 +195,7 @@ const SaunaManagement: React.FC<SaunaManagementProps> = ({ onBack }) => {
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 items-end md:items-center">
-          {(isOperationsManager() || isDirectorOrInvestor()) && (
+          {isManager() && (
             <div className="w-full md:w-64">
               <StaffSelector 
                 value={filterUserId} 

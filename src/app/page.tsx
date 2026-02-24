@@ -13,8 +13,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      // Directors and investors see the dashboard
-      if (user?.role === 'director' || user?.role === 'investor') {
+      // Directors, investors, and admins see the dashboard
+      if (user?.role === 'director' || user?.role === 'investor' || user?.role === 'admin') {
         return; // Stay on dashboard
       }
       // All other roles redirect to events
@@ -30,8 +30,8 @@ export default function Home() {
     return <PageLoader text="Verifying access..." />;
   }
 
-  // Only directors and investors see the dashboard
-  if (user?.role === 'director' || user?.role === 'investor') {
+  // Only directors, investors, and admins see the dashboard
+  if (user?.role === 'director' || user?.role === 'investor' || user?.role === 'admin') {
     return (
       <ErrorBoundary>
         <InvestorDashboard />
