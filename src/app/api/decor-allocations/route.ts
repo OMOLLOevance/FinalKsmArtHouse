@@ -4,20 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { getClientWithRole } from '@/lib/auth-utils';
 
 const DecorAllocationSchema = z.object({
   id: z.string().uuid().optional(),
@@ -62,28 +49,7 @@ export async function GET(request: NextRequest) {
     const yearStr = searchParams.get('year');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // Default client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-    let sessionUserId = null;
-
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        sessionUserId = user.id;
-        const { data: userProfile } = await authClient.from('users').select('role').eq('id', user.id).single();
-        const role = userProfile?.role || 'staff';
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      sessionUserId = user?.id;
-    }
+    const { client, userId: sessionUserId, isManager } = await getClientWithRole(token);
 
     const userId = userIdParam || sessionUserId;
     if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -127,7 +93,10 @@ export async function POST(request: NextRequest) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const validatedData = DecorAllocationSchema.parse(body);
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const { client, userId } = await getClientWithRole(token);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { data, error } = await client
       .from('decor_allocations')

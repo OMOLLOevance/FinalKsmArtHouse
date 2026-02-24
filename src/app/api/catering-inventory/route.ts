@@ -4,20 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { getClientWithRole } from '@/lib/auth-utils';
 
 const CateringInventorySchema = z.object({
   id: z.string().uuid().optional(),
@@ -28,16 +15,6 @@ const CateringInventorySchema = z.object({
   repair_needed: z.number().int().min(0).default(0),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -45,27 +22,7 @@ export async function GET(request: NextRequest) {
     const filterUserId = searchParams.get('filterUserId');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // Default to authenticated client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
-    let sessionUserId = null;
-
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        sessionUserId = user.id;
-        const role = await getUserRole(user.id, authClient);
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      sessionUserId = user?.id;
-    }
+    const { client, userId: sessionUserId, isManager } = await getClientWithRole(token);
 
     const userId = userIdParam || sessionUserId;
     if (!userId && !isManager) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -107,17 +64,14 @@ export async function POST(request: NextRequest) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const validatedData = CateringInventorySchema.parse(body);
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const { client, userRole, userId } = await getClientWithRole(token);
     
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Ensure user_id matches authenticated user for staff
-    const userRole = await getUserRole(user.id, client);
-    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+    if (userRole === 'staff' && validatedData.user_id !== userId) {
       return NextResponse.json({ error: 'Forbidden: Staff can only create their own records' }, { status: 403 });
     }
 
@@ -154,16 +108,12 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const { client, userRole, userId } = await getClientWithRole(token);
     
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = await getUserRole(user.id, client);
-    
     // Only directors and investors can delete
     if (!['director', 'investor'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete records' }, { status: 403 });

@@ -59,8 +59,7 @@ export async function GET(request: NextRequest) {
       const yearNum = parseInt(year);
       
       if (monthNum >= 1 && monthNum <= 12 && yearNum > 2000) {
-        // Use UTC dates to avoid timezone boundary issues
-        // [startOfMonth, nextMonthStart)
+        // Range: [startOfMonth, nextMonthStart)
         const startOfMonth = new Date(Date.UTC(yearNum, monthNum - 1, 1));
         const nextMonthStart = new Date(Date.UTC(yearNum, monthNum, 1));
         
@@ -86,11 +85,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const { client, userId, userRole } = await getClientWithRole(token);
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const userId = body.userId || body.user_id;
+    const targetUserId = body.userId || body.user_id || userId;
+
+    // RBAC: Staff can only create for themselves
+    if (userRole === 'staff' && targetUserId !== userId) {
+      return NextResponse.json({ error: 'Forbidden: Staff can only create their own bookings' }, { status: 403 });
+    }
 
     const dataToValidate = {
-      user_id: userId,
+      user_id: targetUserId,
       booking_date: body.booking_date || body.date,
       booking_time: body.booking_time || body.time,
       client_name: body.client_name || body.client,
@@ -103,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     const validatedData = BookingSchema.parse(dataToValidate);
     
-    const { data: inserted, error } = await supabase
+    const { data: inserted, error } = await client
       .from('sauna_bookings')
       .insert([validatedData])
       .select()
@@ -125,14 +136,28 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id } = body;
+    const { id, ...updates } = body;
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
+
+    const { client, userId } = await getClientWithRole(token);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
-    // Block all updates as per RBAC requirements
-    return NextResponse.json({ error: 'Forbidden: Transaction updates are not allowed' }, { status: 403 });
+    // Updates are usually restricted in these modules, but if needed, we use the role-aware client
+    const { data, error } = await client
+      .from('sauna_bookings')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw ApiError.fromSupabase(error);
+    return NextResponse.json({ data });
   } catch (error) {
     logger.error('Sauna PUT Error:', error);
     const status = error instanceof ApiError ? error.status : 500;
@@ -144,12 +169,23 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
+
+    const { client, userId, userRole } = await getClientWithRole(token);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Only directors and investors can delete
+    if (!['director', 'investor'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete bookings' }, { status: 403 });
+    }
     
-    const { error } = await supabase
+    const { error } = await client
       .from('sauna_bookings')
       .delete()
       .eq('id', id);

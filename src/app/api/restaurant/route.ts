@@ -104,10 +104,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const { client, userId, userRole } = await getClientWithRole(token);
     
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Map frontend names to exact DB schema provided
     const dataToValidate = {
-      user_id: body.userId || body.user_id,
+      user_id: body.userId || body.user_id || userId,
       sale_date: body.date || body.sale_date,
       item_name: body.item || body.item_name,
       quantity: body.quantity,
@@ -118,17 +123,8 @@ export async function POST(request: NextRequest) {
 
     const validatedData = RestaurantSaleSchema.parse(dataToValidate);
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Ensure user_id matches authenticated user for staff
-    const userRole = await getUserRole(user.id, client);
-    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+    if (userRole === 'staff' && validatedData.user_id !== userId) {
       return NextResponse.json({ error: 'Forbidden: Staff can only create their own transactions' }, { status: 403 });
     }
 
@@ -154,23 +150,27 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id } = body;
+    const { id, ...updates } = body;
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
+    const { client, userId } = await getClientWithRole(token);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Block all updates as per RBAC requirements
-    return NextResponse.json({ error: 'Forbidden: Transaction updates are not allowed' }, { status: 403 });
+    const { data, error } = await client
+      .from('restaurant_sales')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw ApiError.fromSupabase(error);
+    return NextResponse.json({ data });
   } catch (error) {
     logger.error('Restaurant PUT Error:', error);
     const status = error instanceof ApiError ? error.status : 500;
@@ -188,22 +188,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
+    const { client, userId, userRole } = await getClientWithRole(token);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const userRole = await getUserRole(user.id, client);
     
     // Only directors and investors can delete
     if (!['director', 'investor'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete transactions' }, { status: 403 });
     }
 
-    // RLS policy will handle the actual deletion permission
     const { error } = await client
       .from('restaurant_sales')
       .delete()

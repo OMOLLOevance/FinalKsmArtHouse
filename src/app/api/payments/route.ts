@@ -263,3 +263,72 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message || 'An unknown error occurred', details: error }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+
+    const { client, userId, userRole } = await getClientWithRole(token);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Only directors and investors can delete
+    if (!['director', 'investor'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete payments' }, { status: 403 });
+    }
+
+    const { error } = await client
+      .from('payments')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    logger.error('Payments DELETE Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...updates } = body;
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+
+    const { client, userId, userRole } = await getClientWithRole(token);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Only managers can update payments
+    if (!['director', 'investor', 'operations_manager'].includes(userRole)) {
+      return NextResponse.json({ error: 'Forbidden: Manager clearance required for payment updates' }, { status: 403 });
+    }
+
+    const { data, error } = await client
+      .from('payments')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json({ data });
+  } catch (error: any) {
+    logger.error('Payments PUT Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}

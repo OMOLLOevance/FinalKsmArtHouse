@@ -4,20 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ApiError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
-
-// Initialize Admin Client if Service Role Key is available
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+import { getClientWithRole } from '@/lib/auth-utils';
 
 const GymFinanceSchema = z.object({
   user_id: z.string().uuid(),
@@ -28,44 +15,19 @@ const GymFinanceSchema = z.object({
   payment_method: z.string().default('cash'),
 });
 
-// Helper function to get user role
-async function getUserRole(userId: string, client: any): Promise<string> {
-  const { data } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  return data?.role || 'staff';
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userIdParam = searchParams.get('userId');
     const filterUserId = searchParams.get('filterUserId');
     const fields = searchParams.get('fields') || '*';
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    // Default to authenticated client
-    let client = token ? createAuthenticatedClient(token) : supabase;
-    let isManager = false;
+    const { client, userId: sessionUserId, isManager } = await getClientWithRole(token);
 
-    // RBAC: Check current user role and escalate if management
-    if (token && adminSupabase) {
-      const authClient = createAuthenticatedClient(token);
-      const { data: { user } } = await authClient.auth.getUser();
-      if (user) {
-        const role = await getUserRole(user.id, authClient);
-        isManager = !!['director', 'investor', 'operations_manager'].includes(role);
-        if (isManager) {
-          client = adminSupabase;
-        }
-      }
-    }
-
-    // RLS policies will be bypassed if using adminSupabase
+    // RLS policies will be bypassed if using adminSupabase (isManager is true)
     let query = client
       .from('gym_finances')
       .select(fields)
@@ -75,8 +37,8 @@ export async function GET(request: NextRequest) {
     // RBAC Filtering Logic
     if (filterUserId) {
       query = query.eq('user_id', filterUserId);
-    } else if (!isManager && userId) {
-      query = query.eq('user_id', userId);
+    } else if (!isManager && (userIdParam || sessionUserId)) {
+      query = query.eq('user_id', userIdParam || sessionUserId);
     }
 
     const { data, error } = await query;
@@ -97,17 +59,14 @@ export async function POST(request: NextRequest) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     const validatedData = GymFinanceSchema.parse(body);
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const { client, userRole, userId } = await getClientWithRole(token);
     
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Ensure user_id matches authenticated user for staff
-    const userRole = await getUserRole(user.id, client);
-    if (userRole === 'staff' && validatedData.user_id !== user.id) {
+    if (userRole === 'staff' && validatedData.user_id !== userId) {
       return NextResponse.json({ error: 'Forbidden: Staff can only create their own transactions' }, { status: 403 });
     }
 
@@ -140,11 +99,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
+    const { userId } = await getClientWithRole(token);
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -167,16 +123,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
+    const { client, userRole, userId } = await getClientWithRole(token);
     
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = await getUserRole(user.id, client);
-    
     // Only directors and investors can delete
     if (!['director', 'investor'].includes(userRole)) {
       return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete transactions' }, { status: 403 });
