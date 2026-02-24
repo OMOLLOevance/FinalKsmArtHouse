@@ -13,7 +13,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   signup: (userData: Omit<User, 'id' | 'createdAt'>, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
-
+  resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   isLoading: boolean;
 }
 
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
-            role: 'staff' // Securely force 'staff' role at signup
+            role: userData.role || 'staff'
           }
         }
       });
@@ -179,6 +179,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      });
+      
+      if (error) {
+        console.error('Reset password error:', error);
+        return { success: false, message: error.message };
+      }
+      
+      return { success: true, message: 'Password reset link has been sent to your email.' };
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      return { success: false, message: error?.message || 'Failed to send reset link.' };
+    }
+  };
+
   const isAuthenticated = !!user;
   const userId = user?.id || null;
 
@@ -189,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     signup,
     logout,
+    resetPassword,
     isLoading
   }), [user, isAuthenticated, userId, isLoading]);
 
