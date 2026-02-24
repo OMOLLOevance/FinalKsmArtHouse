@@ -765,36 +765,26 @@ const QuotationManager: React.FC<QuotationManagerProps> = ({ onBack }) => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {/* Month Filter */}
+          {/* Month & Year Filters */}
           <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-xl border border-primary/10 h-10">
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 pl-2"
+              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 pl-2 cursor-pointer hover:text-primary transition-colors"
             >
-              <option value="all">All Months</option>
-              <option value="1">January</option>
-              <option value="2">February</option>
-              <option value="3">March</option>
-              <option value="4">April</option>
-              <option value="5">May</option>
-              <option value="6">June</option>
-              <option value="7">July</option>
-              <option value="8">August</option>
-              <option value="9">September</option>
-              <option value="10">October</option>
-              <option value="11">November</option>
-              <option value="12">December</option>
+              <option value="all" className="bg-background text-foreground uppercase font-bold text-[10px]">All Months</option>
+              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((name, index) => (
+                <option key={index} value={index + 1} className="bg-background text-foreground uppercase font-bold text-[10px]">{name}</option>
+              ))}
             </select>
             
-            {/* Year Filter */}
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4"
+              className="bg-transparent border-none text-[10px] font-black uppercase focus:outline-none pr-4 cursor-pointer hover:text-primary transition-colors"
             >
               {[selectedYear - 1, selectedYear, selectedYear + 1].map(year => (
-                <option key={year} value={year}>{year}</option>
+                <option key={year} value={year} className="bg-background text-foreground uppercase font-bold text-[10px]">{year}</option>
               ))}
             </select>
           </div>

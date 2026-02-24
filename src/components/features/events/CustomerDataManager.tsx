@@ -231,8 +231,14 @@ const CustomerDataManager: React.FC<CustomerDataManagerProps> = ({ onBack }) => 
 
   const handleDelete = async () => {
     if (isDeletingId) {
-      await deleteRecord(isDeletingId);
-      setIsDeletingId(null);
+      try {
+        await deleteRecord(isDeletingId);
+        setIsDeletingId(null);
+      } catch (err) {
+        console.error('Failed to delete record:', err);
+        // Error is already handled by toast in the mutation hook, 
+        // but we catch it here to prevent uncaught promise warnings.
+      }
     }
   };
 

@@ -471,23 +471,22 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
                 </div>
                 
                 <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={allocation.status}
-                      onValueChange={(value) => handleStatusChange(allocation.id, value)}
-                    >
-                      <SelectTrigger className="w-36 h-9 text-xs font-black uppercase tracking-widest bg-background/50">
-                        <SelectValue placeholder="Select Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">PENDING</SelectItem>
-                        <SelectItem value="confirmed">CONFIRMED</SelectItem>
-                        <SelectItem value="completed">COMPLETED</SelectItem>
-                        <SelectItem value="cancelled">CANCELLED</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {allocation.status === 'pending' && (
-                      <Button 
+                                  <div className="flex items-center gap-2">
+                                    <Select
+                                      value={allocation.status}
+                                      onValueChange={(value) => handleStatusChange(allocation.id, value)}
+                                    >
+                                      <SelectTrigger className="w-36 h-9 text-xs font-black uppercase tracking-widest bg-background/50 border-primary/10">
+                                        <SelectValue placeholder="Select Status" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="pending">PENDING</SelectItem>
+                                        <SelectItem value="confirmed">CONFIRMED</SelectItem>
+                                        <SelectItem value="completed">COMPLETED</SelectItem>
+                                        <SelectItem value="cancelled">CANCELLED</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    {allocation.status === 'pending' && (                      <Button 
                         size="sm" 
                         onClick={() => handleStatusChange(allocation.id, 'confirmed')} 
                         disabled={updatingId === allocation.id}
@@ -639,17 +638,21 @@ const MonthlyAllocationTable: React.FC<MonthlyAllocationTableProps> = ({
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1">Event Type</label>
-                <select
+                <Select
                   value={newCustomer.event_type}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, event_type: e.target.value })}
-                  className="w-full h-11 px-3 py-2 border border-input bg-background rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                  onValueChange={(value) => setNewCustomer({ ...newCustomer, event_type: value })}
                 >
-                  <option value="Wedding">Wedding</option>
-                  <option value="Corporate">Corporate</option>
-                  <option value="Birthday">Birthday</option>
-                  <option value="Funeral">Funeral</option>
-                  <option value="Other">Other</option>
-                </select>
+                  <SelectTrigger className="w-full h-11 bg-background rounded-xl font-bold border-primary/10">
+                    <SelectValue placeholder="Select Event Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Wedding">WEDDING</SelectItem>
+                    <SelectItem value="Corporate">CORPORATE</SelectItem>
+                    <SelectItem value="Birthday">BIRTHDAY</SelectItem>
+                    <SelectItem value="Funeral">FUNERAL</SelectItem>
+                    <SelectItem value="Other">OTHER</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest ml-1 text-success">Total Quote (KSH)</label>

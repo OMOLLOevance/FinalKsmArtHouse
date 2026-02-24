@@ -81,14 +81,19 @@ import { useAuth } from '@/contexts/AuthContext'; // Add this import
 // ... other imports
 
 const InvestorDashboard: React.FC = () => {
+  const [isMounted, setIsMounted] = React.useState(false);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // Conditionally initialize useDashboardStats
   const { data: stats, isLoading: statsLoading, error } = isAuthenticated
     ? useDashboardStats()
-    : { data: undefined, isLoading: false, error: undefined }; // Added conditional initialization
+    : { data: undefined, isLoading: false, error: undefined };
 
-  const loading = authLoading || statsLoading; // Added combined loading state
+  const loading = authLoading || statsLoading;
 
   if (loading) return <LoadingSpinner text="Analyzing Enterprise Data..." />;
 
@@ -98,6 +103,10 @@ const InvestorDashboard: React.FC = () => {
         <p className="text-destructive font-bold">Failed to load investor intelligence data</p>
       </div>
     );
+  }
+
+  if (!isMounted) {
+    return <div className="w-full h-[400px] bg-muted/10 animate-pulse rounded-3xl" />;
   }
 
   const metrics = [

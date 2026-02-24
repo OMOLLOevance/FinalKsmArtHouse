@@ -188,32 +188,48 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const client = token ? createAuthenticatedClient(token) : supabase;
-    
-    // Get current user from session
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication token is required' }, { status: 401 });
     }
 
-    const userRole = await getUserRole(user.id, client);
+    const { client, userId, userRole, isManager } = await getClientWithRole(token);
     
-    // Only directors and investors can delete
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized: Session invalid' }, { status: 401 });
+    }
+
+    // Role check - Only directors, investors, and admins can delete records
     if (!['director', 'investor', 'admin'].includes(userRole)) {
-      return NextResponse.json({ error: 'Forbidden: Only directors and investors can delete records' }, { status: 403 });
+      logger.warn(`Unauthorized delete attempt on customer ${id} by user ${userId} with role ${userRole}`);
+      return NextResponse.json({ error: 'Forbidden: Insufficient professional clearance' }, { status: 403 });
     }
 
-    const { error } = await client
+    logger.debug(`Deleting customer ${id} initiated by ${userRole} (${userId})`);
+
+    const { error: deleteError } = await client
       .from('customers')
       .delete()
       .eq('id', id);
 
-    if (error) throw ApiError.fromSupabase(error);
+    if (deleteError) {
+      logger.error(`Database error during customer ${id} deletion:`, deleteError);
+      throw ApiError.fromSupabase(deleteError);
+    }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    logger.error('Customers DELETE Error:', error);
+    return NextResponse.json({ success: true, id });
+  } catch (error: any) {
+    logger.error('Customers DELETE Exception:', {
+      message: error.message,
+      stack: error.stack,
+      id: request.nextUrl.searchParams.get('id')
+    });
+    
     const status = error instanceof ApiError ? error.status : 500;
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status });
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      details: error instanceof ApiError ? error.details : undefined
+    }, { status });
   }
 }
