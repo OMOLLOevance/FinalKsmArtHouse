@@ -19,6 +19,9 @@ class APIClient {
     this.setupInterceptors();
   }
   
+  private sessionPromise: Promise<any> | null = null;
+  private isSigningOut = false;
+  
   private setupInterceptors() {
     let cachedToken: string | null = null;
     let tokenExpiry: number = 0;
@@ -31,10 +34,19 @@ class APIClient {
         // Only fetch new session if we don't have a token or it's about to expire (within 60s)
         if (!cachedToken || tokenExpiry - now < 60) {
           try {
-            const { data } = await supabase.auth.getSession();
+            // Use a shared promise to prevent concurrent getSession calls
+            if (!this.sessionPromise) {
+              this.sessionPromise = supabase.auth.getSession();
+            }
+            
+            const { data } = await this.sessionPromise;
+            // Clear promise after resolution
+            this.sessionPromise = null;
+            
             cachedToken = data.session?.access_token || null;
             tokenExpiry = data.session?.expires_at || 0;
           } catch (e) {
+            this.sessionPromise = null;
             logger.error('Error in request interceptor fetching session:', e);
           }
         }
@@ -72,8 +84,13 @@ class APIClient {
         // Handle 401 Unauthorized - always clear session and redirect to login
         if (error.response?.status === 401) {
           logger.warn(`API Unauthorized: ${error.config?.url} - aggressively clearing session and redirecting to login`);
-          if (typeof window !== 'undefined') {
-            await supabase.auth.signOut(); 
+          if (typeof window !== 'undefined' && !this.isSigningOut) {
+            this.isSigningOut = true;
+            try {
+              await supabase.auth.signOut(); 
+            } catch (signOutError) {
+              logger.error('Error during automatic sign out:', signOutError);
+            }
             
             // Aggressively clear Supabase-related localStorage items
             for (const key in localStorage) {

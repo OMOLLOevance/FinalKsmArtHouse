@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { Loader, UserPlus, ShieldAlert, Copy, RefreshCw, ShieldCheck, Mail, Shield } from 'lucide-react';
 import { DataTable } from '@/components/shared/DataTable';
 import { Badge } from '@/components/ui/Badge';
@@ -26,15 +26,7 @@ const UserManagement = () => {
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
-      const result = await response.json();
+      const result = await apiClient.get<any>('/api/admin/users');
       if (result.success) {
         setUsers(result.users);
       }
@@ -55,26 +47,7 @@ const UserManagement = () => {
     setCreatedUser(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Session expired. Please login again.');
-        return;
-      }
-
-      const response = await fetch('/api/admin/create-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create user');
-      }
+      const result = await apiClient.post<any>('/api/admin/create-user', formData);
 
       setCreatedUser({
         email: formData.email,
@@ -92,7 +65,7 @@ const UserManagement = () => {
 
     } catch (error: any) {
       console.error('Create user error:', error);
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to create user');
     } finally {
       setLoading(false);
     }
@@ -102,27 +75,11 @@ const UserManagement = () => {
     if (!confirm('Are you sure you want to reset this user\'s password to the default?')) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch('/api/admin/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ userId })
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        toast.success(result.message);
-        fetchUsers();
-      } else {
-        toast.error(result.error);
-      }
-    } catch (error) {
-      toast.error('Failed to reset password');
+      const result = await apiClient.post<any>('/api/admin/reset-password', { userId });
+      toast.success(result.message || 'Password reset successfully');
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reset password');
     }
   };
 

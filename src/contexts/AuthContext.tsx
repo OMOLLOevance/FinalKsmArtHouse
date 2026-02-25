@@ -1,10 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types';
-// import { getAuthenticatedUser } from '@/utils/authHelpers'; // Removed
-// Removed: import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +24,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [forcePasswordChange, setForcePasswordChange] = useState(false);
+  const sessionPromiseRef = useRef<Promise<any> | null>(null);
+
+  const getSession = useCallback(async () => {
+    if (sessionPromiseRef.current) return sessionPromiseRef.current;
+    
+    sessionPromiseRef.current = supabase.auth.getSession();
+    try {
+      return await sessionPromiseRef.current;
+    } finally {
+      sessionPromiseRef.current = null;
+    }
+  }, []);
 
   const fetchProfile = async (userId: string): Promise<{ must_change_password: boolean; role: string } | null> => {
     try {
@@ -49,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthStatus = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await getSession();
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
         
@@ -185,12 +195,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async (): Promise<void> => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Use a race to prevent being stuck on lock acquisition
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Sign out timed out')), 3000)
+      );
+      
+      await Promise.race([signOutPromise, timeoutPromise]);
+    } catch (error: any) {
+      console.warn('Logout notice (proceeding with local cleanup):', error.message || error);
+    } finally {
+      // Always clear local state
       setUser(null);
       setForcePasswordChange(false);
-    } catch (error: any) {
-      console.error('Logout error:', error);
+      
+      if (typeof window !== 'undefined') {
+        // Aggressively clear Supabase-related storage
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sb-') || key.startsWith('supabase.auth.'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        // Use window.location for a clean state reload
+        window.location.href = '/login';
+      }
     }
   }, []);
 
