@@ -36,12 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       if (error) {
-        console.error('Error fetching profile:', error);
+        // Log more detail but don't treat as a crash-worthy error
+        console.warn('Profile fetch notice:', error.message || error);
         return null;
       }
       return data;
     } catch (err) {
-      console.error('Error fetching profile:', err);
+      console.error('Unexpected error fetching profile:', err);
       return null;
     }
   };
