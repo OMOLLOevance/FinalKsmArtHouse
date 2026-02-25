@@ -1,7 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { getClientWithRole } from '@/lib/auth-utils';
+import { getClientWithRole, createAdminClient } from '@/lib/auth-utils';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
@@ -19,18 +18,18 @@ const ClientSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const { client, userId, isManager } = await getClientWithRole(token);
+    const { userId, isManager } = await getClientWithRole(token);
+    const adminClient = createAdminClient();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let query = client.from('clients').select('*');
+    let query = adminClient.from('clients').select('*');
 
-    // If not manager, only see own data
-    // Note: This relies on the user_id column existing
+    // If not manager, only see own data or historical orphaned data
     if (!isManager) {
-      query = query.eq('user_id', userId);
+      query = query.or(`user_id.eq.${userId},user_id.is.null`);
     }
 
     const { data, error } = await query.order('date', { ascending: false });
@@ -141,7 +140,8 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     
-    const { client, userId, isManager } = await getClientWithRole(token);
+    const { userId, isManager } = await getClientWithRole(token);
+    const adminClient = createAdminClient();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -151,8 +151,20 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    // Only managers or the owner can delete
-    const { error } = await client
+    // If not manager, verify ownership
+    if (!isManager) {
+        const { data: existing } = await adminClient
+            .from('clients')
+            .select('user_id')
+            .eq('id', id)
+            .single();
+        
+        if (existing && existing.user_id && existing.user_id !== userId) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+    }
+
+    const { error } = await adminClient
       .from('clients')
       .delete()
       .eq('id', id);
