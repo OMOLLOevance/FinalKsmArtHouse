@@ -19,7 +19,8 @@ export const supabase = createClient(
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false, // Disabled for better performance as per optimized config
+    detectSessionInUrl: false,
+    storageKey: 'ksm-auth-token-v2', // Change key to bypass stuck locks
   },
   db: {
     schema: 'public',
