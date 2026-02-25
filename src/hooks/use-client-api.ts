@@ -36,6 +36,7 @@ export const useClientsQuery = () => {
         user_id: client.user_id,
       }));
     },
+    refetchInterval: 5000,
   });
 };
 

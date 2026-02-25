@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       query = query.or(`user_id.eq.${userId},user_id.is.null`);
     }
 
-    const { data, error } = await query.order('date', { ascending: false });
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       logger.error('Clients GET Error:', error);
