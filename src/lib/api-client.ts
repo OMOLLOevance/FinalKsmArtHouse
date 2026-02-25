@@ -20,15 +20,27 @@ class APIClient {
   }
   
   private setupInterceptors() {
+    let cachedToken: string | null = null;
+    let tokenExpiry: number = 0;
+
     // Request interceptor
     this.client.interceptors.request.use(
       async (config) => {
-        // Try to get token from Supabase session directly
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+        const now = Math.floor(Date.now() / 1000);
         
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        // Only fetch new session if we don't have a token or it's about to expire (within 60s)
+        if (!cachedToken || tokenExpiry - now < 60) {
+          try {
+            const { data } = await supabase.auth.getSession();
+            cachedToken = data.session?.access_token || null;
+            tokenExpiry = data.session?.expires_at || 0;
+          } catch (e) {
+            logger.error('Error in request interceptor fetching session:', e);
+          }
+        }
+        
+        if (cachedToken) {
+          config.headers.Authorization = `Bearer ${cachedToken}`;
         }
         // Ensure cookies are included for authentication
         config.withCredentials = true; 

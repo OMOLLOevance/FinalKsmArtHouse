@@ -19,8 +19,9 @@ export const supabase = createClient(
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
-    storageKey: 'ksm-auth-token-v2', // Change key to bypass stuck locks
+    detectSessionInUrl: true,
+    storageKey: 'ksm-art-house-auth',
+    flowType: 'pkce',
   },
   db: {
     schema: 'public',
