@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [forcePasswordChange, setForcePasswordChange] = useState(false);
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
+  const hasInitialized = useRef(false);
 
   const getSession = useCallback(async () => {
     if (sessionPromiseRef.current) return sessionPromiseRef.current;
@@ -89,6 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     setIsLoading(true);
     checkAuthStatus();
 
