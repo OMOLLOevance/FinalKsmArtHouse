@@ -20,7 +20,7 @@ export const supabase = createClient(
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
-    storageKey: 'ksm-art-house-auth',
+    storageKey: 'ksm-art-house-auth-v2',
     flowType: 'pkce',
     // @ts-ignore: lockAcquireTimeout is a valid option in recent @supabase/gotrue-js versions
     lockAcquireTimeout: 30000,
@@ -39,6 +39,15 @@ export const supabase = createClient(
     },
   },
 });
+
+// One-time log in dev to confirm configuration
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('[Supabase] Client initialized:', {
+    storageKey: 'ksm-art-house-auth-v2',
+    detectSessionInUrl: false,
+    lockAcquireTimeout: 30000
+  });
+}
 
 // Helper to create an authenticated client for server-side use
 export const createAuthenticatedClient = (token: string) => {
