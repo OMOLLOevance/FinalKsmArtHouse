@@ -20,10 +20,10 @@ export const supabase = createClient(
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
-    // @ts-ignore: lockAcquireTimeout is a valid option in recent @supabase/gotrue-js versions
-    lockAcquireTimeout: 30000,
     storageKey: 'ksm-art-house-auth',
     flowType: 'pkce',
+    // @ts-ignore: lockAcquireTimeout is a valid option in recent @supabase/gotrue-js versions
+    lockAcquireTimeout: 30000,
   },
   db: {
     schema: 'public',

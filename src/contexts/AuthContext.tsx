@@ -58,63 +58,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleUserSession = useCallback(async (session: any) => {
+    if (session?.user) {
+      const profile = await fetchProfile(session.user.id);
+      
+      const userData: User = {
+        id: session.user.id,
+        email: session.user.email || '',
+        firstName: session.user.user_metadata?.first_name || '',
+        lastName: session.user.user_metadata?.last_name || '',
+        role: profile?.role as any || session.user.user_metadata?.role || 'staff',
+        createdAt: session.user.created_at || new Date().toISOString(),
+        mustChangePassword: profile?.must_change_password || false
+      };
+
+      setUser(userData);
+      if (profile?.must_change_password) {
+        setForcePasswordChange(true);
+      }
+    } else {
+      setUser(null);
+      setForcePasswordChange(false);
+    }
+    setIsLoading(false);
+  }, []);
+
   const checkAuthStatus = useCallback(async () => {
     try {
       const { data: { session } } = await getSession();
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: session.user.user_metadata?.first_name || '',
-          lastName: session.user.user_metadata?.last_name || '',
-          role: profile?.role as any || session.user.user_metadata?.role || 'staff',
-          createdAt: session.user.created_at || new Date().toISOString(),
-          mustChangePassword: profile?.must_change_password || false
-        };
-
-        setUser(userData);
-        if (profile?.must_change_password) {
-          setForcePasswordChange(true);
-        }
-      } else {
-        setUser(null);
-      }
+      await handleUserSession(session);
     } catch (error: any) {
       console.error('Auth check error:', error);
       setUser(null);
-    } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [getSession, handleUserSession]);
 
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     setIsLoading(true);
+    
+    // Initial check
     checkAuthStatus();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: session.user.user_metadata?.first_name || '',
-          lastName: session.user.user_metadata?.last_name || '',
-          role: profile?.role as any || session.user.user_metadata?.role || 'staff',
-          createdAt: session.user.created_at || new Date().toISOString(),
-          mustChangePassword: profile?.must_change_password || false
-        };
-        setUser(userData);
-        if (profile?.must_change_password) {
-          setForcePasswordChange(true);
-        }
-        setIsLoading(false);
-      } else if (event === 'SIGNED_OUT' || !session) {
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        await handleUserSession(session);
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setForcePasswordChange(false);
         setIsLoading(false);
@@ -122,9 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [checkAuthStatus]);
+  }, [checkAuthStatus, handleUserSession]);
 
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
