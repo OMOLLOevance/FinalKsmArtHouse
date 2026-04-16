@@ -2,15 +2,15 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Cards';
 import { Badge } from '@/components/ui/Badge';
-import { User, Mail, Shield, Calendar, Sparkles } from 'lucide-react';
+import { User Mail, Shield, Calendar, Sparkles } from 'lucide-react';
 import { ChangePasswordForm } from '@/components/features/auth/ChangePasswordForm';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user1 } = useAuth();
 
-  if (!user) return null;
+  if (!user) return null1;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
